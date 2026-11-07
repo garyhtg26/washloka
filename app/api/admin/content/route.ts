@@ -1,4 +1,4 @@
-import { requestBranch } from "@/lib/branches";
+import { branchSettingsId, requestBranch } from "@/lib/branches";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest) {
     if (raw.length > 5000) throw new ApiError(413, "Data terlalu besar.");
     const content = contentSchema.parse(JSON.parse(raw));
     await db()
-      .doc(`settings/${requestBranch(req.url)}`)
+      .doc(`settings/${branchSettingsId(requestBranch(req.url))}`)
       .set({ content, updatedBy: user!.uid }, { merge: true });
     return NextResponse.json({ ok: true });
   } catch (e) {

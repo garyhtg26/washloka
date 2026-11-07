@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { eligibleMemberDiscount } from "./membership-eligibility";
+import { sameBranch } from "./branches";
 
 export const MEMBER_CODE_LIFETIME_MS = 5 * 60 * 1000;
 export const memberCodePattern = /^[A-F0-9]{10}$/;
@@ -18,7 +19,7 @@ export function validMemberCode(
     !!record &&
     typeof record.uid === "string" &&
     record.uid.length > 0 &&
-    record.branchId === branch &&
+    sameBranch(record.branchId, branch) &&
     typeof record.expiresAt === "number" &&
     record.expiresAt > now &&
     !record.usedAt

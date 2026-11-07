@@ -17,7 +17,7 @@ import {
 import { useAuth } from "./auth-provider";
 import { prepareImage } from "@/lib/image-upload";
 export default function DashboardAccount({
-  branchName = "Cinere",
+  branchName = "D’Fable",
 }: {
   branchName?: string;
 }) {
@@ -146,7 +146,7 @@ export default function DashboardAccount({
           <span className="account-avatar">{avatar}</span>
           <span className="admin-account-info">
             <b>{auth.name || name || "Admin"}</b>
-            <small>Cabang {branchName}</small>
+            <small>Toko · {branchName}</small>
           </span>
           <ChevronDown size={16} className="account-chevron" />
         </button>

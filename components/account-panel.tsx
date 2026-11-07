@@ -14,6 +14,7 @@ import { useAuth } from "./auth-provider";
 import { authErrorMessage } from "@/lib/auth-error";
 import { phoneFromLoginEmail, phoneLoginEmail } from "@/lib/phone-auth";
 import "./account-phone.css";
+import "./account-brand.css";
 export default function AccountPanel({
   onDone,
   phone = "",
@@ -70,11 +71,11 @@ export default function AccountPanel({
   return (
     <div className="auth-panel">
       <p className="auth-kicker">
-        D’FABLE {admin ? "WORKSPACE" : "LAUNDRY STUDIO"}
+        EAZYWASH {admin ? "WORKSPACE" : "AKUN PELANGGAN"}
       </p>
       <h2>
         {signedIn
-          ? `Halo, ${auth.user?.displayName?.split(" ")[0] || "teman D’Fable"}.`
+          ? `Halo, ${auth.user?.displayName?.split(" ")[0] || "teman"}.`
           : auth.user && !auth.verified
             ? "Cek email kamu."
             : mode === "register"
@@ -108,8 +109,8 @@ export default function AccountPanel({
           <div className="verify-instructions">
             <b>Satu klik untuk mengaktifkan akun.</b>
             <p>
-              Buka email dari D’Fable Laundry Studio dan pilih tombol
-              verifikasi. Halaman ini akan memperbarui status secara otomatis.
+              Buka email verifikasi akun dan pilih tombol verifikasi. Halaman
+              ini akan memperbarui status secara otomatis.
             </p>
             <small>Belum terlihat? Periksa folder spam atau promosi.</small>
           </div>

@@ -1,7 +1,7 @@
 import { AuthProvider } from "@/components/auth-provider";
 import EmailAction from "@/components/email-action";
 export const metadata = {
-  title: "Akun kamu — D’Fable",
+  title: "Akun kamu — Eazywash",
   robots: { index: false, follow: false },
   referrer: "no-referrer" as const,
 };

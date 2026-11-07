@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Order } from "../types";
+import { normalizeBranchId } from "../branches";
 import type {
   ManualPaymentSummary,
   BankDetails,
@@ -64,13 +65,14 @@ export function bankDetails(
       typeof value?.accountHolder === "string" ? value.accountHolder : "",
   };
   const qrVersion = proofVersionSchema.safeParse(value?.qrVersion);
+  const store = normalizeBranchId(branch);
   return {
     ...bank,
     configured: bankSettingsSchema.safeParse(bank).success,
     ...(value?.version ? { version: value.version } : {}),
-    ...(qrVersion.success
+    ...(qrVersion.success && store
       ? {
-          qrUrl: `/api/payments/bank-qr?branch=${encodeURIComponent(branch)}&v=${qrVersion.data}`,
+          qrUrl: `/api/payments/bank-qr?branch=${encodeURIComponent(store)}&v=${qrVersion.data}`,
         }
       : {}),
   };

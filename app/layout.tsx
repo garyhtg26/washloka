@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "@/components/customer-mobile-nav.css";
+import "@/components/customer-brand.css";
 export const metadata: Metadata = {
-  title: "D’Fable — Laundry Studio",
+  title: "Eazywash — Integrated Laundry Ecosystem",
   description:
-    "Cucian bersih, hari lebih ringan. Pesan layanan laundry dan pantau perjalanan pakaianmu.",
-  icons: { icon: "/favicon.svg" },
+    "Platform untuk menghubungkan pelanggan dengan layanan laundry pilihan mereka.",
+  icons: { icon: "/eazywash-icon.svg" },
 };
 export default function RootLayout({
   children,

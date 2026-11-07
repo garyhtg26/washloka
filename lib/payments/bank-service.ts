@@ -2,9 +2,20 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import { db } from "../firebase/admin";
+import {
+  branchAliases,
+  branchSchema,
+  branchSettingsId,
+  sameBranch,
+} from "../branches";
+import { readBranchSettings } from "../branch-settings";
 import { ApiError, requireManager, type Identity } from "../firebase/access";
 import { uploadPhoto } from "../storage/photos";
-import { bankDetails, bankSettingsSchema } from "./manual-policy";
+import {
+  bankDetails,
+  bankSettingsSchema,
+  proofVersionSchema,
+} from "./manual-policy";
 import { signalPaymentChange } from "./service";
 import type { BankAccount, StoredBankSettings } from "./manual-types";
 
@@ -12,8 +23,9 @@ export async function readBankDetails(
   branch: string,
   database: Firestore = db(),
 ) {
-  const snap = await database.doc(`settings/${branch}`).get();
-  return bankDetails(snap.get("manualPayment"), branch);
+  const store = branchSchema.parse(branch);
+  const snap = await readBranchSettings(database, store);
+  return bankDetails(snap.get("manualPayment"), store);
 }
 
 export async function saveBankDetails(
@@ -23,10 +35,11 @@ export async function saveBankDetails(
   database: Firestore = db(),
 ) {
   requireManager(user);
+  const store = branchSchema.parse(branch);
   const account = bankSettingsSchema.parse(input);
   await database.runTransaction(async (tx) => {
-    const ref = database.doc(`settings/${branch}`);
-    const prior = await tx.get(ref);
+    const prior = await readBranchSettings(database, store, tx);
+    const ref = prior.ref;
     const existing = prior.get("manualPayment") as
       StoredBankSettings | undefined;
     const identityChanged =
@@ -60,7 +73,9 @@ export async function setBankQr(
   expectedVersion?: string,
 ) {
   requireManager(user);
-  const initial = await database.doc(`settings/${branch}`).get();
+  const store = branchSchema.parse(branch);
+  const storageBranch = branchSettingsId(store);
+  const initial = await readBranchSettings(database, store);
   if (bytes && !bankDetails(initial.get("manualPayment"), branch).configured)
     throw new ApiError(
       409,
@@ -74,10 +89,11 @@ export async function setBankQr(
       "Rekening telah berubah. Muat ulang sebelum mengunggah QR.",
     );
   const qrVersion = bytes ? randomUUID() : "";
-  if (bytes) await upload(`payments/bank-qr/${branch}/${qrVersion}.jpg`, bytes);
+  if (bytes)
+    await upload(`payments/bank-qr/${storageBranch}/${qrVersion}.jpg`, bytes);
   await database.runTransaction(async (tx) => {
-    const ref = database.doc(`settings/${branch}`);
-    const prior = await tx.get(ref);
+    const prior = await readBranchSettings(database, store, tx);
+    const ref = prior.ref;
     const existing = prior.get("manualPayment") as
       StoredBankSettings | undefined;
     if ((existing?.version || "unconfigured") !== capturedVersion)
@@ -101,11 +117,37 @@ export async function setBankQr(
       { merge: true },
     );
     if (qrVersion)
-      tx.set(database.doc(`bankQrVersions/${branch}-${qrVersion}`), {
-        branchId: branch,
+      tx.set(database.doc(`bankQrVersions/${storageBranch}-${qrVersion}`), {
+        branchId: storageBranch,
         qrVersion,
       });
     signalPaymentChange(tx, database, branch);
   });
   return readBankDetails(branch, database);
+}
+
+// A QR version is immutable. Search only D’Fable's explicit aliases and return
+// its original storage path instead of moving or regenerating the image.
+export async function bankQrPath(
+  branch: string,
+  version: string,
+  database: Firestore = db(),
+) {
+  proofVersionSchema.parse(version);
+  const aliases = [...branchAliases(branch)];
+  aliases.sort(
+    (first, second) => Number(second === branch) - Number(first === branch),
+  );
+  const snapshots = await Promise.all(
+    aliases.map((id) => database.doc(`bankQrVersions/${id}-${version}`).get()),
+  );
+  const index = snapshots.findIndex(
+    (record, position) =>
+      record.exists &&
+      record.get("branchId") === aliases[position] &&
+      sameBranch(record.get("branchId"), branch) &&
+      record.get("qrVersion") === version,
+  );
+  if (index < 0) throw new ApiError(404, "QR pembayaran tidak ditemukan.");
+  return `payments/bank-qr/${aliases[index]}/${version}.jpg`;
 }

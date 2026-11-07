@@ -892,7 +892,7 @@ export default function PaymentPanel({
                         height={180}
                         alt={
                           realQrUrl
-                            ? `QR pembayaran ${bank?.bankName || "bank"} D’Fable`
+                            ? `QR pembayaran ${bank?.bankName || "bank"} toko`
                             : "Contoh QR, belum dapat digunakan untuk pembayaran"
                         }
                         className="mx-auto aspect-square w-full max-w-[180px] rounded-lg bg-white object-contain"

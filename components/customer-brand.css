@@ -1,0 +1,154 @@
+.customer-header .eazy-customer-brand {
+  width: 174px;
+}
+.eazy-customer-brand img {
+  mix-blend-mode: normal;
+  width: 100%;
+  height: auto;
+}
+.customer-header {
+  gap: 24px;
+}
+.customer-header nav {
+  gap: 27px;
+}
+.customer-header nav :is(button, a).active::after {
+  height: 3px;
+  border-radius: 3px;
+  background: #ffbf16;
+}
+.customer-main {
+  --blue: #0756c5;
+  --deep: #061f55;
+}
+.customer-main h1,
+.customer-main h2,
+.customer-main h3 {
+  color: #102b53;
+}
+.customer-main .campaign-copy h2,
+.customer-main .people-copy h2 {
+  color: #fff;
+}
+.customer-main .primary,
+dialog.order-dialog:not(.dashboard-dialog) .primary {
+  background: #0756c5;
+}
+.customer-main .primary:hover,
+dialog.order-dialog:not(.dashboard-dialog) .primary:hover {
+  background: #06489f;
+}
+.customer-header + .customer-main + footer .brand {
+  width: 128px;
+}
+.customer-header ~ .mobile-nav :is(button, a).active {
+  color: #0756c5;
+  background: #edf5ff;
+}
+.customer-header ~ .mobile-nav :is(button, a).active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 18px;
+  height: 3px;
+  border-radius: 3px;
+  background: #ffbf16;
+}
+@media (max-width: 1080px) and (min-width: 801px) {
+  .customer-header {
+    gap: 18px;
+    padding-inline: 26px;
+  }
+  .customer-header .eazy-customer-brand {
+    width: 148px;
+  }
+  .customer-header nav {
+    gap: 18px;
+  }
+  .customer-header nav :is(button, a) {
+    font-size: 12px;
+  }
+}
+@media (max-width: 800px) {
+  .customer-header .eazy-customer-brand {
+    width: 149px;
+  }
+  .customer-header {
+    padding-inline: 20px;
+  }
+}
+@media (max-width: 520px) {
+  .customer-header {
+    min-height: 76px;
+    height: auto;
+    padding: 14px 18px;
+    gap: 12px;
+  }
+  .customer-header .eazy-customer-brand {
+    width: 128px;
+  }
+  .customer-header .header-right {
+    gap: 9px;
+    margin-left: auto;
+  }
+  .customer-header .customer-account .customer-account-trigger {
+    display: flex;
+    justify-content: center;
+    width: 32px;
+    min-height: 40px;
+    padding: 0;
+    border: 0;
+    color: #173e75;
+  }
+  .customer-header .customer-account-trigger > span,
+  .customer-header
+    .customer-account-trigger
+    > svg:last-child:not(:first-child) {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  .customer-header {
+    padding-inline: 14px;
+  }
+  .customer-header .eazy-customer-brand {
+    width: 112px;
+  }
+}
+.order-store-summary {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 20px 0 24px;
+  padding: 12px 14px;
+  border: 1px solid #e3eaf4;
+  border-radius: 12px;
+  background: #f8faff;
+}
+.order-store-logo {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border: 1px solid #e5eaf4;
+  border-radius: 9px;
+  background: #fff;
+}
+.order-store-logo img {
+  width: 27px;
+  height: 27px;
+}
+.order-store-summary > span:last-child {
+  display: grid;
+  gap: 3px;
+}
+.order-store-summary small {
+  font-size: 11px;
+  color: #8796a9;
+}
+.order-store-summary b {
+  font-size: 14px;
+  font-weight: 650;
+  color: #15345f;
+}

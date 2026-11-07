@@ -6,6 +6,8 @@ import { calculateOrderPrice } from "./pricing";
 import { finalAmount, paymentLocked } from "./payments/policy";
 import { manualLocked, safeManualSummary } from "./payments/manual-policy";
 import type { Order } from "./types";
+import { signalPaymentChange } from "./payments/signals";
+import { normalizeBranchId } from "./branches";
 
 export function memberBalance(value: unknown) {
   const balance = value ?? 0;
@@ -31,6 +33,8 @@ export async function reviewDeposit(
     ]);
     if (!deposit.exists || deposit.get("requestId") !== requestId)
       throw new ApiError(409, "Permintaan deposit sudah berubah.");
+    if (!normalizeBranchId(deposit.get("branchId")))
+      throw new ApiError(404, "Permintaan deposit tidak ditemukan.");
     if (deposit.get("status") !== "pending") {
       if (
         deposit.get("status") ===
@@ -86,6 +90,8 @@ export async function redeemMembership(
     ]);
     if (!orderSnap.exists) throw new ApiError(404, "Pesanan tidak ditemukan.");
     const order = orderSnap.data() as Order;
+    if (!normalizeBranchId(order.branchId))
+      throw new ApiError(404, "Pesanan tidak ditemukan.");
     if (order.uid !== uid)
       throw new ApiError(
         403,
@@ -186,11 +192,7 @@ export async function redeemMembership(
       paymentRevision: (order.paymentRevision || 0) + 1,
       updatedAt: now,
     });
-    if (["cinere", "bogor"].includes(order.branchId))
-      tx.set(database.doc(`paymentSignals/${order.branchId}`), {
-        version: randomUUID(),
-        updatedAt: now,
-      });
+    signalPaymentChange(tx, database, order.branchId);
     return { balance: nextBalance, amount, total, paid };
   });
 }

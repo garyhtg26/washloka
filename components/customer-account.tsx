@@ -6,6 +6,7 @@ import { ChevronDown, LogOut, User } from "lucide-react";
 import { useAuth } from "./auth-provider";
 import { phoneFromLoginEmail } from "@/lib/phone-auth";
 import "./customer-account.css";
+import { DFABLE_PROFILE } from "@/lib/dfable-path";
 
 export default function CustomerAccount({ onLogin }: { onLogin: () => void }) {
   const auth = useAuth();
@@ -61,7 +62,7 @@ export default function CustomerAccount({ onLogin }: { onLogin: () => void }) {
               {phoneFromLoginEmail(auth.user?.email) || auth.user?.email}
             </small>
           </div>
-          <Link href="/profil" onClick={() => setOpen(false)}>
+          <Link href={DFABLE_PROFILE} onClick={() => setOpen(false)}>
             <User size={17} /> Profil saya
           </Link>
           <button

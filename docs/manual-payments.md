@@ -5,12 +5,12 @@ Pilihan pembayaran tersedia setelah pesanan web atau transaksi POS tersimpan. QR
 ## Pengaturan oleh owner dan admin
 
 1. Masuk ke `/dashboard` menggunakan email dan password owner/admin.
-2. Pilih workspace cabang yang sesuai, lalu buka **Pembayaran**.
+2. Pilih workspace toko yang sesuai, lalu buka **Pembayaran**.
 3. Isi nama bank, nomor rekening, dan nama pemilik rekening. Nilai awal nama bank adalah BCA, sedangkan nomor dan pemilik rekening sengaja dikosongkan.
 4. Simpan rekening terlebih dahulu. Unggah gambar QR toko bila diperlukan. JPG, PNG, dan WebP diproses menjadi JPEG sebelum disimpan ke bucket Supabase privat yang sudah dipakai aplikasi.
 5. Pastikan nomor rekening, pemilik, dan QR benar sebelum menerima pembayaran. Jika identitas rekening diubah, unggah ulang QR yang sesuai dengan rekening baru.
 
-Pengaturan tersimpan per cabang. Staf dapat memproses pesanan dan memeriksa pembayaran, tetapi tidak dapat mengubah rekening atau gambar QR. Pembatasan ini diperiksa di server, bukan hanya melalui tampilan menu.
+Pengaturan mengikuti toko yang dipilih. Staf dapat memproses pesanan dan memeriksa pembayaran, tetapi tidak dapat mengubah rekening atau gambar QR. Pembatasan ini diperiksa di server, bukan hanya melalui tampilan menu.
 
 Ketika belum ada QR toko, pelanggan melihat ilustrasi QR dengan keterangan **Contoh QR · belum dapat dibayar**. Ilustrasi tersebut tidak dapat dipakai untuk pembayaran. Nomor rekening asli harus diisi oleh owner/admin sebelum transfer dapat diajukan.
 

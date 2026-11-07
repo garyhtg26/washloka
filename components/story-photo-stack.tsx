@@ -7,7 +7,7 @@ import "./story-photo-stack.css";
 
 const photos = [
   {
-    src: "/unsplash/people.jpg",
+    src: "/people-optimized.webp",
     alt: "Aktivitas mencuci di tempat laundry",
     label: "Di balik setiap cucian",
   },
@@ -17,7 +17,7 @@ const photos = [
     label: "Bersih dan rapi",
   },
   {
-    src: "/unsplash/warm.jpg",
+    src: "/unsplash/ironing-web.webp",
     alt: "Proses menyetrika pakaian",
     label: "Dirawat dengan teliti",
   },

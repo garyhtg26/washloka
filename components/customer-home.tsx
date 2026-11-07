@@ -66,7 +66,7 @@ export default function CustomerHome({
     <div className="customer-experience">
       <div className="app-welcome">
         <div>
-          <h1>{name ? `Halo, ${name}` : "D’Fable Laundry"}</h1>
+          <h1>{name ? `Halo, ${name}` : "Pesan laundry"}</h1>
         </div>
         <button
           className="welcome-account"
@@ -79,7 +79,7 @@ export default function CustomerHome({
 
       <section
         className={`campaign-grid ${!store.promo.active || !content.people.active ? "no-campaign" : ""}`}
-        aria-label="Pilihan D’Fable"
+        aria-label="Pilihan layanan Eazywash"
       >
         {store.promo.active && (
           <article className="campaign-card" data-scroll-reveal>
@@ -104,7 +104,11 @@ export default function CustomerHome({
               <button onClick={() => onOrder("wash")}>
                 {store.promo.button || "Jemput sekarang"} <Plus size={17} />
               </button>
-              <span className="campaign-code">{store.promo.code}</span>
+              <span className="campaign-code">
+                {store.promo.code === "HELLODFABLE"
+                  ? "EAZYWASH"
+                  : store.promo.code}
+              </span>
             </div>
           </article>
         )}
@@ -228,7 +232,7 @@ export default function CustomerHome({
                   sizes="(max-width: 520px) 100vw, (max-width: 900px) 50vw, 700px"
                   unoptimized={!memberImage.startsWith("/api/")}
                   src={memberImage}
-                  alt="Membership D’Fable"
+                  alt="Membership laundry"
                 />
                 <span className="photo-service-tag">Membership</span>
                 <span className="photo-service-add">
@@ -296,10 +300,10 @@ export default function CustomerHome({
               unoptimized={!memberImage.startsWith("/api/")}
               className="monthly-thumb"
               src={memberImage}
-              alt="Membership D’Fable"
+              alt="Membership laundry"
             />
             <div className="monthly-copy">
-              <span className="monthly-kicker">D’FABLE MEMBERSHIP</span>
+              <span className="monthly-kicker">MEMBERSHIP TOKO</span>
               <h3>{content.member.title}</h3>
             </div>
             <span className="monthly-action">

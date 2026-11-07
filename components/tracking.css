@@ -18,7 +18,7 @@
   position: relative;
   overflow: hidden;
   padding: 25px 25px 23px;
-  background: #2521d5;
+  background: #0756c5;
   color: #fff;
 }
 .tracking-status-hero::after {
@@ -38,7 +38,7 @@
   gap: 12px;
 }
 .tracking-status-top span {
-  color: #d8dcff;
+  color: #d9e8ff;
   font-size: 11px;
 }
 .tracking-status-top b {
@@ -69,7 +69,7 @@
 }
 .tracking-status-title p {
   margin: 0;
-  color: #d3d9ff;
+  color: #d3e6ff;
   font-size: 12px;
 }
 .tracking-progress-body {
@@ -112,7 +112,7 @@
   background: #e9edf5;
 }
 .tracking-steps li.done::after {
-  background: #c8c6ff;
+  background: #c7ddfa;
 }
 .tracking-step-icon {
   z-index: 1;
@@ -125,13 +125,13 @@
   color: #a2aabc;
 }
 .tracking-steps li.done .tracking-step-icon {
-  background: #edefff;
-  color: #4e49d9;
+  background: #eaf3ff;
+  color: #1765c1;
 }
 .tracking-steps li.current .tracking-step-icon {
-  background: #2b27da;
+  background: #0756c5;
   color: #fff;
-  box-shadow: 0 0 0 4px #eeeeff;
+  box-shadow: 0 0 0 4px #e9f2ff;
 }
 .tracking-step-copy {
   padding: 6px 0 15px;
@@ -148,7 +148,7 @@
 .tracking-step-copy small {
   display: block;
   padding-top: 3px;
-  color: #625dde;
+  color: #527cae;
   font-size: 10px;
 }
 .tracking-progress-note {
@@ -182,8 +182,8 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  color: #4e49d9;
-  background: #f0efff;
+  color: #1765c1;
+  background: #eaf3ff;
 }
 .tracking-history-card {
   margin-top: 18px;

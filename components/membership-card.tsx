@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { money } from "@/lib/types";
 import { prepareImage } from "@/lib/image-upload";
+import { DEFAULT_BRANCH } from "@/lib/branches";
 import { useAuth } from "./auth-provider";
 import "./membership-card.css";
 
@@ -52,7 +53,7 @@ export default function MembershipCard() {
   const [data, setData] = useState<Membership | null>(null);
   const [loadedBranch, setLoadedBranch] = useState("");
   const [amount, setAmount] = useState("100000");
-  const [branch, setBranch] = useState("cinere");
+  const branch = DEFAULT_BRANCH;
   const [senderName, setSenderName] = useState("");
   const [proof, setProof] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -109,7 +110,7 @@ export default function MembershipCard() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loadedBranch !== branch || !data?.bank.configured) {
-      setMessage("Tunggu informasi rekening cabang selesai dimuat.");
+      setMessage("Tunggu informasi rekening toko selesai dimuat.");
       return;
     }
     if (!proof) {
@@ -205,7 +206,7 @@ export default function MembershipCard() {
 
   return (
     <>
-      <section className="member-summary" aria-label="Membership D’Fable">
+      <section className="member-summary" aria-label="Membership laundry">
         <div className="member-summary-head">
           <span className="member-summary-icon">
             <CreditCard size={20} aria-hidden="true" />
@@ -294,7 +295,7 @@ export default function MembershipCard() {
       >
         <div className="member-dialog-head">
           <div>
-            <span className="member-kicker">D’FABLE MEMBERSHIP</span>
+            <span className="member-kicker">MEMBERSHIP LAUNDRY</span>
             <h2 id="member-dialog-title">{title}</h2>
           </div>
           <button
@@ -315,27 +316,13 @@ export default function MembershipCard() {
                   <ShieldCheck size={20} />
                 </span>
                 <div>
-                  <b>Untuk pesanan di toko</b>
+                  <b>Untuk pesanan di D’Fable</b>
                   <p>
                     Tunjukkan kode sekali pakai kepada staf saat mencatat
                     pesanan.
                   </p>
                 </div>
               </div>
-              <label className="member-field">
-                Cabang kunjungan
-                <select
-                  value={branch}
-                  disabled={codeBusy}
-                  onChange={(event) => {
-                    setBranch(event.target.value);
-                    setCode(null);
-                  }}
-                >
-                  <option value="cinere">Cinere</option>
-                  <option value="bogor">Cibubur</option>
-                </select>
-              </label>
               <button
                 type="button"
                 className="member-primary member-wide"
@@ -375,10 +362,8 @@ export default function MembershipCard() {
                   <b>{money(data!.pending!.amount)}</b>
                 </div>
                 <div>
-                  <span>Cabang</span>
-                  <b>
-                    {data!.pending!.branchId === "bogor" ? "Cibubur" : "Cinere"}
-                  </b>
+                  <span>Toko</span>
+                  <b>D’Fable Laundry</b>
                 </div>
                 <div>
                   <span>Bukti transfer</span>
@@ -403,43 +388,27 @@ export default function MembershipCard() {
                   <Gift size={20} />
                 </span>
                 <div>
-                  <b>Diskon layanan 20%</b>
+                  <b>Diskon layanan 20% di D’Fable</b>
                   <p>
                     Deposit jadi saldo laundry. Diskon berlaku saat saldo
                     tersedia.
                   </p>
                 </div>
               </div>
-              <div className="member-form-grid">
-                <label className="member-field">
-                  Cabang
-                  <select
-                    value={branch}
-                    disabled={busy}
-                    onChange={(event) => {
-                      setBranch(event.target.value);
-                      setCode(null);
-                    }}
-                  >
-                    <option value="cinere">Cinere</option>
-                    <option value="bogor">Cibubur</option>
-                  </select>
-                </label>
-                <label className="member-field">
-                  Nominal deposit
-                  <input
-                    type="number"
-                    min="100000"
-                    max="10000000"
-                    step="1000"
-                    required
-                    disabled={busy}
-                    value={amount}
-                    onChange={(event) => setAmount(event.target.value)}
-                  />
-                  <small>Minimal Rp100.000</small>
-                </label>
-              </div>
+              <label className="member-field">
+                Nominal deposit
+                <input
+                  type="number"
+                  min="100000"
+                  max="10000000"
+                  step="1000"
+                  required
+                  disabled={busy}
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                />
+                <small>Minimal Rp100.000</small>
+              </label>
               <label className="member-field">
                 Nama pemilik rekening pengirim
                 <input
@@ -454,7 +423,7 @@ export default function MembershipCard() {
               </label>
               {loadedBranch !== branch ? (
                 <p className="member-form-message" role="status">
-                  Memuat rekening cabang…
+                  Memuat rekening toko…
                 </p>
               ) : data?.bank.configured ? (
                 <div className="member-bank">

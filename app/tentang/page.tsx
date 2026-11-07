@@ -4,7 +4,10 @@ import Link from "next/link";
 import AboutHeader from "@/components/about-header";
 import StoryPhotoStack from "@/components/story-photo-stack";
 import ScrollReveal from "@/components/scroll-reveal";
+import { DFABLE_HOME, DFABLE_ABOUT } from "@/lib/dfable-path";
 import {
+  ArrowRight,
+  ArrowUpRight,
   LayoutDashboard,
   MessageCircle,
   Package,
@@ -12,217 +15,196 @@ import {
   Store,
   Truck,
   User,
-  WashingMachine,
 } from "lucide-react";
+import "@/components/about-eazywash.css";
 
 export const metadata: Metadata = {
-  title: "Tentang D’Fable — Laundry Studio",
-  description:
-    "Kenal lebih dekat dengan D’Fable Hybrid Laundry Studio dan hubungi tim kami melalui WhatsApp.",
+  title: "Tentang Eazywash",
+  description: "Kenali Eazywash dan partner laundry yang melayani pesananmu.",
 };
 
 const whatsappUrl =
   "https://wa.me/6285199300110?text=Halo%20D%27Fable%2C%20saya%20ingin%20bertanya%20tentang%20layanan%20laundry.";
 
-const services = [
-  {
-    title: "Self Service",
-    text: "Cuci dan keringkan sendiri.",
-    icon: WashingMachine,
-  },
-  {
-    title: "Full Service",
-    text: "Cuci, kering, setrika, dan lipat.",
-    icon: Shirt,
-  },
-  {
-    title: "Drop Off",
-    text: "Titipkan cucian di gerai.",
-    icon: Store,
-  },
-  {
-    title: "Pick Up & Delivery",
-    text: "Kami jemput dan antar kembali.",
-    icon: Truck,
-  },
-];
-
 function Brand() {
   return (
-    <Link className="brand" href="/" aria-label="D’Fable beranda">
-      <img src="/dfable-logo.png" alt="D’Fable Laundry Studio" />
+    <Link
+      className="brand eazy-customer-brand"
+      href={DFABLE_HOME}
+      aria-label="Eazywash beranda"
+    >
+      <img src="/eazywash-logo.png" alt="Eazywash" />
     </Link>
   );
 }
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="about-eazywash">
       <AboutHeader />
       <ScrollReveal />
-
-      <main className="mx-auto max-w-[1296px] px-5 pb-20 pt-8 sm:px-8 lg:px-12 lg:pb-16 lg:pt-10 xl:px-0">
-        <section className="grid grid-cols-[minmax(0,1fr)] overflow-hidden rounded-[26px] bg-[#1023a7] shadow-[0_24px_70px_rgba(23,31,111,0.16)] lg:min-h-[520px] lg:grid-cols-[0.78fr_1.22fr]">
-          <div className="order-2 min-w-0 px-7 py-9 text-white sm:px-10 sm:py-12 lg:order-1 lg:flex lg:flex-col lg:justify-center lg:px-12">
-            <span className="mb-5 text-[10px] font-bold tracking-[0.18em] text-blue-200">
-              TENTANG D’FABLE
-            </span>
-            <h1 className="max-w-[520px] text-[38px] leading-[1.08] tracking-[-0.055em] text-white sm:text-[48px] lg:text-[52px]">
-              Cucian bersih, dengan cara yang kamu pilih.
+      <main className="about-ew-content">
+        <section className="about-ew-hero">
+          <div className="about-ew-hero-copy">
+            <span className="about-ew-eyebrow">TENTANG EAZYWASH</span>
+            <h1>
+              Lebih mudah
+              <br />
+              mengurus cucian.
             </h1>
-            <p className="mt-5 max-w-[500px] text-sm leading-7 text-blue-100 sm:text-[15px]">
-              Mau cuci sendiri, titip di toko, atau dijemput dari rumah?
-              Semuanya bisa di D’Fable.
+            <p>
+              Pilih toko dan layanan, jadwalkan penjemputan, lalu pantau
+              pesananmu. Semuanya ada di Eazywash.
             </p>
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-8 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold !text-[#2621da] transition hover:-translate-y-0.5 hover:shadow-xl"
+            <Link
+              href={`${DFABLE_HOME}?view=services`}
+              className="about-ew-primary"
             >
-              <MessageCircle size={18} /> Hubungi D’Fable
-            </a>
+              Lihat layanan <ArrowRight size={17} />
+            </Link>
           </div>
-          <div className="relative order-1 h-[230px] min-w-0 bg-blue-950 sm:h-auto sm:aspect-[16/10] lg:order-2 lg:aspect-auto">
+          <div className="about-ew-hero-photo">
             <Image
-              src="/dfable-storefront.jpg"
-              alt="Tampak depan D’Fable Hybrid Laundry Studio"
+              src="/unsplash/folding-web.webp"
+              alt="Pakaian yang sedang dilipat dengan rapi"
               fill
               priority
-              sizes="(max-width: 1023px) 100vw, 62vw"
-              className="object-cover object-center"
+              sizes="(max-width: 760px) 100vw, 55vw"
             />
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-blue-950/35 to-transparent" />
+            <span>Untuk cucian yang kamu percayakan.</span>
+          </div>
+        </section>
+
+        <section className="about-ew-story" data-scroll-reveal>
+          <StoryPhotoStack />
+          <div className="about-ew-story-copy">
+            <span className="about-ew-section-label">
+              DEKAT DENGAN KESEHARIANMU
+            </span>
+            <h2>
+              Urus cucian.
+              <br />
+              Lanjutkan harimu.
+            </h2>
+            <p>
+              Eazywash menghubungkan kamu dengan toko laundry dan layanan yang
+              kamu butuhkan. Dari kiloan hingga perawatan satuan, kamu bisa
+              memilih langsung dari aplikasi.
+            </p>
+            <div className="about-ew-points">
+              <div>
+                <span>
+                  <Shirt size={20} />
+                </span>
+                <p>
+                  <b>Pilihan layanan jelas</b>
+                  <small>
+                    Lihat harga dan waktu pengerjaan sebelum memesan.
+                  </small>
+                </p>
+              </div>
+              <div>
+                <span>
+                  <Truck size={20} />
+                </span>
+                <p>
+                  <b>Jemput dan antar</b>
+                  <small>
+                    Atur lokasi serta jadwal bersama toko pilihanmu.
+                  </small>
+                </p>
+              </div>
+              <div>
+                <span>
+                  <Package size={20} />
+                </span>
+                <p>
+                  <b>Pantau perkembangannya</b>
+                  <small>
+                    Ikuti status cucian dari diterima sampai selesai.
+                  </small>
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
         <section
+          className="about-ew-partners"
           data-scroll-reveal
-          className="grid items-center gap-10 py-16 lg:grid-cols-[1fr_1fr] lg:gap-20 lg:py-24"
+          aria-labelledby="about-ew-partners-title"
         >
-          <StoryPhotoStack />
-          <div className="max-w-[600px]">
-            <span className="mb-4 block text-[10px] font-bold tracking-[0.18em] text-indigo-600">
-              CERITA D’FABLE
-            </span>
-            <h2 className="max-w-[500px] text-[32px] leading-tight sm:text-[40px]">
-              Tumbuh bersama, dari Cinere.
-            </h2>
-            <div className="space-y-5 text-[15px] leading-8 text-slate-600 sm:text-base">
-              <p>
-                D’Fable berdiri pada 2026, dimulai dari cabang pertama kami di
-                Cinere, Karang Tengah.
-              </p>
-              <p>
-                Kami ingin menjadi tempat laundry yang dekat dengan keseharian
-                pelanggan, sekaligus membuka kesempatan bagi penyandang
-                disabilitas untuk berkarya dan berkembang bersama.
-              </p>
-              <p>
-                Setiap cucian yang kamu percayakan ikut menjadi bagian dari
-                cerita itu.
-              </p>
-            </div>
-            <span className="mt-6 inline-flex rounded-full bg-indigo-50 px-4 py-2 text-xs font-bold tracking-[0.12em] text-indigo-700">
-              BERSIH · RAPI · BERDAYA
-            </span>
-          </div>
-        </section>
-
-        <section className="rounded-[24px] border border-slate-200 bg-slate-50 p-6 sm:p-9 lg:p-11">
-          <div
-            data-scroll-reveal
-            className="mb-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-end"
-          >
+          <div className="about-ew-section-heading">
             <div>
-              <span className="mb-3 block text-[10px] font-bold tracking-[0.18em] text-indigo-600">
-                HYBRID LAUNDRY
-              </span>
-              <h2 className="mb-0 text-[28px] sm:text-[34px]">
-                Pilih layanan yang paling pas.
+              <span className="about-ew-section-label">PARTNER KAMI</span>
+              <h2 id="about-ew-partners-title">
+                Kenali toko di balik
+                <br />
+                cucian bersihmu.
               </h2>
             </div>
-            <p className="mb-0 max-w-[340px] text-sm leading-6 text-slate-500">
-              Datang ke gerai atau jadwalkan penjemputan dari rumah.
+            <p>
+              Setiap toko membawa layanan dan ceritanya sendiri. Temukan partner
+              laundry yang melayani pesananmu.
             </p>
           </div>
-          <div className="about-service-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {services.map(({ title, text, icon: Icon }) => (
-              <article
-                key={title}
-                data-scroll-reveal
-                className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_14px_35px_rgba(30,41,99,0.09)]"
-              >
-                <span className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                  <Icon size={21} strokeWidth={1.8} />
-                </span>
-                <h3 className="mb-2 text-base">{title}</h3>
-                <p className="mb-0 text-sm leading-6 text-slate-500">{text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section
-          data-scroll-reveal
-          className="mt-8 overflow-hidden rounded-[24px] bg-[linear-gradient(120deg,#1712a0_0%,#2621da_58%,#3b82f6_130%)] p-7 text-white sm:p-10 lg:flex lg:items-center lg:justify-between lg:gap-12 lg:p-12"
-        >
-          <div>
-            <span className="mb-4 block text-[10px] font-bold tracking-[0.18em] text-blue-200">
-              HUBUNGI KAMI
-            </span>
-            <h2 className="mb-3 text-[30px] text-white sm:text-[38px]">
-              Ada yang ingin ditanyakan?
-            </h2>
-            <p className="mb-0 max-w-[600px] text-sm leading-7 text-blue-100">
-              Tanya kami soal layanan, pesanan, atau jadwal jemput lewat
-              WhatsApp.
-            </p>
-          </div>
-          <div className="mt-8 shrink-0 lg:mt-0 lg:text-right">
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="block text-[24px] font-bold tracking-[-0.03em] text-white sm:text-[28px]"
-            >
-              +62 851-9930-0110
-            </a>
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold !text-[#2621da] transition hover:-translate-y-0.5 hover:shadow-xl"
-            >
-              <MessageCircle size={18} /> Chat lewat WhatsApp
-            </a>
-          </div>
+          <article className="about-ew-partner">
+            <div className="about-ew-partner-brand">
+              <Image
+                src="/dfable-logo.png"
+                alt="D’Fable Laundry Studio"
+                width={1600}
+                height={483}
+              />
+              <span>
+                <Store size={14} /> Partner Eazywash
+              </span>
+            </div>
+            <div className="about-ew-partner-copy">
+              <span className="about-ew-partner-category">LAUNDRY STUDIO</span>
+              <h3>D’Fable Laundry</h3>
+              <p>
+                Berdiri pada 2026, D’Fable hadir untuk kebutuhan laundry
+                sehari-hari sekaligus membuka kesempatan bagi penyandang
+                disabilitas untuk berkarya.
+              </p>
+              <div className="about-ew-partner-actions">
+                <Link
+                  href={`${DFABLE_HOME}?view=services`}
+                  className="about-ew-partner-link"
+                >
+                  Lihat layanan toko <ArrowUpRight size={17} />
+                </Link>
+                <a href={whatsappUrl} target="_blank" rel="noreferrer">
+                  <MessageCircle size={16} /> Hubungi D’Fable
+                </a>
+              </div>
+            </div>
+          </article>
         </section>
       </main>
-
       <footer>
         <Brand />
-        <span>© {new Date().getFullYear()} D’Fable Laundry Studio</span>
+        <span>© {new Date().getFullYear()} Eazywash</span>
       </footer>
-
       <nav className="mobile-nav" aria-label="Navigasi utama">
-        <Link href="/?view=home">
+        <Link href={`${DFABLE_HOME}?view=home`}>
           <LayoutDashboard size={20} />
           Beranda
         </Link>
-        <Link href="/?view=services">
+        <Link href={`${DFABLE_HOME}?view=services`}>
           <Shirt size={20} />
           Layanan
         </Link>
-        <Link href="/?view=tracking">
+        <Link href={`${DFABLE_HOME}?view=tracking`}>
           <Package size={20} />
           Tracking
         </Link>
-        <Link className="active" href="/tentang">
+        <Link className="active" href={DFABLE_ABOUT}>
           <Store size={20} />
           Tentang
         </Link>
-        <Link href="/?account=1">
+        <Link href={`${DFABLE_HOME}?account=1`}>
           <User size={20} />
           Akun
         </Link>

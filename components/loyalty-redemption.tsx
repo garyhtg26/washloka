@@ -90,7 +90,7 @@ export default function LoyaltyRedemption({
     }
   }
   return (
-    <section className="loyalty-use" aria-label="Gunakan poin D’Fable">
+    <section className="loyalty-use" aria-label="Gunakan poin loyalty">
       <div className="loyalty-use-heading">
         <span className="loyalty-use-icon">
           <Coins size={19} aria-hidden="true" />

@@ -1,0 +1,217 @@
+/* Eazywash is the platform; the client identity remains visible in its workspace. */
+.dashboard-platform-brand {
+  display: block;
+  width: 165px;
+  max-width: 100%;
+  flex: none;
+}
+.dashboard-platform-brand img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.admin-shell {
+  --blue: #0756c5;
+  --deep: #061f55;
+  --ink: #172941;
+  --line: #e6ebf2;
+  background: #f5f8fc;
+}
+.admin-shell .sidebar {
+  padding: 27px 17px 20px;
+  background: #fff;
+  border-color: #e6ebf2;
+}
+.admin-shell .sidebar > .dashboard-platform-brand {
+  margin: 0 8px 26px;
+  width: 162px;
+}
+.dashboard-client {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e6edf6;
+  border-radius: 12px;
+  background: #f7faff;
+}
+.dashboard-client-logo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border: 1px solid #eaf0f8;
+  border-radius: 9px;
+  background: #fff;
+}
+.dashboard-client-logo img {
+  flex: none;
+  width: 120px;
+  max-width: none;
+  height: auto;
+}
+.dashboard-client > span:last-child {
+  min-width: 0;
+}
+.dashboard-client small,
+.dashboard-client b {
+  display: block;
+}
+.dashboard-client small {
+  color: #8b99ae;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.dashboard-client b {
+  overflow: hidden;
+  color: #102b53;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.admin-shell .sidebar .workspace-switch {
+  margin-top: 12px;
+  margin-bottom: 26px;
+  border-color: #e2e9f2;
+}
+.admin-shell .sidebar .workspace-switch > svg {
+  color: #527399;
+}
+.admin-shell .sidebar .nav-caption {
+  color: #91a0b3;
+  font-weight: 800;
+}
+.admin-shell .sidebar .side-link {
+  position: relative;
+  color: #667992;
+  border-radius: 10px;
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+.admin-shell .sidebar .side-link:hover {
+  color: #0756c5;
+  background: #f3f8ff;
+}
+.admin-shell .sidebar .side-link.active {
+  color: #0756c5;
+  background: #eaf3ff;
+}
+.admin-shell .sidebar .side-link.active::before {
+  position: absolute;
+  left: 0;
+  top: 11px;
+  bottom: 11px;
+  width: 3px;
+  border-radius: 4px;
+  background: #ffb400;
+  content: "";
+}
+.admin-shell .sidebar .count {
+  background: #d6e8ff;
+  color: #0756c5;
+}
+.admin-shell .admin-top {
+  color: #12335f;
+  border-color: #e6ebf2;
+}
+.admin-shell .admin-top .muted {
+  color: #8a9ab0;
+}
+.dashboard-client-crumb {
+  color: #536b89;
+}
+.dashboard-platform-brand-compact {
+  display: none;
+}
+.admin-shell .primary {
+  background: #0756c5;
+}
+.admin-shell .primary:hover {
+  background: #06479f;
+}
+.admin-shell .overview-chart-heading strong {
+  color: #0756c5;
+}
+.admin-shell .overview-line-path,
+.admin-shell .overview-line-point {
+  stroke: #0756c5;
+}
+.admin-shell .overview-line-area {
+  fill: #0756c5;
+}
+.admin-shell .overview-line-point.is-selected {
+  fill: #0756c5;
+  stroke: #fff;
+}
+.admin-shell .overview-line-labels button.is-selected {
+  color: #0756c5;
+  background: #eaf3ff;
+}
+.dashboard-login {
+  --blue: #0756c5;
+  --deep: #061f55;
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: 40px 20px;
+  color: #172941;
+  background:
+    radial-gradient(ellipse at 15% 5%, #e6f2ff 0, transparent 42%), #f6f9fd;
+}
+.dashboard-login-inner {
+  width: min(100%, 470px);
+}
+.dashboard-login-inner > .dashboard-platform-brand {
+  width: 170px;
+  margin: 0 auto 26px;
+}
+.dashboard-login-card {
+  padding: 28px 32px 32px;
+  border: 1px solid #e4eaf3;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 18px 60px #0c2b5110;
+}
+.dashboard-login .primary {
+  background: #0756c5;
+}
+.dashboard-login .primary:hover {
+  background: #06479f;
+}
+@media (max-width: 800px) {
+  .admin-shell .sidebar {
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+  }
+  .admin-shell .sidebar > .dashboard-platform-brand,
+  .dashboard-client {
+    display: none;
+  }
+  .admin-shell .sidebar .side-link.active::before {
+    display: none;
+  }
+  .admin-shell .admin-top > span:nth-child(2) {
+    display: none;
+  }
+  .dashboard-platform-brand-compact {
+    display: block;
+    width: 92px;
+    margin-right: auto;
+  }
+  .admin-shell .admin-top {
+    gap: 8px;
+  }
+}
+@media (max-width: 380px) {
+  .dashboard-platform-brand-compact {
+    width: 78px;
+  }
+  .dashboard-login-card {
+    padding: 24px 20px 28px;
+  }
+}

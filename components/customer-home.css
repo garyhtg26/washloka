@@ -1,6 +1,6 @@
 .customer-experience {
-  --fresh-blue: #2521df;
-  --fresh-ink: #191e31;
+  --fresh-blue: #0756c5;
+  --fresh-ink: #10274a;
   padding-bottom: 24px;
   color: var(--fresh-ink);
 }
@@ -35,7 +35,7 @@
   min-height: 386px;
   border-radius: 23px;
   overflow: hidden;
-  background: #0750df;
+  background: #061f55;
   color: #fff;
   isolation: isolate;
 }
@@ -52,7 +52,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(90deg, #092995b3, transparent 75%);
+  background: linear-gradient(90deg, #061f5540, transparent 75%);
 }
 .campaign-copy {
   padding: 32px 36px;
@@ -103,8 +103,8 @@
   font-weight: 800;
 }
 .campaign-copy button {
-  background: #fff;
-  color: #2635a1;
+  background: #ffc32b;
+  color: #102b57;
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -116,7 +116,7 @@
   box-shadow: 0 4px 14px #0013551a;
 }
 .campaign-copy button:hover {
-  background: #eaf0ff;
+  background: #ffd363;
 }
 .campaign-code {
   display: block;
@@ -139,7 +139,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 62% 48%;
+  object-position: 62% 12%;
   z-index: -2;
 }
 .people-feature:after {
@@ -305,22 +305,22 @@
   white-space: nowrap;
 }
 .category-row > button.selected {
-  background: #f3f3ff;
-  border-color: #6d67eb;
+  background: #f0f6ff;
+  border-color: #4782d0;
   color: var(--fresh-blue);
   box-shadow: 0 4px 14px #2923cf0c;
 }
 .category-row > button.selected > span {
   color: var(--fresh-blue);
-  background: #e5e5ff;
+  background: #e2eeff;
 }
 .category-row > button:hover {
-  border-color: #7168ea;
+  border-color: #4782d0;
   transform: translateY(-2px);
   box-shadow: 0 7px 18px #2721b614;
 }
 .category-row > button:focus-visible {
-  outline: 2px solid #5c56e8;
+  outline: 2px solid #0756c5;
   outline-offset: 3px;
 }
 .photo-service-grid {
@@ -433,7 +433,7 @@
   margin: 0 7px;
 }
 .photo-service-info p svg {
-  color: #8780d3;
+  color: #6a88ae;
 }
 .compact-terms {
   font-size: 11px;
@@ -463,7 +463,7 @@
   padding: 22px;
 }
 .ribbon-icon {
-  background: #e9e9ff;
+  background: #e7f0ff;
   color: var(--fresh-blue);
   width: 45px;
   height: 45px;
@@ -519,8 +519,8 @@
   font-size: 12px;
 }
 .monthly-strip {
-  border: 1px solid #e1e3f9;
-  background: linear-gradient(135deg, #f5f5ff 0%, #ececfc 100%);
+  border: 1px solid #f0e1b8;
+  background: #fff9e9;
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) auto;
   align-items: center;
@@ -529,7 +529,7 @@
   min-width: 0;
   padding: 18px;
   border-radius: 16px;
-  color: #554ec0;
+  color: #163661;
   text-align: left;
   transition:
     transform 180ms ease,
@@ -538,8 +538,8 @@
 }
 .monthly-strip:hover {
   transform: translateY(-2px);
-  border-color: #cbc9f5;
-  box-shadow: 0 14px 28px rgba(55, 53, 104, 0.11);
+  border-color: #e4c769;
+  box-shadow: 0 14px 28px rgba(58, 66, 83, 0.08);
 }
 .monthly-copy {
   min-width: 0;
@@ -549,7 +549,7 @@
   font-size: 9px;
   line-height: 1.2;
   letter-spacing: 0.12em;
-  color: #6963c9;
+  color: #9c7b28;
 }
 .monthly-strip h3 {
   font-size: 16px;
@@ -557,7 +557,7 @@
   letter-spacing: -0.03em;
   overflow-wrap: anywhere;
   margin: 5px 0 0;
-  color: #373568;
+  color: #19345c;
 }
 .monthly-strip .monthly-action {
   display: inline-flex;
@@ -806,8 +806,8 @@
     display: grid;
     place-items: center;
     margin-left: auto;
-    background: #eef0fe;
-    color: #5b54cf;
+    background: #edf4ff;
+    color: #0756c5;
     border-radius: 50%;
     width: 42px;
     height: 42px;
@@ -863,14 +863,15 @@
     display: none;
   }
   .campaign-photo {
-    object-position: 60% 50%;
+    object-position: 30% 50%;
   }
   .campaign-card:after {
     background: linear-gradient(
       90deg,
-      #062c96b0 0%,
-      #062c9620 65%,
-      transparent
+      #061f55db 0%,
+      #061f55b8 48%,
+      #061f5540 76%,
+      transparent 100%
     );
   }
   .people-feature {

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import { ApiError, requireAdmin, type Identity } from "../firebase/access";
 import { db } from "../firebase/admin";
+import { readBranchSettings } from "../branch-settings";
 import { uploadPhoto } from "../storage/photos";
 import type { Order } from "../types";
 import { finalAmount } from "./policy";
@@ -52,7 +53,7 @@ export async function selectManualPayment(
     const order = snap.data() as Order;
     if (order.manualPayment?.bank && !manualGatewayConflict(order)) return;
     available(order);
-    const settings = await tx.get(database.doc(`settings/${order.branchId}`));
+    const settings = await readBranchSettings(database, order.branchId, tx);
     const stored = settings.get("manualPayment");
     const bank = bankDetails(stored, order.branchId);
     tx.update(ref, {
@@ -311,9 +312,7 @@ export async function confirmManualPayment(
         409,
         "Isi berat aktual dan ongkir sebelum mengonfirmasi pembayaran.",
       );
-    const settingsSnap = await tx.get(
-      database.doc(`settings/${order.branchId}`),
-    );
+    const settingsSnap = await readBranchSettings(database, order.branchId, tx);
     const settings = settingsSnap.get("manualPayment") as
       Partial<StoredBankSettings> | undefined;
     const configuredBank = bankDetails(settings, order.branchId);
@@ -332,7 +331,7 @@ export async function confirmManualPayment(
     if (!bank)
       throw new ApiError(
         409,
-        "Rekening transfer belum diatur untuk cabang pesanan ini.",
+        "Rekening transfer belum diatur untuk toko pesanan ini.",
       );
 
     const earn = await prepareEarn(tx, database, order);

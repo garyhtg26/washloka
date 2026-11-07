@@ -1,5 +1,12 @@
 import "server-only";
-import type { BranchId } from "./branches";
+import type { Firestore } from "firebase-admin/firestore";
+import {
+  branchAliases,
+  branchSchema,
+  DEFAULT_BRANCH,
+  sameBranch,
+} from "./branches";
+import { readBranchSettings } from "./branch-settings";
 import { db, firebaseReady } from "./firebase/admin";
 import { siteContent } from "./site-content";
 import { defaultStore } from "./defaults";
@@ -10,24 +17,28 @@ import { bankDetails, safeManualSummary } from "./payments/manual-policy";
 import { normalizeServices } from "./catalog";
 export async function readStore(
   user: Identity | null,
-  branch: BranchId = "cinere",
+  requestedBranch: string = DEFAULT_BRANCH,
+  connection?: Firestore,
 ): Promise<Store> {
-  if (!firebaseReady())
+  const branch = branchSchema.parse(requestedBranch);
+  if (!connection && !firebaseReady())
     return {
       ...defaultStore,
       configured: false,
       isAdmin: false,
       paymentEnabled: false,
     };
-  const database = db();
-  const settings = await database.doc(`settings/${branch}`).get();
+  const database = connection ?? db();
+  const settings = await readBranchSettings(database, branch);
   const data = settings.exists ? settings.data()! : defaultStore;
   let orders: Order[] = [];
   let hasMore = false;
   let profile = { name: user?.name || "", phone: "", email: user?.email || "" };
   if (user) {
     const q = user.admin
-      ? database.collection("orders").where("branchId", "==", branch)
+      ? database
+          .collection("orders")
+          .where("branchId", "in", [...branchAliases(branch)])
       : database
           .collection("orders")
           .where("uid", "==", user.uid)
@@ -36,8 +47,11 @@ export async function readStore(
       user.admin ? q.get() : q.limit(501).get(),
       database.doc(`users/${user.uid}`).get(),
     ]);
-    hasMore = snap.size > 500;
-    orders = [...snap.docs]
+    const storeOrders = snap.docs.filter((doc) =>
+      sameBranch(doc.get("branchId"), branch),
+    );
+    hasMore = storeOrders.length > 500;
+    orders = [...storeOrders]
       .sort((a, b) =>
         String(b.get("createdAt")).localeCompare(String(a.get("createdAt"))),
       )

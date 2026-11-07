@@ -15,17 +15,18 @@ import {
   CircleCheck,
 } from "lucide-react";
 import { money, statuses, type TrackingOrder, type Service } from "@/lib/types";
-import { branches, isBranchId } from "@/lib/branches";
+import { branchLabel } from "@/lib/branches";
 import { speedLabel, unitLabel } from "@/lib/catalog";
 import PaymentPanel from "./payment-panel";
 import LoyaltyRedemption from "./loyalty-redemption";
 import MembershipRedemption from "./membership-redemption";
 import { useAuth } from "./auth-provider";
+import { DFABLE_HOME } from "@/lib/dfable-path";
 import "./tracking.css";
 
 export const previewTracking: TrackingOrder = {
   id: "DF-CONTOH",
-  branchId: "cinere",
+  branchId: "dfablelaundry",
   service: "complete",
   kg: 5,
   actualKg: 5,
@@ -181,10 +182,8 @@ export default function Tracking({
           </div>
           <div className="my-5 space-y-3 border-y border-slate-100 py-5 text-sm">
             <div className="flex justify-between gap-3">
-              <span className="text-slate-400">Cabang</span>
-              <b className="font-medium">
-                {isBranchId(o.branchId) ? branches[o.branchId] : "Cinere"}
-              </b>
+              <span className="text-slate-400">Toko</span>
+              <b className="font-medium">{branchLabel(o.branchId)}</b>
             </div>
             <div className="flex justify-between gap-3">
               <span className="text-slate-400">Jadwal masuk / jemput</span>
@@ -217,14 +216,14 @@ export default function Tracking({
             </>
           )}
           {!preview && !isOwner && !auth.user && !o.paid && (
-            <section className="loyalty-login-hint" aria-label="Poin D’Fable">
-              <b>Punya poin D’Fable?</b>
+            <section className="loyalty-login-hint" aria-label="Poin loyalty">
+              <b>Punya poin loyalty?</b>
               <p>
                 Masuk dengan akun pemilik pesanan untuk menggunakan poin. Jika
                 pesanan toko belum terhubung ke akunmu, minta bantuan staf.
               </p>
               <Link
-                href={`/?account=1${trackingToken ? `&track=${encodeURIComponent(trackingToken)}` : "&view=tracking"}`}
+                href={`${DFABLE_HOME}?account=1${trackingToken ? `&track=${encodeURIComponent(trackingToken)}` : "&view=tracking"}`}
               >
                 Masuk untuk cek poin
               </Link>

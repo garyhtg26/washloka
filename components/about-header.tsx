@@ -6,47 +6,38 @@ import { X } from "lucide-react";
 import AccountPanel from "./account-panel";
 import { AuthProvider } from "./auth-provider";
 import CustomerAccount from "./customer-account";
-import {
-  isBranchId,
-  resolveCustomerBranch,
-  type BranchId,
-} from "@/lib/branches";
+import ShopSelector from "./shop-selector";
+import { DFABLE_HOME, DFABLE_ABOUT } from "@/lib/dfable-path";
+import { resolveCustomerBranch, type BranchId } from "@/lib/branches";
 
 export function CustomerHeader({
   active = "about",
 }: {
   active?: "about" | "profile";
 }) {
-  const [branch, setBranch] = useState<BranchId>("cinere");
+  const [branch, setBranch] = useState<BranchId>("dfablelaundry");
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
-  const manualSelection = useRef(false);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("branch");
     let saved: string | null = null;
     try {
-      saved = localStorage.getItem("dfable-customer-branch");
+      saved =
+        localStorage.getItem("eazywash-selected-store") ||
+        localStorage.getItem("dfable-customer-branch");
     } catch {}
-    setBranch(resolveCustomerBranch({ requested, saved }));
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        if (!manualSelection.current)
-          setBranch(
-            resolveCustomerBranch({
-              detected: {
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-              },
-              requested,
-              saved,
-            }),
-          );
-      },
-      () => {},
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 },
-    );
+    const selectedStore = resolveCustomerBranch({ requested, saved });
+    setBranch(selectedStore);
+    try {
+      localStorage.setItem("eazywash-selected-store", selectedStore);
+      localStorage.removeItem("dfable-customer-branch");
+    } catch {}
+    if (requested && requested !== selectedStore) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("branch", selectedStore);
+      window.history.replaceState(window.history.state, "", url);
+    }
   }, []);
 
   useEffect(() => {
@@ -61,48 +52,41 @@ export function CustomerHeader({
     };
   }, [open]);
 
-  const page = (view: string) => `/?view=${view}&branch=${branch}`;
+  const page = (view: string) => `${DFABLE_HOME}?view=${view}&branch=${branch}`;
   return (
     <>
       <header className="customer-header">
         <Link
-          className="brand"
+          className="brand eazy-customer-brand"
           href={page("home")}
-          aria-label="D’Fable beranda"
+          aria-label="Eazywash beranda"
         >
-          <img src="/dfable-logo.png" alt="D’Fable Laundry Studio" />
+          <img src="/eazywash-logo.png" alt="Eazywash" />
         </Link>
         <nav>
           <Link href={page("home")}>Beranda</Link>
           <Link href={page("services")}>Layanan & harga</Link>
           <Link href={page("tracking")}>Lacak pesanan</Link>
-          <Link className={active === "about" ? "active" : ""} href="/tentang">
-            Tentang D’Fable
+          <Link
+            className={active === "about" ? "active" : ""}
+            href={DFABLE_ABOUT}
+          >
+            Tentang
           </Link>
         </nav>
         <div className="header-right">
-          <label className="customer-branch-select">
-            <span className="sr-only">Cabang laundry</span>
-            <select
-              aria-label="Cabang laundry"
-              value={branch}
-              onChange={(event) => {
-                const next = event.target.value;
-                if (!isBranchId(next)) return;
-                manualSelection.current = true;
-                setBranch(next);
-                try {
-                  localStorage.setItem("dfable-customer-branch", next);
-                } catch {}
-                const url = new URL(window.location.href);
-                url.searchParams.set("branch", next);
-                window.history.replaceState(window.history.state, "", url);
-              }}
-            >
-              <option value="cinere">Cinere</option>
-              <option value="bogor">Cibubur</option>
-            </select>
-          </label>
+          <ShopSelector
+            branch={branch}
+            onBranchChange={(next) => {
+              setBranch(next);
+              try {
+                localStorage.setItem("eazywash-selected-store", next);
+              } catch {}
+              const url = new URL(window.location.href);
+              url.searchParams.set("branch", next);
+              window.history.replaceState(window.history.state, "", url);
+            }}
+          />
           <CustomerAccount onLogin={() => setOpen(true)} />
         </div>
       </header>

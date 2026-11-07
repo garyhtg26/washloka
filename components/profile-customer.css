@@ -27,7 +27,7 @@
   font-weight: 600;
 }
 .profile-back:hover {
-  color: #2521df;
+  color: #0756c5;
 }
 .profile-content {
   width: min(1180px, calc(100% - 48px));
@@ -38,7 +38,7 @@
   margin-bottom: 28px;
 }
 .profile-title > span {
-  color: #514ed5;
+  color: #4774aa;
   font-size: 10px;
   font-weight: 750;
   letter-spacing: 0.15em;
@@ -89,8 +89,8 @@
   flex-shrink: 0;
   place-items: center;
   border-radius: 14px;
-  background: #f0efff;
-  color: #302bd7;
+  background: #eaf3ff;
+  color: #0756c5;
 }
 .profile-details form {
   display: grid;
@@ -118,8 +118,8 @@
   font-weight: 450;
 }
 .profile-details label input:focus {
-  outline: 2px solid #b7b4ff;
-  border-color: #8f8bf2;
+  outline: 2px solid #a7c9f7;
+  border-color: #5591db;
 }
 .profile-details label input[readonly] {
   color: #858b9b;
@@ -157,9 +157,9 @@
   overflow: hidden;
   padding: 26px;
   border-radius: 20px;
-  background: linear-gradient(125deg, #1713ad, #332de3 64%, #6260ed);
+  background: linear-gradient(125deg, #071f52, #0756c5 64%, #1683df);
   color: #fff;
-  box-shadow: 0 16px 35px #2821bb2b;
+  box-shadow: 0 16px 35px #0756c52b;
 }
 .profile-points-card::after {
   content: "";
@@ -180,7 +180,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  color: #e1e2ff;
+  color: #d9eaff;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -192,7 +192,7 @@
 }
 .profile-points-card > p {
   margin: 37px 0 2px;
-  color: #cdceff;
+  color: #c6dcf8;
   font-size: 12px;
 }
 .profile-points-card > strong {
@@ -203,7 +203,7 @@
   letter-spacing: -0.04em;
 }
 .profile-points-card > strong small {
-  color: #dadbff;
+  color: #d8e8fd;
   font-family: "DM Sans", sans-serif;
   font-size: 14px;
   font-weight: 500;
@@ -213,7 +213,7 @@
   margin-top: 26px;
   padding-top: 16px;
   border-top: 1px solid #ffffff35;
-  color: #e1e1ff;
+  color: #e1edff;
   font-size: 12px;
   line-height: 1.5;
 }
@@ -227,7 +227,7 @@
   gap: 12px;
 }
 .profile-history-heading > svg {
-  color: #7774d9;
+  color: #6a8fbf;
 }
 .profile-history ul {
   padding: 0;
@@ -252,8 +252,8 @@
   background: #ecfaf3;
 }
 .profile-history-icon.redeemed {
-  color: #5c5acb;
-  background: #f0efff;
+  color: #1765c1;
+  background: #eaf3ff;
 }
 .profile-history-copy {
   display: grid;
@@ -288,7 +288,7 @@
   font-size: 12px;
 }
 .profile-empty svg {
-  color: #b2b1d6;
+  color: #adc5e4;
 }
 .profile-empty b {
   color: #52596b;
@@ -334,8 +334,8 @@
   height: 58px;
   place-items: center;
   border-radius: 18px;
-  background: #efefff;
-  color: #302bd7;
+  background: #eaf3ff;
+  color: #0756c5;
 }
 .profile-gate h1 {
   margin: 22px 0 8px;

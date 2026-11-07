@@ -2,11 +2,14 @@ import { loadEnvConfig } from "@next/env";
 import { randomBytes } from "node:crypto";
 import { db } from "../lib/firebase/admin";
 import { uploadPhoto, downloadPhoto } from "../lib/storage/photos";
+import { branchSettingsId, DEFAULT_BRANCH } from "../lib/branches";
 loadEnvConfig(process.cwd());
 
 async function main() {
   try {
-    await db().doc("settings/cinere").get();
+    await db()
+      .doc(`settings/${branchSettingsId(DEFAULT_BRANCH)}`)
+      .get();
     console.log("Firestore: connected.");
   } catch (e) {
     console.error(

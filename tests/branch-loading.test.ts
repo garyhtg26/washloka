@@ -17,7 +17,7 @@ test("a stalled branch response stops blocking the page and returns a retryable 
           { once: true },
         );
       }),
-    "bogor",
+    "dfablelaundry",
     undefined,
     20,
   );
@@ -32,10 +32,10 @@ test("branch requests carry the selected branch and a no-cache policy", async ()
   const result = await requestBranchStore(async (url, init) => {
     requestUrl = url;
     requestInit = init;
-    return Response.json({ branchId: "cinere" });
-  }, "cinere");
+    return Response.json({ branchId: "dfablelaundry" });
+  }, "dfablelaundry");
 
-  assert.equal(requestUrl, "/api/store?branch=cinere");
+  assert.equal(requestUrl, "/api/store?branch=dfablelaundry");
   assert.equal(requestInit?.cache, "no-store");
-  assert.deepEqual(result, { branchId: "cinere" });
+  assert.deepEqual(result, { branchId: "dfablelaundry" });
 });

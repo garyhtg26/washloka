@@ -303,7 +303,7 @@ test("a payment QR cannot be published before its bank account is complete", asy
   assert.equal(uploaded, false);
 });
 
-test("only owner/admin may edit bank and QR; branch settings stay independent", async () => {
+test("only owner/admin may edit bank and QR; legacy areas share the same store settings", async () => {
   const database = new MemoryDatabase();
   for (const user of [staff, customer, null]) {
     await assert.rejects(
@@ -330,13 +330,9 @@ test("only owner/admin may edit bank and QR; branch settings stay independent", 
   assert.equal(
     (database.values.get("settings/cinere")?.manualPayment as typeof account)
       .accountNumber,
-    "1234567890",
-  );
-  assert.equal(
-    (database.values.get("settings/bogor")?.manualPayment as typeof account)
-      .accountNumber,
     "9876543210",
   );
+  assert.equal(database.values.has("settings/bogor"), false);
   await saveBankDetails("cinere", account, owner, database.firestore());
   assert.deepEqual(database.values.get("settings/cinere")?.promo, {
     active: true,

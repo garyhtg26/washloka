@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { branches, isBranchId } from "@/lib/branches";
+import { branchLabel } from "@/lib/branches";
 import { speedLabel, unitLabel } from "@/lib/catalog";
 import { money, statuses, type Order, type Service } from "@/lib/types";
 import { calculateOrderPrice, normalizePhone } from "@/lib/pricing";
@@ -20,6 +20,7 @@ import PaymentStatus from "./payment-status";
 import { useAuth } from "./auth-provider";
 import AuthorizedPhoto from "./authorized-photo";
 import "./staff-order-detail.css";
+import { dfableTrackingPath } from "@/lib/dfable-path";
 
 const formatDate = (date: string) => {
   const parsed = new Date(date);
@@ -81,10 +82,10 @@ export default function StaffOrderDetail({
     (o.manualPayment &&
       ["awaiting_review", "paid"].includes(o.manualPayment.status)),
   );
-  const branch = isBranchId(o.branchId) ? branches[o.branchId] : o.branchId;
+  const branch = branchLabel(o.branchId);
   const tracking =
     typeof window !== "undefined"
-      ? `${window.location.origin}/?track=${encodeURIComponent(o.token)}`
+      ? `${window.location.origin}${dfableTrackingPath(o.token)}`
       : "";
   const phone = normalizePhone(o.phone).replace(/\D/g, "");
   const messageStatus = waStatus ?? o.status;
@@ -93,7 +94,7 @@ export default function StaffOrderDetail({
       ? `Status pesananmu: ${statuses[messageStatus]}.`
       : statusMessages[messageStatus] ||
         `Status pesananmu: ${statuses[messageStatus]}.`;
-  const message = `Halo ${o.name}, ${statusMessage}\n\nNomor pesanan: ${o.id}\nLacak pesananmu di sini: ${tracking}\n\nTerima kasih, D’Fable ${branch}`;
+  const message = `Halo ${o.name}, ${statusMessage}\n\nNomor pesanan: ${o.id}\nLacak pesananmu di sini: ${tracking}\n\nTerima kasih, ${branch}`;
   const waUrl =
     phone && tracking
       ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
@@ -429,10 +430,9 @@ export function StaffReceipt({
 }) {
   const service = services.find((item) => item.id === o.service);
   const unit = unitLabel(o.unit ?? service?.unit);
-  const branch = isBranchId(o.branchId) ? branches[o.branchId] : o.branchId;
   const tracking =
     typeof window !== "undefined"
-      ? `${window.location.origin}/?track=${encodeURIComponent(o.token)}`
+      ? `${window.location.origin}${dfableTrackingPath(o.token)}`
       : "";
   const payment = o.paymentReconciliationRequired
     ? "Perlu pemeriksaan"
@@ -450,7 +450,6 @@ export function StaffReceipt({
   return (
     <div className="staff-receipt" aria-hidden="true">
       <h1>D’FABLE LAUNDRY STUDIO</h1>
-      <p>Cabang {branch}</p>
       <h2>STRUK PESANAN</h2>
       <div className="staff-receipt-row">
         <span>No. pesanan</span>

@@ -18,7 +18,13 @@ test("member codes are random-looking, hashed and scoped to branch, expiry and a
   const now = 1_000_000;
   const active = { uid: "member", branchId: "cinere", expiresAt: now + 1000 };
   assert.equal(validMemberCode(active, "cinere", now), true);
-  assert.equal(validMemberCode(active, "bogor", now), false);
+  assert.equal(validMemberCode(active, "bogor", now), true);
+  assert.equal(validMemberCode(active, "dfablelaundry", now), true);
+  assert.equal(validMemberCode(active, "buzzwash", now), false);
+  assert.equal(
+    validMemberCode({ ...active, branchId: "buzzwash" }, "dfablelaundry", now),
+    false,
+  );
   assert.equal(validMemberCode(active, "cinere", now + 1000), false);
   assert.equal(
     validMemberCode(

@@ -1,4 +1,10 @@
-import { requestBranch } from "@/lib/branches";
+import {
+  branchAliases,
+  branchSettingsId,
+  requestBranch,
+  sameBranch,
+} from "@/lib/branches";
+import { readBranchSettings } from "@/lib/branch-settings";
 import { photoStorageReady, uploadPhoto } from "@/lib/storage/photos";
 import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomUUID } from "node:crypto";
@@ -95,17 +101,31 @@ export async function POST(req: NextRequest) {
       }).format(new Date());
       if (input.date < today)
         throw new ApiError(400, "Jadwal tidak boleh di masa lalu.");
-      const key = createHash("sha256")
-        .update(`${branch}:${user.uid}:${input.requestId}`)
-        .digest("hex");
-      id = "DF-" + key.slice(0, 12).toUpperCase();
-      const ref = database.doc(`orders/${id}`);
-      const existing = await ref.get();
-      if (existing.exists) {
-        if (existing.get("createdBy") !== user.uid)
+      const requestIds = branchAliases(branch).map(
+        (alias) =>
+          "DF-" +
+          createHash("sha256")
+            .update(`${alias}:${user.uid}:${input.requestId}`)
+            .digest("hex")
+            .slice(0, 12)
+            .toUpperCase(),
+      );
+      const priorRequests = await Promise.all(
+        requestIds.map((orderId) => database.doc(`orders/${orderId}`).get()),
+      );
+      const priorIndex = priorRequests.findIndex((prior) => prior.exists);
+      if (priorIndex >= 0) {
+        const existing = priorRequests[priorIndex];
+        if (
+          existing.get("createdBy") !== user.uid ||
+          !sameBranch(existing.get("branchId"), branch)
+        )
           throw new ApiError(409, "Konflik nomor pesanan.");
+        id = requestIds[priorIndex];
         return NextResponse.json({ store: await readStore(user, branch), id });
       }
+      id = requestIds[0];
+      const ref = database.doc(`orders/${id}`);
       if (input.membershipCode) {
         await database.runTransaction(async (tx) => {
           const attemptRef = database.doc(`membershipCodeAttempts/${user.uid}`);
@@ -143,7 +163,7 @@ export async function POST(req: NextRequest) {
           ? database.doc(`membershipCodes/${codeHash}`)
           : null;
         const [settings, prior, rate, codeSnap] = await Promise.all([
-          tx.get(database.doc(`settings/${branch}`)),
+          readBranchSettings(database, branch, tx),
           tx.get(ref),
           tx.get(database.doc(`rateLimits/${user.uid}`)),
           codeRef ? tx.get(codeRef) : Promise.resolve(null),
@@ -156,7 +176,7 @@ export async function POST(req: NextRequest) {
           if (!validMemberCode(codeData, branch, Date.now()))
             throw new ApiError(
               409,
-              "Kode member tidak berlaku, kedaluwarsa, atau sudah digunakan. Minta kode baru untuk cabang ini.",
+              "Kode member tidak berlaku, kedaluwarsa, atau sudah digunakan. Minta kode baru untuk toko ini.",
             );
           customerUid = codeData!.uid as string;
         }
@@ -286,10 +306,10 @@ export async function POST(req: NextRequest) {
         const snap = await tx.get(ref);
         if (!snap.exists) throw new ApiError(404, "Pesanan tidak ditemukan.");
         const o = snap.data() as Order;
-        if (o.branchId !== branch)
+        if (!sameBranch(o.branchId, branch))
           throw new ApiError(
             409,
-            "Pesanan berada di cabang lain. Buka workspace yang sesuai.",
+            "Pesanan berada di toko lain. Buka workspace yang sesuai.",
           );
         if (v.status < o.status)
           throw new ApiError(400, "Status tidak boleh mundur.");
@@ -368,8 +388,8 @@ export async function POST(req: NextRequest) {
       requireManager(user);
       const prices = pricesSchema.parse(body.data);
       await database.runTransaction(async (tx) => {
-        const ref = database.doc(`settings/${branch}`);
-        const snap = await tx.get(ref);
+        const ref = database.doc(`settings/${branchSettingsId(branch)}`);
+        const snap = await readBranchSettings(database, branch, tx);
         const settings = { ...defaultStore, ...snap.data() };
         const currentServices = normalizeServices(settings.services);
         if (
@@ -409,8 +429,8 @@ export async function POST(req: NextRequest) {
       requireManager(user);
       const promo = promoSchema.parse(body.data);
       await database.runTransaction(async (tx) => {
-        const ref = database.doc(`settings/${branch}`);
-        const snap = await tx.get(ref);
+        const ref = database.doc(`settings/${branchSettingsId(branch)}`);
+        const snap = await readBranchSettings(database, branch, tx);
         tx.set(
           ref,
           {

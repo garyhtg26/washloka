@@ -3,7 +3,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import CustomerProfile from "@/components/profile-customer";
 
 export const metadata: Metadata = {
-  title: "Profil Saya — D’Fable Laundry",
+  title: "Profil Saya — Eazywash",
 };
 
 export default function ProfilePage() {

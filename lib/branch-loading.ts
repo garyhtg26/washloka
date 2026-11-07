@@ -36,7 +36,7 @@ export async function requestBranchStore(
         signal: controller.signal,
       });
       if (!response.ok)
-        throw new Error("Data cabang belum bisa dimuat. Coba lagi.");
+        throw new Error("Data toko belum bisa dimuat. Coba lagi.");
       return response.json();
     };
     return await Promise.race([loading(), timedOutRequest]);

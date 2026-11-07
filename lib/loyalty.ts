@@ -6,6 +6,8 @@ import { calculateOrderPrice } from "./pricing";
 import { finalAmount, paymentLocked } from "./payments/policy";
 import { manualLocked, safeManualSummary } from "./payments/manual-policy";
 import type { Order } from "./types";
+import { signalPaymentChange } from "./payments/signals";
+import { normalizeBranchId } from "./branches";
 
 type Wallet = { balance?: number; reconciliationRequired?: boolean };
 function balanceOf(value: Wallet | undefined) {
@@ -73,6 +75,8 @@ export async function redeemPoints(
     ]);
     if (!orderSnap.exists) throw new ApiError(404, "Pesanan tidak ditemukan.");
     const order = orderSnap.data() as Order;
+    if (!normalizeBranchId(order.branchId))
+      throw new ApiError(404, "Pesanan tidak ditemukan.");
     if (order.uid !== uid)
       throw new ApiError(
         403,
@@ -171,11 +175,7 @@ export async function redeemPoints(
       paymentRevision: (order.paymentRevision || 0) + 1,
       updatedAt: now,
     });
-    if (["cinere", "bogor"].includes(order.branchId))
-      tx.set(database.doc(`paymentSignals/${order.branchId}`), {
-        version: randomUUID(),
-        updatedAt: now,
-      });
+    signalPaymentChange(tx, database, order.branchId);
     return { balance: nextBalance, pointsUsed: points, total, paid };
   });
 }

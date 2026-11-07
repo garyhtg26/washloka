@@ -8,16 +8,17 @@ import CustomerHome from "./customer-home";
 import OverviewCharts from "./overview-charts";
 import StaffOrderDetail, { StaffReceipt } from "./staff-order-detail";
 import CustomerAccount from "./customer-account";
+import ShopSelector from "./shop-selector";
 import ScrollReveal from "./scroll-reveal";
 import { useAuth } from "./auth-provider";
 import AccountPanel from "./account-panel";
 import UserManagement from "./user-management";
 import DashboardAccount from "./dashboard-account";
+import "./dashboard-brand.css";
+import "./customer-brand.css";
 import {
   branches,
   branchLocations,
-  isBranchId,
-  nearestBranch,
   resolveCustomerBranch,
   type BranchId,
 } from "@/lib/branches";
@@ -27,6 +28,12 @@ import PaymentPanel from "./payment-panel";
 import LoyaltyRedemption from "./loyalty-redemption";
 import PaymentSettings from "./payment-settings";
 import PaymentStatus from "./payment-status";
+import {
+  DFABLE_HOME,
+  DFABLE_PROFILE,
+  DFABLE_ABOUT,
+  dfableTrackingPath,
+} from "@/lib/dfable-path";
 import { consumePaymentEvents } from "@/lib/payment-stream";
 import { requestBranchStore } from "@/lib/branch-loading";
 import type { TrackingOrder } from "@/lib/types";
@@ -97,7 +104,7 @@ const icons = {
   premium: Shirt,
   additional: Wind,
 };
-const CUSTOMER_BRANCH_KEY = "dfable-customer-branch";
+const CUSTOMER_BRANCH_KEY = "eazywash-selected-store";
 const today = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(
     new Date(),
@@ -113,8 +120,23 @@ function estimate(
 }
 function Brand() {
   return (
-    <a className="brand" href="/" aria-label="D’Fable beranda">
-      <img src="/dfable-logo.png" alt="D’Fable Laundry Studio" />
+    <a
+      className="brand eazy-customer-brand"
+      href={DFABLE_HOME}
+      aria-label="Eazywash beranda"
+    >
+      <img src="/eazywash-logo.png" alt="Eazywash" />
+    </a>
+  );
+}
+function DashboardBrand({ compact = false }: { compact?: boolean }) {
+  return (
+    <a
+      className={`dashboard-platform-brand${compact ? " dashboard-platform-brand-compact" : ""}`}
+      href="/"
+      aria-label="Eazywash beranda"
+    >
+      <img src="/eazywash-logo.png" alt="Eazywash" />
     </a>
   );
 }
@@ -124,27 +146,38 @@ function Icon({ service, size = 25 }: { service: Service; size?: number }) {
 }
 export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
   const auth = useAuth();
-  const [branch, setBranch] = useState<BranchId>("cinere");
+  const [branch, setBranch] = useState<BranchId>("dfablelaundry");
   const [visitorLocation, setVisitorLocation] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
   const geolocationStarted = useRef(false);
-  const manualBranchSelected = useRef(false);
   const branchName = branches[branch];
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("branch");
     let saved: string | null = null;
     try {
-      saved = window.localStorage.getItem(CUSTOMER_BRANCH_KEY);
+      saved =
+        window.localStorage.getItem(CUSTOMER_BRANCH_KEY) ||
+        window.localStorage.getItem("dfable-customer-branch");
     } catch {
       // Storage can be unavailable in strict privacy modes.
     }
-    if (dashboard) {
-      if (isBranchId(requested)) setBranch(requested);
-      return;
+    const selectedStore = resolveCustomerBranch({ requested, saved });
+    setBranch(selectedStore);
+    if (requested && requested !== selectedStore) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("branch", selectedStore);
+      window.history.replaceState(window.history.state, "", url);
     }
-    setBranch(resolveCustomerBranch({ requested, saved }));
+    if (!dashboard) {
+      try {
+        window.localStorage.setItem(CUSTOMER_BRANCH_KEY, selectedStore);
+        window.localStorage.removeItem("dfable-customer-branch");
+      } catch {}
+    }
+    // A location pin belongs to the pickup address, never to the selected store.
+    if (dashboard) return;
     if (geolocationStarted.current || !navigator.geolocation) return;
     geolocationStarted.current = true;
     navigator.geolocation.getCurrentPosition(
@@ -154,14 +187,9 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
           longitude: coords.longitude,
         };
         setVisitorLocation(point);
-        if (!manualBranchSelected.current)
-          switchBranch(
-            resolveCustomerBranch({ detected: point, requested, saved }),
-            false,
-          );
       },
       () => {
-        // Manual selection remains available when location permission is denied.
+        // Customers can enter a pickup address without sharing device location.
       },
       {
         enableHighAccuracy: false,
@@ -175,7 +203,6 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
     url.searchParams.set("branch", next);
     window.history.replaceState(window.history.state, "", url);
     if (remember) {
-      manualBranchSelected.current = true;
       try {
         window.localStorage.setItem(CUSTOMER_BRANCH_KEY, next);
       } catch {
@@ -445,9 +472,9 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
   if (!store || loadedSession !== sessionKey || (dashboard && auth.loading))
     return (
       <main className="loading">
-        <Brand />
+        {dashboard ? <DashboardBrand /> : <Brand />}
         <p role="status" aria-live="polite">
-          {error || "Menyiapkan studio…"}
+          {error || "Menyiapkan Eazywash…"}
         </p>
         {error ? (
           <button className="primary" onClick={load}>
@@ -472,9 +499,13 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
       !auth.verified)
   )
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-8 px-6 py-10">
-        <Brand />
-        <AccountPanel admin phone={profile.phone} onDone={() => load()} />
+      <main className="dashboard-login">
+        <div className="dashboard-login-inner">
+          <DashboardBrand />
+          <div className="dashboard-login-card">
+            <AccountPanel admin phone={profile.phone} onDone={() => load()} />
+          </div>
+        </div>
       </main>
     );
   const revenue = orders.reduce(
@@ -492,26 +523,14 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
       {dashboard ? (
         <div className="admin-shell">
           <aside className="sidebar">
-            <Brand />
-            <label className="branch-box workspace-switch">
-              <MapPin size={18} aria-hidden="true" />
-              <span className="sr-only">Pilih workspace cabang</span>
-              <select
-                aria-label="Workspace cabang"
-                value={branch}
+            <DashboardBrand />
+            <div className="dashboard-shop-select">
+              <ShopSelector
+                branch={branch}
+                onBranchChange={switchBranch}
                 disabled={busy}
-                onChange={(e) => {
-                  setModal("");
-                  setSelected(null);
-                  setQuery("");
-                  setFilter("all");
-                  switchBranch(e.target.value as BranchId);
-                }}
-              >
-                <option value="cinere">Cabang Cinere</option>
-                <option value="bogor">Cabang Cibubur</option>
-              </select>
-            </label>
+              />
+            </div>
             <span className="nav-caption">OPERASIONAL</span>
             {[
               ["overview", "Ringkasan", LayoutDashboard],
@@ -551,8 +570,12 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
           </aside>
           <div className="admin-main">
             <header className="admin-top">
+              <DashboardBrand compact />
               <span>
-                D’Fable Studio{" "}
+                Eazywash{" "}
+                <span className="dashboard-client-crumb">
+                  / D’Fable Laundry
+                </span>{" "}
                 <span className="muted">
                   /{" "}
                   {
@@ -570,24 +593,13 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                   }
                 </span>
               </span>
-              <label className="mobile-workspace workspace-switch">
-                <span className="sr-only">Workspace cabang</span>
-                <select
-                  aria-label="Workspace cabang mobile"
-                  value={branch}
+              <div className="mobile-workspace dashboard-shop-select">
+                <ShopSelector
+                  branch={branch}
+                  onBranchChange={switchBranch}
                   disabled={busy}
-                  onChange={(e) => {
-                    setModal("");
-                    setSelected(null);
-                    setQuery("");
-                    setFilter("all");
-                    switchBranch(e.target.value as BranchId);
-                  }}
-                >
-                  <option value="cinere">Cinere</option>
-                  <option value="bogor">Cibubur</option>
-                </select>
-              </label>
+                />
+              </div>
               <DashboardAccount branchName={branchName} />
             </header>
             <main className="admin-content">
@@ -993,20 +1005,14 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                   {t}
                 </button>
               ))}
-              <Link href="/tentang">Tentang D’Fable</Link>
+              <Link href={DFABLE_ABOUT}>Tentang</Link>
             </nav>
             <div className="header-right">
-              <label className="customer-branch-select">
-                <span className="sr-only">Cabang laundry</span>
-                <select
-                  aria-label="Cabang laundry"
-                  value={branch}
-                  onChange={(e) => switchBranch(e.target.value as BranchId)}
-                >
-                  <option value="cinere">Cinere</option>
-                  <option value="bogor">Cibubur</option>
-                </select>
-              </label>
+              <ShopSelector
+                branch={branch}
+                onBranchChange={(next) => switchBranch(next)}
+                disabled={busy}
+              />
               <CustomerAccount onLogin={() => setModal("login")} />
             </div>
           </header>
@@ -1023,7 +1029,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                 }}
                 onAccount={() =>
                   auth.user && auth.verified
-                    ? window.location.assign("/profil")
+                    ? window.location.assign(DFABLE_PROFILE)
                     : setModal("login")
                 }
                 onServices={() => setView("services")}
@@ -1035,7 +1041,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                   <div>
                     <h2>Layanan & harga</h2>
                   </div>
-                  <span className="small-note">Cabang {branchName}</span>
+                  <span className="small-note">{branchName}</span>
                 </div>
                 <div className="service-catalog">
                   {serviceCategoryOrder.map((category) => {
@@ -1139,7 +1145,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                               <span className="service-item-copy">
                                 <b>
                                   {category === "member"
-                                    ? "Membership D’Fable"
+                                    ? "Membership Eazywash"
                                     : item.name}
                                 </b>
                                 {item.minimumQuantity &&
@@ -1298,7 +1304,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
           </main>
           <footer>
             <Brand />
-            <span>© {new Date().getFullYear()} D’Fable Laundry Studio</span>
+            <span>© {new Date().getFullYear()} Eazywash</span>
           </footer>
           <nav className="mobile-nav">
             {[
@@ -1318,12 +1324,12 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                 </button>
               );
             })}
-            <Link href="/tentang">
+            <Link href={DFABLE_ABOUT}>
               <StoreIcon size={20} />
               Tentang
             </Link>
             {auth.user && auth.verified ? (
-              <Link href="/profil">
+              <Link href={DFABLE_PROFILE}>
                 <User size={20} /> Akun
               </Link>
             ) : (
@@ -1335,7 +1341,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
         </>
       )}
       <dialog
-        aria-label="Form D’Fable"
+        aria-label="Form Eazywash"
         ref={dialog}
         onCancel={() => setModal("")}
         onClick={(e) => {
@@ -1364,15 +1370,11 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
         </button>
         {modal === "order" && (
           <OrderForm
-            branchId={branch}
             branchName={branchName}
             initialLocation={visitorLocation || branchLocations[branch]}
-            onBranchChange={(next) => switchBranch(next, !dashboard)}
             onPickupLocationChange={(latitude, longitude) => {
               const point = { latitude, longitude };
               setVisitorLocation(point);
-              if (!manualBranchSelected.current)
-                switchBranch(nearestBranch(latitude, longitude), false);
             }}
             services={store.services}
             initialService={service}
@@ -1400,7 +1402,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
               {dashboard ? "Pesanan walk-in tersimpan" : "Pilih pembayaran"}
             </h2>
             <p>
-              Pesanan <b>{selected.id}</b> tersimpan di D’Fable {branchName}.
+              Pesanan <b>{selected.id}</b> tersimpan di {branchName}.
               {dashboard
                 ? " Bagikan link tracking kepada pelanggan setelah selesai."
                 : " Berat aktual dan ongkir akan dikonfirmasi toko."}
@@ -1468,7 +1470,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(
-                    `${location.origin}/?track=${selected.token}`,
+                    `${location.origin}${dfableTrackingPath(selected.token)}`,
                   );
                   notify("Link tracking disalin");
                 } catch {
@@ -1505,7 +1507,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
             <span className="service-icon">
               <Layers />
             </span>
-            <p className="eyebrow">D’FABLE MEMBERSHIP</p>
+            <p className="eyebrow">MEMBERSHIP TOKO</p>
             <h2>Lebih hemat dengan membership</h2>
             <p className="muted">
               Deposit mulai Rp100.000 dapat digunakan untuk membayar layanan
@@ -1520,7 +1522,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
               className="primary"
               onClick={() => {
                 if (auth.user && auth.verified)
-                  window.location.assign("/profil");
+                  window.location.assign(DFABLE_PROFILE);
                 else setModal("login");
               }}
             >
@@ -1565,10 +1567,8 @@ function Empty({ title, text }: { title: string; text: string }) {
   );
 }
 function OrderForm({
-  branchId,
   branchName,
   initialLocation,
-  onBranchChange,
   onPickupLocationChange,
   services,
   initialService,
@@ -1577,10 +1577,8 @@ function OrderForm({
   busy,
   submit,
 }: {
-  branchId: BranchId;
   branchName: string;
   initialLocation: { latitude: number; longitude: number };
-  onBranchChange: (branch: BranchId) => void;
   onPickupLocationChange: (latitude: number, longitude: number) => void;
   services: Service[];
   initialService: string;
@@ -1615,7 +1613,7 @@ function OrderForm({
   const [form, setForm] = useState({
     name: pos ? "" : profile.name,
     phone: pos ? "" : profile.phone,
-    address: pos ? `Datang langsung — D’Fable ${branchName}` : "",
+    address: pos ? `Datang langsung — ${branchName}` : "",
     date: today(),
     slot: "09.00–12.00",
     notes: "",
@@ -1716,7 +1714,7 @@ function OrderForm({
       }}
     >
       <p className="eyebrow">
-        {pos ? `KASIR · CABANG ${branchName.toUpperCase()}` : "PESAN LAUNDRY"}
+        {pos ? `KASIR · ${branchName.toUpperCase()}` : "PESAN LAUNDRY"}
       </p>
       <h2>
         {step === 1
@@ -1736,25 +1734,14 @@ function OrderForm({
         </span>
       </div>
       {!pos && (
-        <div className="order-branch-field">
-          <MapPin size={21} aria-hidden="true" />
-          <label>
-            Cabang pelayanan
-            <select
-              aria-label="Cabang pelayanan"
-              value={branchId}
-              onChange={(event) =>
-                onBranchChange(event.target.value as BranchId)
-              }
-            >
-              <option value="cinere">D’Fable Cinere</option>
-              <option value="bogor">D’Fable Cibubur</option>
-            </select>
-            <small>
-              Kami pilih cabang terdekat dari titik jemput. Kamu bisa
-              menggantinya sebelum memesan.
-            </small>
-          </label>
+        <div className="order-store-summary">
+          <span className="order-store-logo">
+            <img src="/favicon.svg" alt="" />
+          </span>
+          <span>
+            <small>Toko pilihan</small>
+            <b>{branchName}</b>
+          </span>
         </div>
       )}
       {step === 1 ? (
@@ -2052,7 +2039,7 @@ function OrderForm({
                 autoComplete="off"
               />
               <small>
-                Minta pelanggan membuat kode untuk cabang ini di profil. Kode
+                Minta pelanggan membuat kode untuk toko ini di profil. Kode
                 berlaku sekali selama 5 menit; saldo hanya digunakan oleh
                 pelanggan melalui tracking. Diskon berlaku jika saldo masih
                 tersedia saat pesanan disimpan.
@@ -2275,7 +2262,7 @@ function PriceEditor({
         }
       }}
     >
-      <h3>Harga layanan cabang {branches[store.branchId || "cinere"]}</h3>
+      <h3>Harga layanan {branches[store.branchId || "dfablelaundry"]}</h3>
       <p className="muted">
         Satu daftar harga dipakai pelanggan, kasir, dan pesanan baru. Pesanan
         lama tetap memakai harga saat dibuat.

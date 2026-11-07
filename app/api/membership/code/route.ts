@@ -8,10 +8,11 @@ import {
   newMemberCode,
 } from "@/lib/membership-code";
 import { eligibleMemberDiscount } from "@/lib/membership-eligibility";
+import { branchSchema } from "@/lib/branches";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-const schema = z.object({ branch: z.enum(["cinere", "bogor"]) }).strict();
+const schema = z.object({ branch: branchSchema }).strict();
 export async function POST(req: NextRequest) {
   try {
     sameOrigin(req);
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
           error instanceof ApiError
             ? error.message
             : error instanceof z.ZodError
-              ? "Cabang tidak valid."
+              ? "Toko tidak valid."
               : "Kode member belum bisa dibuat.",
       },
       {

@@ -1,4 +1,8 @@
-import { requestBranch, branchMediaPath } from "@/lib/branches";
+import {
+  requestBranch,
+  branchMediaPath,
+  branchSettingsId,
+} from "@/lib/branches";
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import {
@@ -20,7 +24,10 @@ export async function GET(req: NextRequest, context: Context) {
     const slot = mediaSlotSchema.safeParse((await context.params).slot);
     if (!slot.success) throw new ApiError(404, "Gambar tidak ditemukan.");
     const bytes = await downloadPhoto(
-      branchMediaPath(requestBranch(req.url), slot.data),
+      branchMediaPath(
+        req.nextUrl.searchParams.get("branch") ?? requestBranch(req.url),
+        slot.data,
+      ),
     );
     return new NextResponse(bytes, {
       headers: {
@@ -47,7 +54,7 @@ export async function POST(req: NextRequest, context: Context) {
     );
     const url = `/api/media/banners/${slot.data}?v=${randomUUID()}&branch=${requestBranch(req.url)}`;
     await db()
-      .doc(`settings/${requestBranch(req.url)}`)
+      .doc(`settings/${branchSettingsId(requestBranch(req.url))}`)
       .set(
         { content: { images: { [slot.data]: url } }, updatedBy: user!.uid },
         { merge: true },

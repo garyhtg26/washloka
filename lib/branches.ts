@@ -1,6 +1,39 @@
 import { z } from "zod";
-export const branchSchema = z.enum(["cinere", "bogor"]);
-export type BranchId = z.infer<typeof branchSchema>;
+
+export const DEFAULT_BRANCH = "dfablelaundry" as const;
+export const activeBranchIds = [DEFAULT_BRANCH] as const;
+export type BranchId = (typeof activeBranchIds)[number];
+
+// These are storage aliases belonging to D’Fable, never additional stores.
+// Keep them readable so existing orders, media and payment links remain valid.
+export const persistedBranchIds = [DEFAULT_BRANCH, "cinere", "bogor"] as const;
+export type PersistedBranchId = (typeof persistedBranchIds)[number];
+const persistedBranchSchema = z.enum(persistedBranchIds);
+export const branchSchema = persistedBranchSchema.transform(
+  () => DEFAULT_BRANCH,
+);
+
+export function normalizeBranchId(value: unknown): BranchId | null {
+  return persistedBranchSchema.safeParse(value).success ? DEFAULT_BRANCH : null;
+}
+
+export function isBranchId(value: unknown): value is BranchId {
+  return value === DEFAULT_BRANCH;
+}
+
+export function sameBranch(first: unknown, second: unknown) {
+  const normalized = normalizeBranchId(first);
+  return normalized !== null && normalized === normalizeBranchId(second);
+}
+
+export function branchAliases(branch: unknown): readonly PersistedBranchId[] {
+  branchSchema.parse(branch);
+  return persistedBranchIds;
+}
+
+export function branchLabel(value: unknown) {
+  return normalizeBranchId(value) ? "D’Fable" : "Toko tidak tersedia";
+}
 
 export type BranchLocation = {
   name: string;
@@ -10,62 +43,25 @@ export type BranchLocation = {
 };
 
 export const branches: Record<BranchId, string> = {
-  cinere: "Cinere",
-  bogor: "Cibubur",
+  dfablelaundry: "D’Fable",
 };
 
+// A map fallback only. A customer's coordinates select their pickup address,
+// while their selected partner remains unchanged.
 export const branchLocations: Record<BranchId, BranchLocation> = {
-  cinere: {
-    name: "D’Fable Cinere",
-    area: "Cinere, Depok",
+  dfablelaundry: {
+    name: "D’Fable",
+    area: "D’Fable Laundry",
     latitude: -6.3286,
     longitude: 106.7844,
   },
-  bogor: {
-    name: "D’Fable Cibubur",
-    area: "Cibubur, Jakarta Timur",
-    latitude: -6.35694,
-    longitude: 106.88194,
-  },
 };
 
-export function isBranchId(value: unknown): value is BranchId {
-  return branchSchema.safeParse(value).success;
-}
-
-function distanceKm(
-  latitude: number,
-  longitude: number,
-  branch: BranchLocation,
-) {
-  const radians = (value: number) => (value * Math.PI) / 180;
-  const earthRadiusKm = 6371;
-  const latitudeDelta = radians(branch.latitude - latitude);
-  const longitudeDelta = radians(branch.longitude - longitude);
-  const a =
-    Math.sin(latitudeDelta / 2) ** 2 +
-    Math.cos(radians(latitude)) *
-      Math.cos(radians(branch.latitude)) *
-      Math.sin(longitudeDelta / 2) ** 2;
-  return 2 * earthRadiusKm * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-export function nearestBranch(
-  latitude: number,
-  longitude: number,
-): BranchId {
-  return (Object.keys(branchLocations) as BranchId[]).reduce(
-    (nearest, candidate) =>
-      distanceKm(latitude, longitude, branchLocations[candidate]) <
-      distanceKm(latitude, longitude, branchLocations[nearest])
-        ? candidate
-        : nearest,
-    "cinere",
-  );
+export function nearestBranch(_latitude: number, _longitude: number): BranchId {
+  return DEFAULT_BRANCH;
 }
 
 export function resolveCustomerBranch({
-  detected,
   requested,
   saved,
 }: {
@@ -73,24 +69,34 @@ export function resolveCustomerBranch({
   requested?: unknown;
   saved?: unknown;
 }): BranchId {
-  if (
-    detected &&
-    Number.isFinite(detected.latitude) &&
-    Number.isFinite(detected.longitude)
-  )
-    return nearestBranch(detected.latitude, detected.longitude);
-  if (isBranchId(requested)) return requested;
-  if (isBranchId(saved)) return saved;
-  return "cinere";
+  return (
+    normalizeBranchId(requested) || normalizeBranchId(saved) || DEFAULT_BRANCH
+  );
 }
 
 export function requestBranch(url: string): BranchId {
   return branchSchema.parse(
-    new URL(url).searchParams.get("branch") ?? "cinere",
+    new URL(url).searchParams.get("branch") ?? DEFAULT_BRANCH,
   );
 }
-export function branchMediaPath(branch: BranchId, slot: string) {
-  return branch === "cinere"
-    ? `banners/${slot}/image.jpg`
-    : `banners/bogor/${slot}/image.jpg`;
+
+// D’Fable's existing primary settings and banner paths stay in place. Only the
+// public store identity changes; no production data is renamed or deleted.
+export function branchSettingsId(branch: unknown): PersistedBranchId {
+  branchSchema.parse(branch);
+  return "cinere";
+}
+
+export function branchSettingsReadIds(
+  branch: unknown,
+): readonly PersistedBranchId[] {
+  branchSchema.parse(branch);
+  return ["cinere", DEFAULT_BRANCH, "bogor"];
+}
+
+export function branchMediaPath(branch: unknown, slot: string) {
+  branchSchema.parse(branch);
+  return branch === "bogor"
+    ? `banners/bogor/${slot}/image.jpg`
+    : `banners/${slot}/image.jpg`;
 }

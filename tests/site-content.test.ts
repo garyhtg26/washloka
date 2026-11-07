@@ -43,75 +43,90 @@ test("content writes cannot inject arbitrary photo URLs or unknown fields", () =
       siteContent({ images: { promo: "https://untrusted.invalid/image" } }),
       "promo",
     ),
-    "/promo-washer-optimized.webp",
+    "/eazywash-promo-v1.webp",
   );
 });
 
 import {
+  DEFAULT_BRANCH,
   requestBranch,
   branchMediaPath,
+  branches,
   branchLocations,
+  branchSchema,
+  branchLabel,
+  isBranchId,
+  sameBranch,
   nearestBranch,
   resolveCustomerBranch,
 } from "../lib/branches";
-test("branch requests reject unknown workspaces and keep banner storage isolated", () => {
-  assert.equal(requestBranch("https://example.com/api/store"), "cinere");
-  assert.equal(
-    requestBranch("https://example.com/api/store?branch=bogor"),
-    "bogor",
-  );
+
+test("only D’Fable is active while legacy links resolve to the same store", () => {
+  assert.deepEqual(Object.keys(branches), [DEFAULT_BRANCH]);
+  assert.deepEqual(Object.keys(branchLocations), [DEFAULT_BRANCH]);
+  for (const branch of [undefined, DEFAULT_BRANCH, "cinere", "bogor"]) {
+    const suffix = branch ? `?branch=${branch}` : "";
+    assert.equal(
+      requestBranch(`https://example.com/api/store${suffix}`),
+      DEFAULT_BRANCH,
+    );
+    if (branch) {
+      assert.equal(branchSchema.parse(branch), DEFAULT_BRANCH);
+      assert.equal(branchLabel(branch), "D’Fable");
+      assert.equal(sameBranch(branch, DEFAULT_BRANCH), true);
+    }
+  }
+  assert.equal(isBranchId(DEFAULT_BRANCH), true);
+  assert.equal(isBranchId("cinere"), false);
+  assert.equal(isBranchId("bogor"), false);
+  assert.equal(sameBranch("unknown", "unknown"), false);
+  assert.equal(sameBranch(DEFAULT_BRANCH, "buzzwash"), false);
+  assert.equal(branchLabel("buzzwash"), "Toko tidak tersedia");
   assert.throws(() =>
     requestBranch("https://example.com/api/store?branch=../users"),
+  );
+  assert.throws(() =>
+    requestBranch("https://example.com/api/store?branch=buzzwash"),
+  );
+});
+
+test("old banner storage and URLs stay readable without becoming extra store choices", () => {
+  assert.equal(
+    branchMediaPath(DEFAULT_BRANCH, "promo"),
+    branchMediaPath("cinere", "promo"),
   );
   assert.notEqual(
     branchMediaPath("cinere", "promo"),
     branchMediaPath("bogor", "promo"),
   );
-  assert.equal(
-    siteImage(
-      siteContent({
-        images: { promo: "/api/media/banners/promo?v=abcd&branch=bogor" },
+  for (const branch of [DEFAULT_BRANCH, "cinere", "bogor"]) {
+    const image = `/api/media/banners/promo?v=abcd&branch=${branch}`;
+    assert.equal(
+      siteImage(siteContent({ images: { promo: image } }), "promo"),
+      image,
+    );
+  }
+  assert.throws(() => branchMediaPath("buzzwash", "promo"));
+});
+
+test("coordinates and saved geographic aliases cannot switch the selected store", () => {
+  for (const point of [
+    { latitude: -6.3286, longitude: 106.7844 },
+    { latitude: -6.35694, longitude: 106.88194 },
+  ]) {
+    assert.equal(
+      nearestBranch(point.latitude, point.longitude),
+      DEFAULT_BRANCH,
+    );
+    assert.equal(
+      resolveCustomerBranch({
+        detected: point,
+        requested: "cinere",
+        saved: "bogor",
       }),
-      "promo",
-    ),
-    "/api/media/banners/promo?v=abcd&branch=bogor",
-  );
-});
-
-test("visitor coordinates select the nearest available branch", () => {
-  assert.equal(
-    nearestBranch(
-      branchLocations.cinere.latitude,
-      branchLocations.cinere.longitude,
-    ),
-    "cinere",
-  );
-  assert.equal(
-    nearestBranch(
-      branchLocations.bogor.latitude,
-      branchLocations.bogor.longitude,
-    ),
-    "bogor",
-  );
-});
-
-test("current visitor location takes priority over URL and saved branch", () => {
-  assert.equal(
-    resolveCustomerBranch({
-      detected: branchLocations.bogor,
-      requested: "cinere",
-      saved: "cinere",
-    }),
-    "bogor",
-  );
-  assert.equal(
-    resolveCustomerBranch({
-      detected: branchLocations.cinere,
-      requested: "bogor",
-      saved: "bogor",
-    }),
-    "cinere",
-  );
-  assert.equal(resolveCustomerBranch({ saved: "bogor" }), "bogor");
-  assert.equal(resolveCustomerBranch({ saved: "unknown" }), "cinere");
+      DEFAULT_BRANCH,
+    );
+  }
+  assert.equal(resolveCustomerBranch({ saved: "bogor" }), DEFAULT_BRANCH);
+  assert.equal(resolveCustomerBranch({ saved: "unknown" }), DEFAULT_BRANCH);
 });

@@ -13,11 +13,12 @@ import {
   Mail,
   ShieldCheck,
   KeyRound,
-  Loader2,
   Link2Off,
 } from "lucide-react";
 import { clientAuth } from "@/lib/firebase/client";
 import { useAuth } from "./auth-provider";
+import { DFABLE_HOME } from "@/lib/dfable-path";
+import "./account-brand.css";
 export default function EmailAction({
   mode = "return",
   code = "",
@@ -36,7 +37,8 @@ export default function EmailAction({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const reset = mode === "resetPassword";
-  const target = auth.scope === "admin" ? "/dashboard" : "/?account=1";
+  const target =
+    auth.scope === "admin" ? "/dashboard" : `${DFABLE_HOME}?account=1`;
   useEffect(() => {
     if (started.current) return;
     started.current = true;
@@ -109,18 +111,22 @@ export default function EmailAction({
   const invalid = state === "invalid";
   return (
     <main className="email-page">
-      <a href="/" className="email-brand" aria-label="D’Fable beranda">
+      <a
+        href={DFABLE_HOME}
+        className="email-brand"
+        aria-label="Eazywash beranda"
+      >
         <Image
-          src="/dfable-logo.png"
+          src="/eazywash-logo.png"
           width={190}
-          height={58}
-          alt="D’Fable Laundry Studio"
+          height={64}
+          alt="Eazywash"
           priority
         />
       </a>
       <div className="email-layout">
         <aside className="email-story">
-          <h1>Akun D’Fable</h1>
+          <h1>Akun Eazywash</h1>
           <Image
             src="/unsplash/folding-web.webp"
             width={1536}
@@ -128,12 +134,20 @@ export default function EmailAction({
             alt="Pakaian bersih terlipat rapi"
             className="email-story-photo"
           />
-          <span className="email-story-caption">D’FABLE · LAUNDRY STUDIO</span>
+          <span className="email-story-caption">
+            EAZYWASH · LAUNDRY ECOSYSTEM
+          </span>
         </aside>
         <section className="email-card" aria-live="polite">
           <span className={`email-status-icon ${success ? "is-success" : ""}`}>
             {state === "loading" ? (
-              <Loader2 className="spin" size={30} />
+              <span
+                className="email-link-loading"
+                role="progressbar"
+                aria-label="Memeriksa tautan"
+              >
+                <span />
+              </span>
             ) : success ? (
               <Check size={32} />
             ) : invalid ? (
@@ -145,7 +159,7 @@ export default function EmailAction({
             )}
           </span>
           <p className="auth-kicker">
-            {auth.scope === "admin" ? "D’FABLE WORKSPACE" : "AKUN D’FABLE"}
+            {auth.scope === "admin" ? "EAZYWASH WORKSPACE" : "AKUN EAZYWASH"}
           </p>
           <h2>
             {state === "loading"
@@ -160,12 +174,12 @@ export default function EmailAction({
                     ? "Lanjutkan ke akunmu."
                     : reset
                       ? "Buat password baru."
-                      : "Selamat datang di D’Fable."}
+                      : "Selamat datang di Eazywash."}
           </h2>
           <p className="email-description">
             {success
               ? reset
-                ? "Gunakan password baru untuk masuk kembali. Sesi customer dan workspace tetap terpisah."
+                ? "Gunakan password baru untuk masuk kembali."
                 : "Akunmu siap digunakan. Terima kasih sudah memastikan email ini milikmu."
               : invalid
                 ? "Tautan ini tidak valid, sudah digunakan, atau kedaluwarsa. Kembali ke akun untuk meminta tautan baru."
@@ -249,7 +263,7 @@ export default function EmailAction({
           </div>
         </section>
       </div>
-      <footer className="email-footer">D’Fable Laundry Studio</footer>
+      <footer className="email-footer">Eazywash</footer>
     </main>
   );
 }

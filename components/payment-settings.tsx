@@ -224,8 +224,8 @@ export default function PaymentSettings({
             Pengaturan pembayaran {branches[branchId]}
           </h2>
           <p className="!mb-0 !text-xs leading-relaxed text-indigo-700">
-            Pelanggan cabang {branches[branchId]} akan melihat rekening ini.
-            Hanya pemilik dan admin yang bisa mengubahnya.
+            Pelanggan {branches[branchId]} akan melihat rekening ini. Hanya
+            pemilik dan admin yang bisa mengubahnya.
           </p>
         </div>
       </div>
@@ -479,7 +479,7 @@ export default function PaymentSettings({
                       Transfer {account.bankName || "bank"}
                     </h3>
                     <p className="!mb-0 !mt-1 !text-[11px] text-slate-500">
-                      D’Fable {branches[branchId]}
+                      {branches[branchId]} Laundry
                     </p>
                   </div>
                 </div>

@@ -62,7 +62,7 @@ Order listing is capped at the latest 500 records per authorized query. The dash
 
 ## Pricing / business assumptions
 
-Cinere cuci-kering: Rp20,000 up to 10 kg, then Rp2,000/kg. Ironing adds Rp4,000 per actual kg. 5 kg wash + iron = Rp40,000, 10 kg = Rp60,000. Iron-only = Rp4,000/kg. Express adds 50%. Transport has no radius cap in this version and is confirmed by the shop. Existing orders retain their captured tariff after price edits.
+D’Fable cuci-kering: Rp20,000 up to 10 kg, then Rp2,000/kg. Ironing adds Rp4,000 per actual kg. 5 kg wash + iron = Rp40,000, 10 kg = Rp60,000. Iron-only = Rp4,000/kg. Express adds 50%. Transport has no radius cap in this version and is confirmed by the shop. Existing orders retain their captured tariff after price edits.
 
 Membership has no automatic activation or quota ledger. Customers and POS choose a bank transfer after ordering, upload private proof, and submit it for shop confirmation. QRIS is marked coming soon until the merchant is approved and its checkout feature flag is explicitly enabled. Payment submission requires the shop to confirm actual weight and shipping. No automated WhatsApp messages are sent. Public tracking visualizes store-entered progress, not courier GPS. Final business rates, bank-account details, merchant activation, and operating policies still need owner confirmation before real orders.
 
@@ -136,8 +136,10 @@ Banner & promotions controls the main promotion, pickup banner, monthly membersh
 
 User management lists Firebase Auth accounts, including users without orders. WhatsApp is joined from the Firestore `users` profile saved during ordering; accounts that have not supplied a number show “Belum diisi”. Search covers the currently loaded list; use Load more to include subsequent pages.
 
-### Workspace cabang
+### Workspace toko
 
-Dashboard menyediakan Cinere dan Cibubur. Cabang aktif tersimpan di parameter URL `branch`, sehingga refresh tetap membuka workspace yang sama. Pesanan POS, harga, promo, dan gambar tersimpan per cabang. Web pelanggan dapat dibuka lewat `/?branch=bogor` (ID internal cabang Cibubur); tanpa parameter memakai Cinere. Akun pengguna dan role tetap berlaku untuk kedua cabang. Layanan, promo, dan gambar Cibubur tetap memakai nilai awal sampai diatur sendiri; pengaturan cabang tidak menyalin pesanan Cinere.
+Pilihan toko sekarang mewakili partner laundry, bukan wilayah. Partner aktif adalah D’Fable dengan ID publik `dfablelaundry`. Eazywash menjadi identitas aplikasi, sedangkan logo D’Fable menandai toko yang melayani pesanan. Lokasi pelanggan hanya mengisi titik penjemputan dan tidak mengganti toko.
 
-Daftar pesanan admin memakai indeks single-field `branchId`, lalu mengurutkan hasil sebelum membatasi tampilan ke 500 pesanan. Untuk volume besar, ganti dengan pagination dan indeks gabungan `branchId`/`createdAt` agar pembacaan tidak meningkat bersama jumlah seluruh pesanan cabang.
+Pesanan baru memakai ID `dfablelaundry`. ID lama `cinere` dan `bogor` tetap diterima sebagai alias toko yang sama, sehingga riwayat pesanan, pembayaran, kode member, dan gambar lama tetap dapat dibuka. Dashboard menggabungkan ketiga ID tersebut. Pengaturan utama tetap disimpan di `settings/cinere` untuk kompatibilitas, dengan fallback ke dokumen canonical dan alias lama; tidak ada penghapusan atau pemindahan data otomatis. ID toko lain yang belum terdaftar tetap ditolak.
+
+Daftar pesanan admin memakai indeks single-field `branchId`, lalu mengurutkan hasil sebelum membatasi tampilan ke 500 pesanan. Untuk volume besar, ganti dengan pagination dan indeks gabungan `branchId`/`createdAt` agar pembacaan tidak meningkat bersama jumlah seluruh pesanan toko.

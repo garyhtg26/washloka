@@ -7,12 +7,13 @@ import { readBankDetails } from "@/lib/payments/bank-service";
 import { memberBalance } from "@/lib/membership";
 import { eligibleMemberDiscount } from "@/lib/membership-eligibility";
 import { submitMembershipDeposit } from "@/lib/membership-proof";
+import { branchSchema, requestBranch } from "@/lib/branches";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const schema = z
   .object({
     amount: z.number().int().min(100000).max(10000000),
-    branch: z.enum(["cinere", "bogor"]),
+    branch: branchSchema,
     senderName: z.string().trim().min(2).max(100),
     proofVersion: z.string().uuid(),
   })
@@ -41,8 +42,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = (await identity(req, true))!;
     const database = db();
-    const branch =
-      req.nextUrl.searchParams.get("branch") === "bogor" ? "bogor" : "cinere";
+    const branch = requestBranch(req.url);
     const [wallet, pending, history, bank] = await Promise.all([
       database.doc(`memberships/${user.uid}`).get(),
       database.doc(`membershipDeposits/${user.uid}`).get(),

@@ -12,4 +12,4 @@ New third service image: `public/laundry-ironing-v3.png`.
 
 Ironing prompt: Photorealistic premium editorial close-up photograph for Indonesian laundry studio app, steam iron in the hand of a laundry professional wearing crisp cobalt blue apron, carefully ironing a fresh pale blue cotton shirt on a clean white ironing board. Natural realistic hands, airy white laundry studio background with soft blue details, sunlight, modern understated quality. Landscape 3:2 composition, focus on iron and shirt, no text, no logos, no watermark.
 
-The three service cards use distinct assets: washing staff, folded clean towels/shirt, and ironing. These are generated illustrative brand photographs, not claimed to be real Cinere staff or premises.
+The three service cards use distinct assets: washing staff, folded clean towels/shirt, and ironing. These are generated illustrative brand photographs, not claimed to be real shop staff or premises.

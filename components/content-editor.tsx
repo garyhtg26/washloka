@@ -37,7 +37,7 @@ export default function ContentEditor({
     try {
       const image = await prepareImage(file);
       const r = await auth.request(
-        `/api/media/banners/${slot}?branch=${store.branchId || "cinere"}`,
+        `/api/media/banners/${slot}?branch=${store.branchId || "dfablelaundry"}`,
         {
           method: "POST",
           headers: { "Content-Type": "image/jpeg" },
@@ -95,7 +95,7 @@ export default function ContentEditor({
           try {
             const { images, ...settings } = content;
             const r = await auth.request(
-              `/api/admin/content?branch=${store.branchId || "cinere"}`,
+              `/api/admin/content?branch=${store.branchId || "dfablelaundry"}`,
               {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },

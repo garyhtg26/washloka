@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { BadgeCheck, Clock3, ImageIcon, RefreshCw } from "lucide-react";
 import { money } from "@/lib/types";
 import { useAuth } from "./auth-provider";
+import { branchLabel } from "@/lib/branches";
 import "./membership-admin.css";
 
 type Deposit = {
@@ -84,7 +85,7 @@ function DepositItem({
         <strong>{money(item.amount)}</strong>
       </div>
       <div className="membership-review-meta">
-        <span>{item.branchId === "bogor" ? "Cibubur" : "Cinere"}</span>
+        <span>{branchLabel(item.branchId)}</span>
         <span>
           {item.bank.bankName} · {item.bank.accountNumber}
         </span>

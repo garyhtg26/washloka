@@ -17,6 +17,7 @@ import {
 import { useAuth } from "./auth-provider";
 import { CustomerHeader } from "./about-header";
 import MembershipCard from "./membership-card";
+import { DFABLE_HOME, DFABLE_PROFILE, DFABLE_ABOUT } from "@/lib/dfable-path";
 import "./profile-customer.css";
 
 type Profile = {
@@ -151,8 +152,12 @@ export default function CustomerProfile() {
   )
     return (
       <main className="loading">
-        <Link className="brand" href="/" aria-label="D’Fable beranda">
-          <img src="/dfable-logo.png" alt="D’Fable Laundry Studio" />
+        <Link
+          className="brand eazy-customer-brand"
+          href={DFABLE_HOME}
+          aria-label="Eazywash beranda"
+        >
+          <img src="/eazywash-logo.png" alt="Eazywash" />
         </Link>
         <p role="status">Menyiapkan profil…</p>
         <div
@@ -167,8 +172,8 @@ export default function CustomerProfile() {
   if (!auth.user || !auth.verified)
     return (
       <main className="profile-gate">
-        <Link className="profile-brand" href="/">
-          <img src="/dfable-logo.png" alt="D’Fable Laundry Studio" />
+        <Link className="profile-brand" href={DFABLE_HOME}>
+          <img src="/eazywash-logo.png" alt="Eazywash" />
         </Link>
         <span className="profile-gate-icon">
           <UserRound size={27} />
@@ -181,7 +186,7 @@ export default function CustomerProfile() {
             ? "Selesaikan verifikasi email untuk melihat data dan poin kamu."
             : "Data diri dan poin kamu ada di sini setelah masuk."}
         </p>
-        <Link className="primary" href="/?account=1">
+        <Link className="primary" href={`${DFABLE_HOME}?account=1`}>
           {auth.user ? "Verifikasi akun" : "Masuk"}
         </Link>
       </main>
@@ -294,7 +299,7 @@ export default function CustomerProfile() {
             <section className="profile-points-card">
               <div className="profile-points-top">
                 <span>
-                  <Gift size={20} /> POIN D’FABLE
+                  <Gift size={20} /> POIN LOYALTY
                 </span>
                 <span>LOYALTY</span>
               </div>
@@ -386,23 +391,23 @@ export default function CustomerProfile() {
         </div>
       </div>
       <nav className="mobile-nav" aria-label="Navigasi utama">
-        <Link href="/?view=home">
+        <Link href={`${DFABLE_HOME}?view=home`}>
           <LayoutDashboard size={20} />
           Beranda
         </Link>
-        <Link href="/?view=services">
+        <Link href={`${DFABLE_HOME}?view=services`}>
           <Shirt size={20} />
           Layanan
         </Link>
-        <Link href="/?view=tracking">
+        <Link href={`${DFABLE_HOME}?view=tracking`}>
           <Package size={20} />
           Tracking
         </Link>
-        <Link href="/tentang">
+        <Link href={DFABLE_ABOUT}>
           <Store size={20} />
           Tentang
         </Link>
-        <Link className="active" aria-current="page" href="/profil">
+        <Link className="active" aria-current="page" href={DFABLE_PROFILE}>
           <User size={20} />
           Akun
         </Link>

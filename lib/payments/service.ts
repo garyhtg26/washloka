@@ -1,6 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import type { Firestore, Transaction } from "firebase-admin/firestore";
+import type { Firestore } from "firebase-admin/firestore";
+import { readBranchSettings } from "../branch-settings";
 import type { Order } from "../types";
 import { ApiError } from "../firebase/access";
 import { db } from "../firebase/admin";
@@ -27,6 +28,8 @@ import {
 import type { PaymentAttempt, PaymentView, ProviderTransaction } from "./types";
 import { bankDetails, manualLocked, safeManualSummary } from "./manual-policy";
 import { prepareEarn, commitEarn } from "../loyalty";
+import { signalPaymentChange } from "./signals";
+export { signalPaymentChange } from "./signals";
 
 export const gateway = {
   status: providerGetStatus,
@@ -35,23 +38,11 @@ export const gateway = {
 };
 export type Gateway = typeof gateway;
 
-export function signalPaymentChange(
-  tx: Transaction,
-  database: Firestore,
-  branchId: string,
-) {
-  if (!["cinere", "bogor"].includes(branchId)) return;
-  tx.set(database.doc(`paymentSignals/${branchId}`), {
-    version: randomUUID(),
-    updatedAt: new Date().toISOString(),
-  });
-}
-
 export async function paymentView(
   order: Order,
   database: Firestore = db(),
 ): Promise<PaymentView> {
-  const settings = await database.doc(`settings/${order.branchId}`).get();
+  const settings = await readBranchSettings(database, order.branchId);
   let qrUrl: string | undefined;
   if (
     order.payment?.status === "pending" &&
