@@ -1,0 +1,94 @@
+/* Search fields nest their input inside a label; reset the global form spacing. */
+body .customer-experience .home-discovery-search,
+body .customer-experience .tracking-ribbon form label {
+  margin: 0;
+  min-width: 0;
+  cursor: text;
+}
+body .customer-experience .home-discovery-search input,
+body .customer-experience .tracking-ribbon form input,
+body .search-box > input {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  line-height: 1.4;
+}
+body .customer-experience .home-discovery-search input:focus,
+body .customer-experience .tracking-ribbon form input:focus,
+body .search-box > input:focus {
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+body .customer-experience .home-discovery-search input {
+  min-height: 38px;
+  padding: 0;
+  font-size: 14px;
+}
+body .customer-experience .home-discovery-search > svg,
+body .customer-experience .tracking-ribbon form label > svg {
+  flex: none;
+}
+body .customer-experience .tracking-ribbon form {
+  align-items: stretch;
+  min-height: 48px;
+  background: #fff;
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s;
+}
+body .customer-experience .tracking-ribbon form label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  padding: 0 9px;
+}
+body .customer-experience .tracking-ribbon form input {
+  min-height: 38px;
+  padding: 0;
+  color: #1f1f1f;
+  font-size: 14px;
+  font-weight: 400;
+}
+body .customer-experience .tracking-ribbon form button {
+  flex: none;
+  justify-content: center;
+  min-height: 38px;
+}
+body .customer-experience .tracking-ribbon form:focus-within,
+body .tracking-page .track-search .search-box:focus-within,
+body .admin-shell .search-box:focus-within {
+  border-color: #a64b68;
+  box-shadow: 0 0 0 3px #7a0e2f1a;
+}
+body .tracking-page .track-search {
+  align-items: stretch;
+}
+body .tracking-page .track-search .search-box {
+  min-width: 0;
+  min-height: 48px;
+  border-radius: 11px;
+}
+body .tracking-page .track-search .search-box input {
+  min-height: 46px;
+  font-size: 15px;
+}
+body .tracking-page .track-search > button {
+  min-height: 48px;
+}
+@media (max-width: 520px) {
+  body .customer-experience .home-discovery-search input {
+    font-size: 16px;
+  }
+  body .customer-experience .tracking-ribbon form input,
+  body .tracking-page .track-search .search-box input {
+    font-size: 16px;
+  }
+}

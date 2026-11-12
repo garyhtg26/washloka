@@ -9,11 +9,11 @@ dialog.staff-detail-dialog {
   justify-content: space-between;
   gap: 20px;
   padding: 0 36px 22px 0;
-  border-bottom: 1px solid #eceef4;
+  border-bottom: 1px solid #ece6e8;
 }
 .staff-detail-kicker {
   margin: 0 0 7px;
-  color: #6662d4;
+  color: #7a0e2f;
   font-size: 10px;
   letter-spacing: 0.12em;
   font-weight: 750;
@@ -31,8 +31,8 @@ dialog.staff-detail-dialog {
   flex-shrink: 0;
   padding: 7px 10px;
   border-radius: 8px;
-  color: #3733bd;
-  background: #eeedff;
+  color: #7a0e2f;
+  background: #f8edf1;
   font-size: 11px;
   font-weight: 700;
 }
@@ -52,7 +52,7 @@ dialog.staff-detail-dialog {
 .staff-detail-card {
   min-width: 0;
   padding: 18px;
-  border: 1px solid #e9ebf3;
+  border: 1px solid #ece6e8;
   border-radius: 14px;
   background: #fff;
 }
@@ -61,11 +61,11 @@ dialog.staff-detail-dialog {
   align-items: center;
   gap: 9px;
   margin-bottom: 16px;
-  color: #4e4ad0;
+  color: #7a0e2f;
 }
 .staff-detail-card-heading h3 {
   margin: 0;
-  color: #22273b;
+  color: #1f1f1f;
   font-size: 15px;
 }
 .staff-detail-customer {
@@ -79,7 +79,7 @@ dialog.staff-detail-dialog {
   overflow-wrap: anywhere;
 }
 .staff-detail-customer b {
-  color: #272d40;
+  color: #1f1f1f;
   font-size: 13px;
 }
 .staff-detail-customer span {
@@ -95,7 +95,7 @@ dialog.staff-detail-dialog {
   padding: 12px;
   margin: 16px 0 0;
   border-radius: 10px;
-  background: #f7f8fd;
+  background: #faf7f8;
   color: #50576b;
   font-size: 12px;
   line-height: 1.6;
@@ -104,7 +104,7 @@ dialog.staff-detail-dialog {
 .staff-detail-address svg,
 .staff-detail-note svg {
   flex-shrink: 0;
-  color: #6964db;
+  color: #7a0e2f;
   margin-top: 2px;
 }
 .staff-detail-address small {
@@ -116,12 +116,12 @@ dialog.staff-detail-dialog {
   align-items: center;
   gap: 4px;
   margin-top: 5px;
-  color: #302bd4;
+  color: #7a0e2f;
   font-weight: 650;
 }
 .staff-detail-photo {
   margin-top: 14px;
-  color: #302bd4;
+  color: #7a0e2f;
   font-size: 12px;
   font-weight: 650;
 }
@@ -162,11 +162,11 @@ dialog.staff-detail-dialog {
   gap: 10px;
   margin-top: 17px;
   padding-top: 15px;
-  border-top: 1px solid #edf0f6;
+  border-top: 1px solid #eee8ea;
   font-size: 12px;
 }
 .staff-detail-total strong {
-  color: #1c2350;
+  color: #1f1f1f;
   font-size: 21px;
 }
 .staff-detail-hint {

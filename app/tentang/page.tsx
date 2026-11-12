@@ -19,8 +19,8 @@ import {
 import "@/components/about-eazywash.css";
 
 export const metadata: Metadata = {
-  title: "Tentang Eazywash",
-  description: "Kenali Eazywash dan partner laundry yang melayani pesananmu.",
+  title: "Tentang Washloka",
+  description: "Kenali Washloka dan partner laundry yang melayani pesananmu.",
 };
 
 const whatsappUrl =
@@ -29,11 +29,20 @@ const whatsappUrl =
 function Brand() {
   return (
     <Link
-      className="brand eazy-customer-brand"
+      className="brand eazy-customer-brand washloka-lockup washloka-lockup-light"
       href={DFABLE_HOME}
-      aria-label="Eazywash beranda"
+      aria-label="Washloka beranda"
     >
-      <img src="/eazywash-logo.png" alt="Eazywash" />
+      <img
+        className="washloka-mark"
+        src="/washloka/app-icon-burgundy.svg"
+        alt=""
+      />
+      <img
+        className="washloka-wordmark"
+        src="/washloka/wordmark-burgundy.svg"
+        alt="Washloka"
+      />
     </Link>
   );
 }
@@ -46,7 +55,7 @@ export default function AboutPage() {
       <main className="about-ew-content">
         <section className="about-ew-hero">
           <div className="about-ew-hero-copy">
-            <span className="about-ew-eyebrow">TENTANG EAZYWASH</span>
+            <span className="about-ew-eyebrow">TENTANG WASHLOKA</span>
             <h1>
               Lebih mudah
               <br />
@@ -54,7 +63,7 @@ export default function AboutPage() {
             </h1>
             <p>
               Pilih toko dan layanan, jadwalkan penjemputan, lalu pantau
-              pesananmu. Semuanya ada di Eazywash.
+              pesananmu. Semuanya ada di Washloka.
             </p>
             <Link
               href={`${DFABLE_HOME}?view=services`}
@@ -87,7 +96,7 @@ export default function AboutPage() {
               Lanjutkan harimu.
             </h2>
             <p>
-              Eazywash menghubungkan kamu dengan toko laundry dan layanan yang
+              Washloka menghubungkan kamu dengan toko laundry dan layanan yang
               kamu butuhkan. Dari kiloan hingga perawatan satuan, kamu bisa
               memilih langsung dari aplikasi.
             </p>
@@ -157,7 +166,7 @@ export default function AboutPage() {
                 height={483}
               />
               <span>
-                <Store size={14} /> Partner Eazywash
+                <Store size={14} /> Partner Washloka
               </span>
             </div>
             <div className="about-ew-partner-copy">
@@ -185,7 +194,7 @@ export default function AboutPage() {
       </main>
       <footer>
         <Brand />
-        <span>© {new Date().getFullYear()} Eazywash</span>
+        <span>© {new Date().getFullYear()} Washloka. All rights reserved.</span>
       </footer>
       <nav className="mobile-nav" aria-label="Navigasi utama">
         <Link href={`${DFABLE_HOME}?view=home`}>

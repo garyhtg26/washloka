@@ -215,15 +215,15 @@ export default function PaymentSettings({
 
   return (
     <section className="space-y-6">
-      <div className="flex items-start gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-4 sm:px-5">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-600">
+      <div className="flex items-start gap-3 rounded-2xl border border-[#ead8de] bg-[#fbf5f7] px-4 py-4 sm:px-5">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#7a0e2f]">
           <ShieldCheck size={21} strokeWidth={1.7} aria-hidden="true" />
         </span>
         <div>
-          <h2 className="!mb-1 !text-sm font-semibold text-indigo-950">
+          <h2 className="!mb-1 !text-sm font-semibold text-[#36101d]">
             Pengaturan pembayaran {branches[branchId]}
           </h2>
-          <p className="!mb-0 !text-xs leading-relaxed text-indigo-700">
+          <p className="!mb-0 !text-xs leading-relaxed text-[#680c2a]">
             Pelanggan {branches[branchId]} akan melihat rekening ini. Hanya
             pemilik dan admin yang bisa mengubahnya.
           </p>
@@ -262,7 +262,7 @@ export default function PaymentSettings({
                 <Landmark
                   size={21}
                   strokeWidth={1.7}
-                  className="text-indigo-600"
+                  className="text-[#7a0e2f]"
                   aria-hidden="true"
                 />
                 <div>
@@ -295,7 +295,7 @@ export default function PaymentSettings({
                     onChange={(event) =>
                       updateAccount("bankName", event.target.value)
                     }
-                    className="!mt-2 !w-full !rounded-xl !border-slate-200 !px-3.5 !py-3 !text-sm focus:!border-indigo-400 focus:!ring-4 focus:!ring-indigo-50"
+                    className="!mt-2 !w-full !rounded-xl !border-slate-200 !px-3.5 !py-3 !text-sm focus:!border-[#b2677d] focus:!ring-4 focus:!ring-[#f8edf1]"
                   />
                 </label>
                 <label className="!block !text-xs font-medium text-slate-600">
@@ -317,7 +317,7 @@ export default function PaymentSettings({
                         event.target.value.replace(/\D/g, ""),
                       )
                     }
-                    className="!mt-2 !w-full !rounded-xl !border-slate-200 !px-3.5 !py-3 !text-sm tabular-nums focus:!border-indigo-400 focus:!ring-4 focus:!ring-indigo-50"
+                    className="!mt-2 !w-full !rounded-xl !border-slate-200 !px-3.5 !py-3 !text-sm tabular-nums focus:!border-[#b2677d] focus:!ring-4 focus:!ring-[#f8edf1]"
                   />
                 </label>
                 <label className="!block !text-xs font-medium text-slate-600">
@@ -333,7 +333,7 @@ export default function PaymentSettings({
                     onChange={(event) =>
                       updateAccount("accountHolder", event.target.value)
                     }
-                    className="!mt-2 !w-full !rounded-xl !border-slate-200 !px-3.5 !py-3 !text-sm focus:!border-indigo-400 focus:!ring-4 focus:!ring-indigo-50"
+                    className="!mt-2 !w-full !rounded-xl !border-slate-200 !px-3.5 !py-3 !text-sm focus:!border-[#b2677d] focus:!ring-4 focus:!ring-[#f8edf1]"
                   />
                 </label>
                 <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -363,7 +363,7 @@ export default function PaymentSettings({
                 <QrCode
                   size={21}
                   strokeWidth={1.7}
-                  className="text-indigo-600"
+                  className="text-[#7a0e2f]"
                   aria-hidden="true"
                 />
                 <div>
@@ -407,7 +407,7 @@ export default function PaymentSettings({
                   <label
                     htmlFor={uploadId}
                     aria-disabled={!!busy || changed}
-                    className={`secondary !relative !flex !cursor-pointer !items-center !justify-center !gap-2 !rounded-xl !px-4 !py-2.5 !text-xs focus-within:!ring-4 focus-within:!ring-indigo-100 ${busy || changed ? "pointer-events-none opacity-50" : ""}`}
+                    className={`secondary !relative !flex !cursor-pointer !items-center !justify-center !gap-2 !rounded-xl !px-4 !py-2.5 !text-xs focus-within:!ring-4 focus-within:!ring-[#efdae1] ${busy || changed ? "pointer-events-none opacity-50" : ""}`}
                   >
                     {busy === "qr" ? (
                       <Loader2 size={16} className="animate-spin" />
@@ -458,7 +458,7 @@ export default function PaymentSettings({
           </div>
 
           <aside className="min-w-0 space-y-4">
-            <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-sm xl:sticky xl:top-6">
+            <div className="overflow-hidden rounded-2xl border border-[#ead8de] bg-white shadow-sm xl:sticky xl:top-6">
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <span className="text-xs font-medium text-slate-500">
                   Pratinjau pelanggan
@@ -471,7 +471,7 @@ export default function PaymentSettings({
               </div>
               <div className="px-5 py-5 sm:px-6">
                 <div className="flex items-center gap-3">
-                  <span className="flex size-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                  <span className="flex size-11 items-center justify-center rounded-xl bg-[#f9edf1] text-[#7a0e2f]">
                     <Building2 size={23} strokeWidth={1.6} aria-hidden="true" />
                   </span>
                   <div>
@@ -483,19 +483,19 @@ export default function PaymentSettings({
                     </p>
                   </div>
                 </div>
-                <div className="my-5 rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-4">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-indigo-500">
+                <div className="my-5 rounded-xl border border-[#ead8de] bg-[#fbf5f7] px-4 py-4">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-[#8a2141]">
                     Nomor rekening
                   </span>
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <strong className="min-w-0 break-all text-xl font-bold tracking-wide text-indigo-950 tabular-nums">
+                    <strong className="min-w-0 break-all text-xl font-bold tracking-wide text-[#36101d] tabular-nums">
                       {account.accountNumber || "Belum diatur"}
                     </strong>
                     <button
                       type="button"
                       aria-label="Salin nomor rekening pratinjau"
                       disabled={!account.accountNumber}
-                      className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-indigo-100 bg-white text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-40"
+                      className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[#ead8de] bg-white text-[#7a0e2f] transition hover:bg-[#f9edf1] disabled:opacity-40"
                       onClick={async () => {
                         try {
                           await navigator.clipboard.writeText(
@@ -512,12 +512,12 @@ export default function PaymentSettings({
                       {copied ? <Check size={17} /> : <Copy size={17} />}
                     </button>
                   </div>
-                  <p className="!mb-0 !mt-2 break-words !text-xs text-indigo-700">
+                  <p className="!mb-0 !mt-2 break-words !text-xs text-[#680c2a]">
                     a.n. {account.accountHolder || "Nama pemilik rekening"}
                   </p>
                   {copied && (
                     <span
-                      className="mt-2 block text-[11px] font-medium text-indigo-600"
+                      className="mt-2 block text-[11px] font-medium text-[#7a0e2f]"
                       role="status"
                     >
                       Nomor rekening disalin.

@@ -1,9 +1,9 @@
 .loyalty-use {
   margin-bottom: 20px;
   padding: 16px;
-  border: 1px solid #d8e7f9;
+  border: 1px solid #eddae1;
   border-radius: 16px;
-  background: #f5f9ff;
+  background: #fcf7f9;
 }
 .loyalty-use-heading {
   display: flex;
@@ -17,8 +17,8 @@
   height: 38px;
   flex: none;
   border-radius: 11px;
-  color: #0756c5;
-  background: #e3efff;
+  color: #7a0e2f;
+  background: #f9edf1;
 }
 .loyalty-use-heading h4 {
   margin: 0;
@@ -34,7 +34,7 @@
 }
 .loyalty-use-applied {
   margin: 12px 0 0;
-  color: #0756c5;
+  color: #7a0e2f;
   font-size: 12px;
   font-weight: 700;
 }
@@ -49,9 +49,9 @@
 .loyalty-login-hint {
   margin-bottom: 20px;
   padding: 16px;
-  border: 1px solid #d8e7f9;
+  border: 1px solid #eddae1;
   border-radius: 16px;
-  background: #f5f9ff;
+  background: #fcf7f9;
 }
 .loyalty-login-hint b {
   color: #252b40;
@@ -64,7 +64,7 @@
   line-height: 1.5;
 }
 .loyalty-login-hint a {
-  color: #0756c5;
+  color: #7a0e2f;
   font-size: 12px;
   font-weight: 700;
 }
@@ -72,7 +72,7 @@
 .loyalty-use-actions button {
   border: 0;
   padding: 0;
-  color: #0756c5;
+  color: #7a0e2f;
   background: none;
   font-size: 12px;
   font-weight: 700;
@@ -111,7 +111,7 @@
   font-size: 16px;
 }
 .loyalty-use-input-row input:focus-visible {
-  outline: 2px solid #8eb9ef;
+  outline: 2px solid #d7aab9;
   outline-offset: 1px;
 }
 .loyalty-use-input-row .loyalty-use-apply {
@@ -120,7 +120,7 @@
   padding: 10px 16px;
   border-radius: 10px;
   color: #fff;
-  background: #0756c5;
+  background: #7a0e2f;
   font-size: 12px;
   font-weight: 700;
 }
@@ -140,5 +140,5 @@
   font-size: 11px;
 }
 .loyalty-use-message {
-  color: #0756c5;
+  color: #7a0e2f;
 }

@@ -7,6 +7,7 @@ import { bankQrPath, readBankDetails } from "../../lib/payments/bank-service";
 import { signalPaymentChange } from "../../lib/payments/signals";
 import type { Identity } from "../../lib/firebase/access";
 import { DEFAULT_BRANCH, persistedBranchIds } from "../../lib/branches";
+import { defaultStore } from "../../lib/defaults";
 
 class ReadDatabase {
   values = new Map<string, Record<string, unknown>>();
@@ -155,6 +156,8 @@ test("one dashboard includes both legacy order sets and canonical orders, exclud
   database.values.set(`orders/${other.id}`, other);
   const dashboard = await readStore(admin, "bogor", database.firestore());
   assert.equal(dashboard.branchId, DEFAULT_BRANCH);
+  assert.equal(dashboard.promo.title, "Canonical fallback");
+  assert.equal(dashboard.promo.description, defaultStore.promo.description);
   assert.equal(dashboard.orders.length, 4);
   assert.equal(
     dashboard.orders.some((order) => order.branchId === "buzzwash"),

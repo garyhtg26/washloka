@@ -21,7 +21,7 @@
   margin: 0;
 }
 .overview-chart-heading strong {
-  color: #2924ca;
+  color: #7a0e2f;
   font-size: 18px;
   white-space: nowrap;
 }
@@ -36,25 +36,25 @@
   overflow: visible;
 }
 .overview-line-grid {
-  stroke: #e9ebf3;
+  stroke: #eee8ea;
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 .overview-line-path {
   fill: none;
-  stroke: #4038e8;
+  stroke: #7a0e2f;
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
 .overview-line-area {
-  fill: #615bf0;
+  fill: #7a0e2f;
   opacity: 0.09;
 }
 .overview-line-point {
   fill: #fff;
-  stroke: #4038e8;
+  stroke: #7a0e2f;
   stroke-width: 2.5;
   vector-effect: non-scaling-stroke;
 }
@@ -79,15 +79,15 @@
 }
 .overview-line-labels button:hover,
 .overview-line-labels button.is-selected {
-  background: #eeedff;
-  color: #3831c7;
+  background: #f8edf1;
+  color: #7a0e2f;
 }
 .overview-line-labels button:focus-visible {
-  outline: 2px solid #4038e8;
+  outline: 2px solid #7a0e2f;
   outline-offset: 1px;
 }
 .overview-line-point.is-selected {
-  fill: #4038e8;
+  fill: #7a0e2f;
   stroke: #fff;
   stroke-width: 2;
 }
@@ -99,12 +99,12 @@
 }
 .overview-line-selection b {
   margin-left: 6px;
-  color: #2924ca;
+  color: #7a0e2f;
   font-size: 12px;
 }
 .overview-line-response .overview-line-path,
 .overview-line-response .overview-line-point {
-  stroke: #7770eb;
+  stroke: #a55069;
 }
 .overview-line-response svg {
   height: 95px;
@@ -116,7 +116,7 @@
   display: grid;
   gap: 4px;
   padding: 15px 0;
-  border-bottom: 1px solid #eef0f5;
+  border-bottom: 1px solid #eee8ea;
 }
 .overview-service-time > div span,
 .overview-service-time > div small {
@@ -124,7 +124,7 @@
   font-size: 11px;
 }
 .overview-service-time > div strong {
-  color: #242a40;
+  color: #1f1f1f;
   font-size: 21px;
 }
 .overview-chart-note {

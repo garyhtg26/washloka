@@ -8,10 +8,10 @@
   gap: 9px;
   min-height: 47px;
   padding: 7px 11px 7px 7px;
-  border: 1px solid #e1e9f3;
+  border: 1px solid #ede5e8;
   border-radius: 12px;
   background: #fff;
-  color: #15345f;
+  color: #1f1f1f;
   text-align: left;
   transition:
     border-color 0.18s,
@@ -19,8 +19,8 @@
 }
 .shop-picker-trigger:hover,
 .shop-picker-trigger.is-open {
-  border-color: #a9c6eb;
-  box-shadow: 0 4px 16px #0d3b7110;
+  border-color: #ddbac6;
+  box-shadow: 0 4px 16px #4e091f10;
 }
 .shop-picker-monogram {
   display: grid;
@@ -29,12 +29,29 @@
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  background: #f3f6fc;
+  background: #faf4f6;
 }
 .shop-picker-monogram img {
   width: 24px;
   height: 24px;
   border-radius: 7px;
+  object-fit: contain;
+}
+.shop-picker-monogram-letter {
+  display: none;
+}
+.customer-header .shop-picker-monogram.shop-picker-monogram--dfable {
+  color: #fff;
+  background: #1914cf;
+}
+.customer-header .shop-picker-monogram--dfable img {
+  display: none;
+}
+.customer-header .shop-picker-monogram--dfable .shop-picker-monogram-letter {
+  display: block;
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1;
 }
 .shop-picker-current {
   display: grid;
@@ -42,7 +59,7 @@
   min-width: 61px;
 }
 .shop-picker-current small {
-  color: #8796a9;
+  color: #9b8e92;
   font-size: 9px;
   line-height: 1.2;
   font-weight: 500;
@@ -53,7 +70,7 @@
   font-weight: 750;
 }
 .shop-picker-trigger > svg {
-  color: #91a0b5;
+  color: #988b90;
   transition: transform 0.18s;
 }
 .shop-picker-trigger.is-open > svg {
@@ -67,10 +84,10 @@
   width: 310px;
   max-width: calc(100vw - 24px);
   padding: 16px;
-  border: 1px solid #e5ebf4;
+  border: 1px solid #eee6e9;
   border-radius: 17px;
   background: #fff;
-  box-shadow: 0 16px 50px #0c285423;
+  box-shadow: 0 16px 50px #4e091f23;
 }
 .shop-picker-panel-heading {
   display: flex;
@@ -82,11 +99,11 @@
 .shop-picker-panel-heading > span:first-child {
   font-size: 13px;
   font-weight: 750;
-  color: #15345f;
+  color: #1f1f1f;
 }
 .shop-picker-panel-heading > span:last-child {
   font-size: 10px;
-  color: #8b9aaf;
+  color: #988a90;
 }
 .shop-picker-option {
   display: flex;
@@ -94,10 +111,10 @@
   gap: 10px;
   width: 100%;
   padding: 11px 10px;
-  border: 1px solid #c7dbf6;
+  border: 1px solid #e8cbd5;
   border-radius: 11px;
-  background: #f2f7ff;
-  color: #154a97;
+  background: #faf1f4;
+  color: #7a0e2f;
   text-align: left;
 }
 .shop-picker-logo {
@@ -108,7 +125,7 @@
   padding: 5px;
   border-radius: 7px;
   background: #fff;
-  border: 1px solid #e5eaf5;
+  border: 1px solid #eee7e9;
 }
 .shop-picker-logo img {
   width: 100%;
@@ -124,7 +141,7 @@
   font-weight: 750;
 }
 .shop-picker-option small {
-  color: #7d91ac;
+  color: #94838a;
   font-size: 10px;
 }
 .shop-picker-coming {
@@ -133,8 +150,8 @@
   gap: 11px;
   margin-top: 15px;
   padding: 13px 4px 0;
-  border-top: 1px solid #edf1f6;
-  color: #a9b3c2;
+  border-top: 1px solid #f0e9eb;
+  color: #b6a9ae;
 }
 .shop-picker-coming > span {
   display: grid;
@@ -142,12 +159,12 @@
 }
 .shop-picker-coming b {
   font-size: 11px;
-  color: #8998aa;
+  color: #998a90;
   font-weight: 650;
 }
 .shop-picker-coming small {
   font-size: 10px;
-  color: #a3adbc;
+  color: #aa9da1;
 }
 .sidebar .dashboard-shop-select {
   margin-bottom: 26px;

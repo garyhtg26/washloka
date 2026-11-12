@@ -57,11 +57,20 @@ export function CustomerHeader({
     <>
       <header className="customer-header">
         <Link
-          className="brand eazy-customer-brand"
+          className="brand eazy-customer-brand washloka-lockup"
           href={page("home")}
-          aria-label="Eazywash beranda"
+          aria-label="Washloka beranda"
         >
-          <img src="/eazywash-logo.png" alt="Eazywash" />
+          <img
+            className="washloka-mark"
+            src="/washloka/app-icon-burgundy.svg"
+            alt=""
+          />
+          <img
+            className="washloka-wordmark"
+            src="/washloka/wordmark-burgundy.svg?v=20261112"
+            alt="Washloka"
+          />
         </Link>
         <nav>
           <Link href={page("home")}>Beranda</Link>

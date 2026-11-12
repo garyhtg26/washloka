@@ -139,6 +139,7 @@ export default function DashboardAccount({
         <button
           ref={trigger}
           className={`account-trigger ${open ? "is-open" : ""}`}
+          aria-label={`Akun ${auth.name || name || "Admin"}`}
           aria-expanded={open}
           aria-controls="account-dropdown"
           onClick={() => setOpen(!open)}

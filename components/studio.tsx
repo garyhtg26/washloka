@@ -118,25 +118,47 @@ function estimate(
   const service = services.find((value) => value.id === id);
   return service ? serviceTotal(service, quantity, speed) : 0;
 }
-function Brand() {
+function Brand({ inverse = false }: { inverse?: boolean }) {
   return (
     <a
-      className="brand eazy-customer-brand"
+      className={`brand eazy-customer-brand washloka-lockup${inverse ? "" : " washloka-lockup-light"}`}
       href={DFABLE_HOME}
-      aria-label="Eazywash beranda"
+      aria-label="Washloka beranda"
     >
-      <img src="/eazywash-logo.png" alt="Eazywash" />
+      <img
+        className="washloka-mark"
+        src="/washloka/app-icon-burgundy.svg"
+        alt=""
+      />
+      <img
+        className="washloka-wordmark"
+        src={
+          inverse
+            ? "/washloka/wordmark-white.svg"
+            : "/washloka/wordmark-burgundy.svg"
+        }
+        alt="Washloka"
+      />
     </a>
   );
 }
 function DashboardBrand({ compact = false }: { compact?: boolean }) {
   return (
     <a
-      className={`dashboard-platform-brand${compact ? " dashboard-platform-brand-compact" : ""}`}
+      className={`dashboard-platform-brand washloka-lockup washloka-lockup-light${compact ? " dashboard-platform-brand-compact" : ""}`}
       href="/"
-      aria-label="Eazywash beranda"
+      aria-label="Washloka beranda"
     >
-      <img src="/eazywash-logo.png" alt="Eazywash" />
+      <img
+        className="washloka-mark"
+        src="/washloka/app-icon-burgundy.svg"
+        alt=""
+      />
+      <img
+        className="washloka-wordmark"
+        src="/washloka/wordmark-burgundy.svg"
+        alt="Washloka"
+      />
     </a>
   );
 }
@@ -474,7 +496,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
       <main className="loading">
         {dashboard ? <DashboardBrand /> : <Brand />}
         <p role="status" aria-live="polite">
-          {error || "Menyiapkan Eazywash…"}
+          {error || "Menyiapkan Washloka…"}
         </p>
         {error ? (
           <button className="primary" onClick={load}>
@@ -572,7 +594,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
             <header className="admin-top">
               <DashboardBrand compact />
               <span>
-                Eazywash{" "}
+                Washloka{" "}
                 <span className="dashboard-client-crumb">
                   / D’Fable Laundry
                 </span>{" "}
@@ -1016,7 +1038,9 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
               <CustomerAccount onLogin={() => setModal("login")} />
             </div>
           </header>
-          <main className="customer-main">
+          <main
+            className={`customer-main${view === "home" ? " customer-main-home" : ""}`}
+          >
             {view === "home" && (
               <CustomerHome
                 store={store}
@@ -1145,7 +1169,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                               <span className="service-item-copy">
                                 <b>
                                   {category === "member"
-                                    ? "Membership Eazywash"
+                                    ? "Membership Washloka"
                                     : item.name}
                                 </b>
                                 {item.minimumQuantity &&
@@ -1199,7 +1223,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                     <input
                       aria-label="Nomor pesanan atau kode tracking"
                       required
-                      placeholder="Nomor pesanan atau kode tracking"
+                      placeholder="Nomor pesanan / kode"
                       value={track}
                       onChange={(e) => setTrack(e.target.value)}
                     />
@@ -1304,7 +1328,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
           </main>
           <footer>
             <Brand />
-            <span>© {new Date().getFullYear()} Eazywash</span>
+            <span>© {new Date().getFullYear()} Washloka. All rights reserved.</span>
           </footer>
           <nav className="mobile-nav">
             {[
@@ -1341,7 +1365,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
         </>
       )}
       <dialog
-        aria-label="Form Eazywash"
+        aria-label="Form Washloka"
         ref={dialog}
         onCancel={() => setModal("")}
         onClick={(e) => {
@@ -1735,8 +1759,15 @@ function OrderForm({
       </div>
       {!pos && (
         <div className="order-store-summary">
-          <span className="order-store-logo">
-            <img src="/favicon.svg" alt="" />
+          <span
+            className={`order-store-logo${branchName === branches.dfablelaundry ? " order-store-logo--dfable" : ""}`}
+            aria-hidden="true"
+          >
+            {branchName === branches.dfablelaundry ? (
+              "D"
+            ) : (
+              <StoreIcon size={21} aria-hidden="true" />
+            )}
           </span>
           <span>
             <small>Toko pilihan</small>
@@ -2369,10 +2400,8 @@ function PromoEditor({
         const f = new FormData(e.currentTarget);
         try {
           await save({
-            title: f.get("title"),
-            description: f.get("description"),
-            code: f.get("code"),
-            button: f.get("button"),
+            ...store.promo,
+            button: store.promo.button || "Jemput sekarang",
             active: f.get("active") === "on",
           });
           setMsg("Banner berhasil diperbarui di beranda pelanggan.");
@@ -2384,38 +2413,9 @@ function PromoEditor({
       }}
     >
       <h3>Banner beranda</h3>
-      <label>
-        Judul banner
-        <input
-          required
-          name="title"
-          minLength={3}
-          maxLength={90}
-          defaultValue={store.promo.title}
-        />
-      </label>
-      <label>
-        Deskripsi
-        <textarea
-          name="description"
-          maxLength={220}
-          defaultValue={store.promo.description}
-        />
-      </label>
-      <label>
-        Teks tombol
-        <input
-          name="button"
-          required
-          maxLength={35}
-          defaultValue={store.promo.button || "Jemput sekarang"}
-        />
-      </label>
-      <label>
-        Label kampanye
-        <input name="code" maxLength={24} defaultValue={store.promo.code} />
-        <small>Label saja; tidak otomatis memberikan diskon.</small>
-      </label>
+      <p className="muted">
+        Banner menampilkan tagline Washloka. Gambar dapat diganti di bawah.
+      </p>
       <label className="checkbox">
         <input
           name="active"

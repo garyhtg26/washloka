@@ -155,9 +155,9 @@ export default function CustomerProfile() {
         <Link
           className="brand eazy-customer-brand"
           href={DFABLE_HOME}
-          aria-label="Eazywash beranda"
+          aria-label="Washloka beranda"
         >
-          <img src="/eazywash-logo.png" alt="Eazywash" />
+          <img src="/washloka/wordmark-burgundy.svg" alt="Washloka" />
         </Link>
         <p role="status">Menyiapkan profil…</p>
         <div
@@ -173,7 +173,7 @@ export default function CustomerProfile() {
     return (
       <main className="profile-gate">
         <Link className="profile-brand" href={DFABLE_HOME}>
-          <img src="/eazywash-logo.png" alt="Eazywash" />
+          <img src="/washloka/wordmark-burgundy.svg" alt="Washloka" />
         </Link>
         <span className="profile-gate-icon">
           <UserRound size={27} />
@@ -390,6 +390,17 @@ export default function CustomerProfile() {
           </div>
         </div>
       </div>
+      <footer>
+        <Link
+          className="brand eazy-customer-brand washloka-lockup"
+          href={DFABLE_HOME}
+          aria-label="Washloka beranda"
+        >
+          <img className="washloka-mark" src="/washloka/app-icon-burgundy.svg" alt="" />
+          <img className="washloka-wordmark" src="/washloka/wordmark-burgundy.svg" alt="Washloka" />
+        </Link>
+        <span>© {new Date().getFullYear()} Washloka. All rights reserved.</span>
+      </footer>
       <nav className="mobile-nav" aria-label="Navigasi utama">
         <Link href={`${DFABLE_HOME}?view=home`}>
           <LayoutDashboard size={20} />

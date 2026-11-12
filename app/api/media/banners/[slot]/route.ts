@@ -1,6 +1,6 @@
 import {
+  DEFAULT_BRANCH,
   requestBranch,
-  branchMediaPath,
   branchSettingsId,
 } from "@/lib/branches";
 import { NextRequest, NextResponse } from "next/server";
@@ -13,7 +13,11 @@ import {
 } from "@/lib/firebase/access";
 import { db } from "@/lib/firebase/admin";
 import { uploadPhoto, downloadPhoto } from "@/lib/storage/photos";
-import { mediaSlotSchema } from "@/lib/site-content";
+import {
+  bannerStoragePath,
+  bannerUploadTarget,
+  mediaSlotSchema,
+} from "@/lib/site-content";
 import { readJpeg } from "@/lib/media-validation";
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -23,12 +27,20 @@ export async function GET(req: NextRequest, context: Context) {
   try {
     const slot = mediaSlotSchema.safeParse((await context.params).slot);
     if (!slot.success) throw new ApiError(404, "Gambar tidak ditemukan.");
-    const bytes = await downloadPhoto(
-      branchMediaPath(
-        req.nextUrl.searchParams.get("branch") ?? requestBranch(req.url),
+    const params = req.nextUrl.searchParams;
+    if (params.getAll("branch").length > 1 || params.getAll("theme").length > 1)
+      throw new ApiError(404, "Gambar tidak ditemukan.");
+    let path: string;
+    try {
+      path = bannerStoragePath(
+        params.get("branch") ?? DEFAULT_BRANCH,
         slot.data,
-      ),
-    );
+        params.get("theme"),
+      );
+    } catch {
+      throw new ApiError(404, "Gambar tidak ditemukan.");
+    }
+    const bytes = await downloadPhoto(path);
     return new NextResponse(bytes, {
       headers: {
         "Content-Type": "image/jpeg",
@@ -47,19 +59,30 @@ export async function POST(req: NextRequest, context: Context) {
     requireManager(user);
     const slot = mediaSlotSchema.safeParse((await context.params).slot);
     if (!slot.success) throw new ApiError(400, "Slot gambar tidak valid.");
+    if (
+      req.nextUrl.searchParams.has("theme") ||
+      req.nextUrl.searchParams.getAll("branch").length > 1
+    )
+      throw new ApiError(400, "Pengaturan gambar tidak valid.");
+    let branch: ReturnType<typeof requestBranch>;
+    try {
+      branch = requestBranch(req.url);
+    } catch {
+      throw new ApiError(400, "Toko tidak valid.");
+    }
     const bytes = await readJpeg(req);
-    await uploadPhoto(
-      branchMediaPath(requestBranch(req.url), slot.data),
-      bytes,
-    );
-    const url = `/api/media/banners/${slot.data}?v=${randomUUID()}&branch=${requestBranch(req.url)}`;
+    const target = bannerUploadTarget(branch, slot.data, randomUUID());
+    await uploadPhoto(target.path, bytes);
     await db()
-      .doc(`settings/${branchSettingsId(requestBranch(req.url))}`)
+      .doc(`settings/${branchSettingsId(branch)}`)
       .set(
-        { content: { images: { [slot.data]: url } }, updatedBy: user!.uid },
+        {
+          content: { images: { [target.key]: target.url } },
+          updatedBy: user!.uid,
+        },
         { merge: true },
       );
-    return NextResponse.json({ url });
+    return NextResponse.json({ url: target.url });
   } catch (e) {
     return fail(e);
   }

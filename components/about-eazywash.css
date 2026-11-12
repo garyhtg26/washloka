@@ -1,7 +1,7 @@
 .about-eazywash {
   min-height: 100svh;
   background: #fff;
-  color: #152a4a;
+  color: #1f1f1f;
 }
 .about-ew-content {
   width: min(1200px, calc(100% - 80px));
@@ -14,7 +14,7 @@
   min-height: 430px;
   border-radius: 24px;
   overflow: hidden;
-  background: #082963;
+  background: #5a0a24;
 }
 .about-ew-hero-copy {
   display: flex;
@@ -23,10 +23,10 @@
   justify-content: center;
   padding: 46px;
   color: #fff;
-  background: linear-gradient(135deg, #09265d, #0758c6);
+  background: linear-gradient(135deg, #4e091f, #7a0e2f);
 }
 .about-ew-eyebrow {
-  color: #ffe29b;
+  color: #f6dce4;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.13em;
@@ -41,7 +41,7 @@
 .about-ew-hero-copy > p {
   max-width: 370px;
   margin: 0;
-  color: #d7e6fb;
+  color: #f2dce3;
   font-size: 14px;
   line-height: 1.8;
 }
@@ -52,8 +52,8 @@
   margin-top: 26px;
   padding: 13px 18px;
   border-radius: 10px;
-  color: #092654;
-  background: #ffc02a;
+  color: #7a0e2f;
+  background: #ffffff;
   font-size: 13px;
   font-weight: 750;
   transition:
@@ -62,7 +62,7 @@
 }
 .about-ew-primary:hover {
   transform: translateY(-2px);
-  background: #ffd05e;
+  background: #f9edf1;
 }
 .about-ew-hero-photo {
   position: relative;
@@ -82,7 +82,7 @@
   border-radius: 10px;
   padding: 10px 14px;
   background: #fffffff2;
-  color: #23426b;
+  color: #3e3337;
   font-size: 12px;
   font-weight: 650;
 }
@@ -95,7 +95,7 @@
 }
 .about-ew-section-label {
   display: block;
-  color: #376bad;
+  color: #7a0e2f;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.13em;
@@ -103,13 +103,13 @@
 .about-ew-story-copy h2,
 .about-ew-section-heading h2 {
   margin: 12px 0 18px;
-  color: #10294f;
+  color: #1f1f1f;
   font-size: clamp(29px, 3.5vw, 41px);
   line-height: 1.18;
   letter-spacing: -0.045em;
 }
 .about-ew-story-copy > p {
-  color: #77869b;
+  color: #81777b;
   font-size: 14px;
   line-height: 1.8;
 }
@@ -130,8 +130,8 @@
   width: 43px;
   height: 43px;
   border-radius: 12px;
-  color: #0757c4;
-  background: #edf5ff;
+  color: #7a0e2f;
+  background: #f9edf1;
 }
 .about-ew-points p {
   display: grid;
@@ -139,11 +139,11 @@
   margin: 0;
 }
 .about-ew-points b {
-  color: #274265;
+  color: #30292b;
   font-size: 13px;
 }
 .about-ew-points small {
-  color: #8290a3;
+  color: #8e8186;
   font-size: 12px;
   line-height: 1.6;
 }
@@ -163,7 +163,7 @@
 .about-ew-section-heading > p {
   max-width: 350px;
   margin: 0 0 3px;
-  color: #7b899d;
+  color: #81777b;
   font-size: 13px;
   line-height: 1.75;
 }
@@ -171,9 +171,9 @@
   display: grid;
   grid-template-columns: 0.65fr 1.35fr;
   overflow: hidden;
-  border: 1px solid #e5ebf4;
+  border: 1px solid #eee6e9;
   border-radius: 20px;
-  background: #fbfcff;
+  background: #fcfafb;
 }
 .about-ew-partner-brand {
   display: flex;
@@ -183,8 +183,8 @@
   gap: 26px;
   min-height: 260px;
   padding: 35px;
-  border-right: 1px solid #e5ebf4;
-  background: #f1f6ff;
+  border-right: 1px solid #eee6e9;
+  background: #fff;
 }
 .about-ew-partner-brand img {
   width: min(240px, 100%);
@@ -194,27 +194,30 @@
   display: flex;
   gap: 6px;
   align-items: center;
-  color: #6683aa;
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: #7a0e2f;
+  background: #faf4f6;
   font-size: 12px;
 }
 .about-ew-partner-copy {
   padding: 35px 40px;
 }
 .about-ew-partner-category {
-  color: #7090b8;
+  color: #8d6f79;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.13em;
 }
 .about-ew-partner-copy h3 {
   margin: 8px 0 13px;
-  color: #17335c;
+  color: #1f1f1f;
   font-size: 25px;
 }
 .about-ew-partner-copy > p {
   max-width: 580px;
   margin: 0;
-  color: #718298;
+  color: #81777b;
   font-size: 14px;
   line-height: 1.8;
 }
@@ -228,16 +231,16 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #586f8e;
+  color: #71666a;
   font-size: 12px;
   font-weight: 650;
 }
 .about-ew-partner-actions .about-ew-partner-link {
-  color: #0757c4;
+  color: #7a0e2f;
   font-weight: 750;
 }
 .about-ew-partner-actions a:hover {
-  color: #07449c;
+  color: #590922;
 }
 @media (max-width: 900px) {
   .about-ew-content {
@@ -298,7 +301,7 @@
     gap: 18px;
     padding: 28px;
     border-right: 0;
-    border-bottom: 1px solid #e5ebf4;
+    border-bottom: 1px solid #eee6e9;
   }
   .about-ew-partner-brand img {
     width: 200px;

@@ -1,4 +1,5 @@
 import { catalogServices } from "./defaults";
+import { brandCopy } from "./brand-copy";
 import type { Service, ServiceSpeed } from "./types";
 
 export const serviceSpeeds: Array<{
@@ -69,6 +70,8 @@ export function normalizeServices(value: unknown): Service[] {
     return {
       ...service,
       ...stored,
+      name: brandCopy(stored?.name, service.name),
+      description: brandCopy(stored?.description, service.description),
       ...(service.rates
         ? { rates: { ...service.rates, ...stored?.rates } }
         : {}),

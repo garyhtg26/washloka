@@ -1,4 +1,4 @@
-/** Canonical paths for the unified Eazywash customer app. */
+/** Canonical paths for the unified Washloka customer app. */
 export const DFABLE_HOME = "/";
 export const DFABLE_PROFILE = "/profil";
 export const DFABLE_ABOUT = "/tentang";

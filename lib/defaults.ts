@@ -111,8 +111,9 @@ const additional: Service[] = [
 
 const member: Service = {
   id: "member",
-  name: "Membership Eazywash",
-  description: "Deposit mulai Rp100.000; diskon layanan 20% saat saldo tersedia.",
+  name: "Membership Washloka",
+  description:
+    "Deposit mulai Rp100.000; diskon layanan 20% saat saldo tersedia.",
   category: "member",
   price: 100000,
   unit: "deposit",

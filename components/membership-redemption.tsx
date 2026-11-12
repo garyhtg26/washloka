@@ -84,7 +84,7 @@ export default function MembershipRedemption({
     }
   }
   return (
-    <section className="mb-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm">
+    <section className="mb-4 rounded-2xl border border-[#ead8de] bg-[#f9f1f4] p-4 text-sm">
       <div className="flex items-center gap-2">
         <CreditCard size={19} />
         <b>Membership · diskon layanan 20%</b>

@@ -138,7 +138,9 @@ User management lists Firebase Auth accounts, including users without orders. Wh
 
 ### Workspace toko
 
-Pilihan toko sekarang mewakili partner laundry, bukan wilayah. Partner aktif adalah D’Fable dengan ID publik `dfablelaundry`. Eazywash menjadi identitas aplikasi, sedangkan logo D’Fable menandai toko yang melayani pesanan. Lokasi pelanggan hanya mengisi titik penjemputan dan tidak mengganti toko.
+Pilihan toko sekarang mewakili partner laundry, bukan wilayah. Partner aktif adalah D’Fable dengan ID publik `dfablelaundry`. Washloka menjadi identitas aplikasi. Lokasi pelanggan hanya mengisi titik penjemputan dan tidak mengganti toko.
+
+Gambar situs yang diunggah ulang melalui dashboard disimpan terpisah di namespace Washloka. Gambar lama tetap tersimpan dan URL lamanya tetap dapat diakses; sampai gambar baru diunggah, situs menggunakan gambar bawaan Washloka.
 
 Pesanan baru memakai ID `dfablelaundry`. ID lama `cinere` dan `bogor` tetap diterima sebagai alias toko yang sama, sehingga riwayat pesanan, pembayaran, kode member, dan gambar lama tetap dapat dibuka. Dashboard menggabungkan ketiga ID tersebut. Pengaturan utama tetap disimpan di `settings/cinere` untuk kompatibilitas, dengan fallback ke dokumen canonical dan alias lama; tidak ada penghapusan atau pemindahan data otomatis. ID toko lain yang belum terdaftar tetap ditolak.
 

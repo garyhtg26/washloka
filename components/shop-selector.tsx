@@ -6,6 +6,7 @@ import type { BranchId } from "@/lib/branches";
 import "./shop-selector.css";
 
 export default function ShopSelector({
+  branch,
   disabled = false,
 }: {
   branch: BranchId;
@@ -44,8 +45,18 @@ export default function ShopSelector({
         aria-expanded={open}
         aria-label="Pilih toko. D’Fable Laundry, toko terpilih"
       >
-        <span className="shop-picker-monogram" aria-hidden="true">
-          <img src="/favicon.svg" alt="" />
+        <span
+          className={`shop-picker-monogram${branch === "dfablelaundry" ? " shop-picker-monogram--dfable" : ""}`}
+          aria-hidden="true"
+        >
+          {branch === "dfablelaundry" ? (
+            <>
+              <img src="/dfable-icon.png" alt="" />
+              <span className="shop-picker-monogram-letter">D</span>
+            </>
+          ) : (
+            <Store size={18} />
+          )}
         </span>
         <span className="shop-picker-current">
           <small>Toko pilihan</small>
@@ -57,7 +68,7 @@ export default function ShopSelector({
         <section className="shop-picker-panel" aria-label="Pilih toko laundry">
           <div className="shop-picker-panel-heading">
             <span>Pilih toko</span>
-            <span>Partner Eazywash</span>
+            <span>Partner Washloka</span>
           </div>
           <button
             className="shop-picker-option"
@@ -69,7 +80,7 @@ export default function ShopSelector({
             aria-label="D’Fable Laundry, toko terpilih"
           >
             <span className="shop-picker-logo">
-              <img src="/dfable-logo.png" alt="D’Fable Laundry" />
+              <img src="/dfable-logo-compact.webp" alt="" />
             </span>
             <span>
               <b>D’Fable Laundry</b>
@@ -81,7 +92,7 @@ export default function ShopSelector({
             <Store size={18} />
             <span>
               <b>Partner lainnya</b>
-              <small>Segera hadir di Eazywash</small>
+              <small>Segera hadir di Washloka</small>
             </span>
           </div>
         </section>

@@ -15,8 +15,8 @@
   border-radius: 50%;
   background: radial-gradient(
     ellipse,
-    #e2e8ff 0%,
-    #f5f7ff 55%,
+    #f0dfe5 0%,
+    #fcf8f9 55%,
     transparent 75%
   );
 }
@@ -33,7 +33,7 @@
   border: 1px solid #e9ebf1;
   border-radius: 19px;
   background: #fff;
-  box-shadow: 0 18px 45px #20275c2b;
+  box-shadow: 0 18px 45px #4e091f2b;
   text-align: left;
   transform-origin: 50% 90%;
   transition:
@@ -54,7 +54,7 @@
 }
 .story-photo-0:hover {
   transform: translateX(-50%) rotate(0deg) translateY(-8px);
-  box-shadow: 0 26px 55px #20275c38;
+  box-shadow: 0 26px 55px #4e091f38;
 }
 .story-photo-1:hover {
   transform: translateX(-88%) rotate(-15deg) translateY(-8px) scale(0.94);
@@ -86,7 +86,7 @@
   font-weight: 650;
 }
 .story-photo-caption svg {
-  color: #302bd7;
+  color: #7a0e2f;
   flex-shrink: 0;
 }
 .story-photo-hint {

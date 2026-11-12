@@ -392,10 +392,10 @@ export default function MidtransPayment({
   return (
     <section
       aria-label="Pembayaran QRIS"
-      className="overflow-hidden rounded-2xl border border-indigo-100 bg-white"
+      className="overflow-hidden rounded-2xl border border-[#ead8de] bg-white"
     >
-      <div className="flex items-center gap-3 border-b border-indigo-100 bg-indigo-50/60 px-4 py-3.5">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-600">
+      <div className="flex items-center gap-3 border-b border-[#ead8de] bg-[#fbf5f7] px-4 py-3.5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#7a0e2f]">
           <QrCode size={21} strokeWidth={1.7} />
         </span>
         <div className="min-w-0 flex-1">
@@ -457,7 +457,7 @@ export default function MidtransPayment({
                   >
                     <Loader2
                       size={25}
-                      className="animate-spin text-indigo-600"
+                      className="animate-spin text-[#7a0e2f]"
                     />
                     <b className="text-sm">Menyiapkan QR pembayaran</b>
                     <p className="!mb-0 text-xs text-slate-500">
@@ -518,7 +518,7 @@ export default function MidtransPayment({
                           ) : (
                             <Loader2
                               size={28}
-                              className="animate-spin text-indigo-500"
+                              className="animate-spin text-[#8a2141]"
                               aria-label="Memuat QRIS"
                             />
                           )}
@@ -560,7 +560,7 @@ export default function MidtransPayment({
                       ) : (
                         <>
                           Berlaku selama{" "}
-                          <b className="tabular-nums text-indigo-700">
+                          <b className="tabular-nums text-[#680c2a]">
                             {expiresIn || "—"}
                           </b>
                         </>
@@ -569,10 +569,10 @@ export default function MidtransPayment({
                   </>
                 )}
                 <div
-                  className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-indigo-50 px-3 py-2.5 text-[11px] text-indigo-700"
+                  className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-[11px] text-amber-900"
                   role="status"
                 >
-                  <span className="size-1.5 rounded-full bg-indigo-500" />{" "}
+                  <span className="size-1.5 rounded-full bg-amber-600" />{" "}
                   Menunggu konfirmasi pembayaran
                 </div>
                 {auth.scope === "admin" && (

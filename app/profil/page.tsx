@@ -3,7 +3,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import CustomerProfile from "@/components/profile-customer";
 
 export const metadata: Metadata = {
-  title: "Profil Saya — Eazywash",
+  title: "Profil Saya — Washloka",
 };
 
 export default function ProfilePage() {

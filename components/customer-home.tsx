@@ -1,24 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   WashingMachine,
   Shirt,
   Wind,
   Layers,
-  Grid2X2,
   Plus,
   Package,
   Truck,
   Clock,
   Search,
-  User,
-  Check,
+  MapPin,
+  ArrowRight,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { money, type Store } from "@/lib/types";
+import { branches, DEFAULT_BRANCH } from "@/lib/branches";
+import { defaultImages, siteContent, siteImage } from "@/lib/site-content";
 import "./customer-home.css";
-import { siteContent, siteImage } from "@/lib/site-content";
 
 type Props = {
   store: Store;
@@ -29,13 +32,18 @@ type Props = {
   onAccount: () => void;
   onServices: () => void;
 };
+
 const categories = [
-  { id: "all", label: "Semua", icon: Grid2X2 },
-  { id: "wash", label: "Cuci kering", icon: WashingMachine },
+  { id: "wash", label: "Cuci & lipat", icon: WashingMachine },
+  { id: "complete", label: "Cuci & setrika", icon: Shirt },
   { id: "iron", label: "Setrika", icon: Wind },
-  { id: "complete", label: "Lengkap", icon: Shirt },
   { id: "member", label: "Membership", icon: Layers },
 ];
+
+type ImageSlot = "wash" | "iron" | "complete";
+function serviceImageSlot(id: string): ImageSlot {
+  return id === "wash" || id === "iron" || id === "complete" ? id : "complete";
+}
 
 export default function CustomerHome({
   store,
@@ -43,101 +51,286 @@ export default function CustomerHome({
   onOrder,
   onMember,
   onTrack,
-  onAccount,
   onServices,
 }: Props) {
   const content = siteContent(store.content);
   const [category, setCategory] = useState("all");
+  const [query, setQuery] = useState("");
   const [code, setCode] = useState("");
-  const wash = store.services.find((s) => s.id === "wash")!;
+  const [slideIndex, setSlideIndex] = useState(0);
+  const carousel = useRef<HTMLDivElement>(null);
+  const term = query.trim().toLocaleLowerCase("id-ID");
   const services = store.services
-    .filter((service) => service.category === "daily")
-    .sort(
-      (a, b) =>
-        ["wash", "complete", "iron"].indexOf(a.id) -
-        ["wash", "complete", "iron"].indexOf(b.id),
+    .filter((service) => service.category !== "member")
+    .filter((service) => term || service.category === "daily")
+    .filter((service) => category === "all" || service.id === category)
+    .filter(
+      (service) =>
+        !term ||
+        `${service.name} ${service.description}`
+          .toLocaleLowerCase("id-ID")
+          .includes(term),
     )
-    .filter((service) => category === "all" || service.id === category);
+    .sort((a, b) => {
+      const order = ["wash", "complete", "iron"];
+      const first = order.indexOf(a.id);
+      const second = order.indexOf(b.id);
+      return (first < 0 ? 100 : first) - (second < 0 ? 100 : second);
+    });
+  const showMembership =
+    content.member.active &&
+    (category === "member" ||
+      (category === "all" &&
+        !!term &&
+        `${content.member.title} membership deposit`
+          .toLocaleLowerCase("id-ID")
+          .includes(term)));
   const promoImage = siteImage(content, "promo");
   const peopleImage = siteImage(content, "people");
   const memberImage = siteImage(content, "member");
+  const slides = [
+    ...(store.promo.active
+      ? [
+          {
+            id: "promo",
+            image: promoImage,
+          },
+        ]
+      : []),
+    ...(content.people.active
+      ? [
+          {
+            id: "people",
+            image: peopleImage,
+          },
+        ]
+      : []),
+  ];
+  const currentSlide = Math.min(slideIndex, Math.max(0, slides.length - 1));
+
+  useEffect(() => {
+    setSlideIndex(0);
+    carousel.current?.scrollTo({ left: 0, behavior: "auto" });
+  }, [store.promo.active, content.people.active]);
+
+  function showSlide(index: number) {
+    const viewport = carousel.current;
+    if (!viewport || slides.length < 2) return;
+    const next = (index + slides.length) % slides.length;
+    const reducedMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    viewport.scrollTo({
+      left: viewport.clientWidth * next,
+      behavior: reducedMotion ? "auto" : "smooth",
+    });
+    setSlideIndex(next);
+  }
 
   return (
     <div className="customer-experience">
-      <div className="app-welcome">
-        <div>
-          <h1>{name ? `Halo, ${name}` : "Pesan laundry"}</h1>
-        </div>
-        <button
-          className="welcome-account"
-          onClick={onAccount}
-          aria-label="Buka profil"
+      <h1 className="home-heading">{name ? `Halo, ${name}` : "Washloka"}</h1>
+
+      {slides.length > 0 && (
+        <section
+          className="campaign-slider"
+          aria-label="Banner Washloka"
+          aria-roledescription="carousel"
+          onKeyDown={(event) => {
+            if (slides.length < 2) return;
+            if (event.key === "ArrowRight") {
+              event.preventDefault();
+              const next = (currentSlide + 1) % slides.length;
+              event.currentTarget
+                .querySelectorAll<HTMLButtonElement>(".campaign-dots button")
+                [next]?.focus();
+              showSlide(next);
+            }
+            if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              const previous =
+                (currentSlide - 1 + slides.length) % slides.length;
+              event.currentTarget
+                .querySelectorAll<HTMLButtonElement>(".campaign-dots button")
+                [previous]?.focus();
+              showSlide(previous);
+            }
+          }}
         >
-          <User size={23} />
-        </button>
-      </div>
+          <div
+            className="campaign-viewport"
+            ref={carousel}
+            onScroll={(event) => {
+              const viewport = event.currentTarget;
+              if (viewport.clientWidth) {
+                setSlideIndex(
+                  Math.max(
+                    0,
+                    Math.min(
+                      slides.length - 1,
+                      Math.round(viewport.scrollLeft / viewport.clientWidth),
+                    ),
+                  ),
+                );
+              }
+            }}
+          >
+            {slides.map((slide, index) => (
+              <div
+                className="campaign-slide-frame"
+                role="group"
+                aria-roledescription="slide"
+                aria-label={`${index + 1} dari ${slides.length}`}
+                aria-hidden={index !== currentSlide}
+                inert={index !== currentSlide}
+                key={slide.id}
+              >
+                <div className={`campaign-slide campaign-slide-${slide.id}`}>
+                  {slide.id === "promo" && (
+                    <div className="campaign-message">
+                      <span className="campaign-headline">
+                        Clean at Your
+                        <br />
+                        Fingertips.
+                      </span>
+                      <button
+                        type="button"
+                        className="campaign-order"
+                        onClick={() => onOrder("wash")}
+                        tabIndex={index === currentSlide ? 0 : -1}
+                      >
+                        Pesan sekarang{" "}
+                        <ArrowRight size={17} aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
+                  {slide.id === "people" && (
+                    <div className="campaign-message campaign-coming-soon">
+                      <span className="campaign-headline">
+                        House cleaning
+                        <br />
+                        datang ke rumah
+                      </span>
+                      <span className="campaign-coming-label">Coming soon</span>
+                    </div>
+                  )}
+                  <picture>
+                    {slide.id === "promo" &&
+                      slide.image === defaultImages.promo && (
+                        <source
+                          media="(min-width: 961px)"
+                          srcSet="/washloka/hero-washer-wide.webp"
+                          type="image/webp"
+                        />
+                      )}
+                    {slide.id === "people" &&
+                      slide.image === defaultImages.people && (
+                        <source
+                          media="(min-width: 961px)"
+                          srcSet="/washloka/home-care-wide.webp"
+                          type="image/webp"
+                        />
+                      )}
+                    <Image
+                      width={1536}
+                      height={1024}
+                      sizes="(max-width: 1440px) 100vw, 1296px"
+                      src={
+                        slide.id === "promo" &&
+                        slide.image === defaultImages.promo
+                          ? "/washloka/hero-washer-mobile.webp"
+                          : slide.id === "people" &&
+                              slide.image === defaultImages.people
+                            ? "/washloka/home-care-mobile.webp"
+                            : slide.image
+                      }
+                      unoptimized
+                      fetchPriority={index === 0 ? "high" : "auto"}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      alt=""
+                      className="campaign-photo"
+                    />
+                  </picture>
+                </div>
+              </div>
+            ))}
+          </div>
+          {slides.length > 1 && (
+            <div
+              className={`campaign-controls campaign-controls-${slides[currentSlide].id}`}
+              aria-label="Navigasi banner"
+            >
+              <button
+                type="button"
+                onClick={() => showSlide(currentSlide - 1)}
+                aria-label="Banner sebelumnya"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <div className="campaign-dots">
+                {slides.map((slide, index) => (
+                  <button
+                    type="button"
+                    key={slide.id}
+                    className={currentSlide === index ? "active" : ""}
+                    aria-label={`Lihat banner ${index + 1}`}
+                    aria-current={currentSlide === index ? "true" : undefined}
+                    onClick={() => showSlide(index)}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => showSlide(currentSlide + 1)}
+                aria-label="Banner berikutnya"
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          )}
+          <svg
+            className="campaign-wave"
+            viewBox="0 0 1440 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d="M0 35C360 70 1080 70 1440 35V100H0Z" />
+          </svg>
+        </section>
+      )}
 
       <section
-        className={`campaign-grid ${!store.promo.active || !content.people.active ? "no-campaign" : ""}`}
-        aria-label="Pilihan layanan Eazywash"
+        className={`browse-laundry${slides.length === 0 ? " no-campaign" : ""}`}
+        aria-label="Pilih layanan"
       >
-        {store.promo.active && (
-          <article className="campaign-card" data-scroll-reveal>
-            <Image
-              width={1536}
-              height={1024}
-              sizes="(max-width: 520px) 100vw, (max-width: 900px) 50vw, 700px"
-              src={promoImage}
-              unoptimized={!promoImage.startsWith("/api/")}
-              fetchPriority="high"
-              loading="eager"
-              alt="Mesin cuci dan perlengkapan laundry"
-              className="campaign-photo"
+        <div className="home-discovery" data-scroll-reveal>
+          <div className="home-discovery-store">
+            <MapPin size={17} aria-hidden="true" />
+            <span>{branches[store.branchId || DEFAULT_BRANCH]}</span>
+          </div>
+          <label className="home-discovery-search">
+            <Search size={19} aria-hidden="true" />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setCategory("all");
+              }}
+              placeholder="Cari layanan"
+              aria-label="Cari layanan"
             />
-            <div className="campaign-copy">
-              <span className="campaign-kicker">PROMO PILIHAN</span>
-              <h2>{store.promo.title}</h2>
-              <p className="campaign-price">
-                <span>{store.promo.description}</span>
-                <strong>{money(wash.price)}</strong>
-              </p>
-              <button onClick={() => onOrder("wash")}>
-                {store.promo.button || "Jemput sekarang"} <Plus size={17} />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Hapus pencarian"
+              >
+                <X size={16} />
               </button>
-              <span className="campaign-code">
-                {store.promo.code === "HELLODFABLE"
-                  ? "EAZYWASH"
-                  : store.promo.code}
-              </span>
-            </div>
-          </article>
-        )}
-        {content.people.active && (
-          <article className="people-feature" data-scroll-reveal>
-            <Image
-              width={1536}
-              height={1024}
-              sizes="(max-width: 520px) 100vw, (max-width: 900px) 50vw, 700px"
-              src={peopleImage}
-              unoptimized={!peopleImage.startsWith("/api/")}
-              loading={store.promo.active ? "lazy" : "eager"}
-              fetchPriority={store.promo.active ? "auto" : "high"}
-              alt="Aktivitas mencuci di tempat laundry"
-            />
-            <div className="people-copy">
-              <h2>{content.people.title}</h2>
-              <button onClick={() => onOrder()}>
-                <Truck size={18} /> {content.people.button}
-              </button>
-            </div>
-          </article>
-        )}
-      </section>
-
-      <section className="browse-laundry" aria-label="Pilih layanan">
-        <div className="browse-heading" data-scroll-reveal>
-          <h2>Layanan</h2>
-          <button onClick={onServices}>Daftar harga</button>
+            )}
+          </label>
         </div>
         <div
           className="category-row"
@@ -146,81 +339,76 @@ export default function CustomerHome({
           data-scroll-reveal
         >
           {categories
-            .filter((c) => c.id !== "member" || content.member.active)
+            .filter((item) => item.id !== "member" || content.member.active)
             .map(({ id, label, icon: Icon }) => (
               <button
                 type="button"
                 aria-pressed={category === id}
                 key={id}
                 className={category === id ? "selected" : ""}
-                onClick={() => setCategory(id)}
+                onClick={() => {
+                  setQuery("");
+                  setCategory((current) => (current === id ? "all" : id));
+                }}
               >
                 <span>
-                  <Icon size={26} strokeWidth={1.6} />
+                  <Icon size={27} strokeWidth={1.65} />
                 </span>
                 <b>{label}</b>
               </button>
             ))}
         </div>
-        <div className="photo-service-grid">
-          {services.map((s) => (
+        <div className="browse-heading" data-scroll-reveal>
+          <div>
+            <p>PERAWATAN SEHARI-HARI</p>
+            <h2>{term ? "Hasil pencarian" : "Layanan favorit"}</h2>
+          </div>
+          <button type="button" onClick={onServices}>
+            Lihat semua <ArrowRight size={16} />
+          </button>
+        </div>
+        <div className="photo-service-grid" aria-live="polite">
+          {services.map((service) => (
             <button
-              key={s.id}
-              className={`photo-service service-${s.id}`}
+              type="button"
+              key={service.id}
+              className={`photo-service service-${service.id}`}
               data-scroll-reveal
-              onClick={() => onOrder(s.id)}
+              onClick={() => onOrder(service.id)}
             >
               <div className="photo-service-image">
                 <Image
                   width={1536}
                   height={1024}
-                  sizes="(max-width: 520px) 100vw, (max-width: 900px) 50vw, 700px"
-                  src={siteImage(content, s.id as "wash" | "iron" | "complete")}
-                  unoptimized={
-                    !siteImage(
-                      content,
-                      s.id as "wash" | "iron" | "complete",
-                    ).startsWith("/api/")
-                  }
-                  alt={
-                    s.id === "wash"
-                      ? "Deretan pakaian bersih"
-                      : s.id === "iron"
-                        ? "Proses menyetrika pakaian"
-                        : "Tumpukan pakaian bersih di laundry"
-                  }
+                  sizes="(max-width: 520px) 50vw, (max-width: 900px) 33vw, 450px"
+                  src={siteImage(content, serviceImageSlot(service.id))}
+                  unoptimized
+                  alt=""
                 />
-                <span className="photo-service-tag">
-                  {s.id === "complete"
-                    ? "Favorit"
-                    : s.id === "wash"
-                      ? "Paket hemat"
-                      : "Setrika"}
-                </span>
-                <span className="photo-service-add">
-                  <Plus size={20} />
-                </span>
               </div>
               <div className="photo-service-info">
-                <h3>{s.name}</h3>
-                <div>
-                  <strong>{money(s.price)}</strong>
-                  <small>
-                    / {s.packageSize ? `${s.packageSize} kg` : s.unit}
-                  </small>
+                <div className="photo-service-description">
+                  <h3>{service.name}</h3>
+                  <p>
+                    {money(service.price)}
+                    <small>
+                      {" "}
+                      /{" "}
+                      {service.packageSize
+                        ? `${service.packageSize} kg`
+                        : service.unit}
+                    </small>
+                  </p>
                 </div>
-                <p>
-                  <Clock size={14} />
-                  {s.days}
-                  <span />
-                  <Truck size={14} />
-                  Jemput & antar
-                </p>
+                <span className="photo-service-add" aria-hidden="true">
+                  <Plus size={19} />
+                </span>
               </div>
             </button>
           ))}
-          {category === "member" && content.member.active && (
+          {showMembership && (
             <button
+              type="button"
               className="photo-service membership-feature"
               data-scroll-reveal
               onClick={onMember}
@@ -229,33 +417,34 @@ export default function CustomerHome({
                 <Image
                   width={1536}
                   height={1024}
-                  sizes="(max-width: 520px) 100vw, (max-width: 900px) 50vw, 700px"
-                  unoptimized={!memberImage.startsWith("/api/")}
+                  sizes="(max-width: 520px) 50vw, 450px"
+                  unoptimized
                   src={memberImage}
-                  alt="Membership laundry"
+                  alt=""
                 />
-                <span className="photo-service-tag">Membership</span>
-                <span className="photo-service-add">
-                  <Plus size={20} />
-                </span>
               </div>
               <div className="photo-service-info">
-                <h3>{content.member.title}</h3>
-                <div>
-                  <strong>Mulai {money(100000)}</strong>
-                  <small> deposit</small>
+                <div className="photo-service-description">
+                  <h3>{content.member.title}</h3>
+                  <p>
+                    Mulai {money(100000)} <small>deposit</small>
+                  </p>
                 </div>
-                <p>
-                  <Layers size={14} />
-                  Diskon 20% saat saldo tersedia
-                  <span />
-                  <Clock size={14} />
-                  Saldo untuk laundry
-                </p>
+                <span className="photo-service-add" aria-hidden="true">
+                  <Plus size={19} />
+                </span>
               </div>
             </button>
           )}
         </div>
+        {services.length === 0 && !showMembership && (
+          <div className="home-search-empty">
+            <p>Layanan belum ditemukan.</p>
+            <button type="button" onClick={onServices}>
+              Lihat semua layanan <ArrowRight size={15} />
+            </button>
+          </div>
+        )}
         <p className="compact-terms">
           Kiloan minimal 3 kg, cuci kering lipat minimal 10 kg. Ongkir
           dikonfirmasi toko.
@@ -266,49 +455,54 @@ export default function CustomerHome({
         {content.tracking.active && (
           <section className="tracking-ribbon">
             <span className="ribbon-icon">
-              <Package size={27} />
+              <Package size={23} />
             </span>
-            <div>
+            <div className="tracking-ribbon-heading">
+              <span>PANTAU CUCIANMU</span>
               <h2>{content.tracking.title}</h2>
             </div>
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
+              onSubmit={(event) => {
+                event.preventDefault();
                 onTrack(code);
               }}
             >
               <label>
-                <Search size={18} />
+                <Search size={17} />
                 <input
                   required
                   aria-label="Nomor pesanan"
                   placeholder="Nomor pesanan"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(event) => setCode(event.target.value)}
                 />
               </label>
-              <button type="submit">Lacak</button>
+              <button type="submit">
+                Lacak <ArrowRight size={15} />
+              </button>
             </form>
           </section>
         )}
         {content.member.active && (
-          <button className="monthly-strip" onClick={onMember}>
+          <button type="button" className="monthly-strip" onClick={onMember}>
             <Image
               width={120}
               height={120}
               sizes="80px"
-              unoptimized={!memberImage.startsWith("/api/")}
+              unoptimized
               className="monthly-thumb"
               src={memberImage}
-              alt="Membership laundry"
+              alt=""
             />
             <div className="monthly-copy">
-              <span className="monthly-kicker">MEMBERSHIP TOKO</span>
+              <span className="monthly-kicker">LEBIH HEMAT DENGAN MEMBER</span>
               <h3>{content.member.title}</h3>
+              <span className="monthly-caption">
+                <Clock size={14} /> Diskon layanan saat saldo tersedia
+              </span>
             </div>
-            <span className="monthly-action">
-              <span>{content.member.button}</span>
-              <Plus size={18} aria-hidden="true" />
+            <span className="monthly-action" aria-label={content.member.button}>
+              <ArrowRight size={19} />
             </span>
           </button>
         )}

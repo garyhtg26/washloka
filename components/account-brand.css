@@ -1,72 +1,90 @@
-/* Shared Eazywash account surfaces. Google retains its original brand colours. */
+/* Washloka account surfaces. Google retains its original brand colours. */
 .auth-panel,
 .email-page {
-  --blue: #0756c5;
-  --deep: #071f52;
+  --blue: #7a0e2f;
+  --deep: #4e091f;
 }
 .auth-panel .auth-kicker,
 .email-page .auth-kicker {
-  color: #537aa9;
+  color: #77515e;
   letter-spacing: 0.12em;
 }
 .auth-panel .auth-tabs button.active {
-  color: #0756c5;
-  background: #edf5ff;
+  color: #7a0e2f;
+  background: #f9edf1;
 }
 .auth-panel .auth-link,
 .auth-panel .auth-confirm-card strong {
-  color: #0756c5;
+  color: #7a0e2f;
 }
 .auth-panel .verify-envelope {
-  color: #0756c5;
-  background: #eaf3ff;
+  color: #7a0e2f;
+  background: #f7eaee;
 }
 .auth-panel .verify-seal {
-  background: #0756c5;
+  background: #7a0e2f;
 }
 .auth-panel .auth-form input:focus {
-  border-color: #6499db;
-  outline-color: #c5dcf9;
+  border-color: #b2677d;
+  outline-color: #e9cbd5;
 }
 .auth-panel .primary,
 .email-page .primary {
-  background: #0756c5;
+  background: #7a0e2f;
 }
 .auth-panel .primary:hover,
 .email-page .primary:hover {
-  background: #06479f;
+  background: #590922;
 }
 .email-page {
-  background: #f5f8fc;
-  color: #172e50;
+  background: #f8f7f7;
+  color: #1f1f1f;
 }
 .email-page .email-story {
-  background: linear-gradient(145deg, #071f52, #0756c5);
+  background: linear-gradient(145deg, #4e091f, #7a0e2f);
 }
 .email-page .email-story h1 {
   color: #fff;
 }
+.auth-panel h2,
+.auth-panel .auth-form label,
+.auth-panel .auth-form input {
+  color: #1f1f1f;
+}
+.auth-panel .auth-form input {
+  border-color: #e7dfe2;
+}
+.auth-panel .auth-tabs {
+  background: #f7f3f4;
+}
+dialog.auth-dialog {
+  background: linear-gradient(160deg, #faf2f5 0%, #fff 33%);
+}
+.auth-panel .auth-google:hover {
+  border-color: #d7b6c1;
+  background: #fbf7f8;
+}
 .email-page .email-story-caption {
-  color: #ffe7a4;
-  background: #092b66;
+  color: #f6d9e2;
+  background: #68112d;
 }
 .email-page .email-status-icon:not(.is-success) {
-  color: #0756c5;
-  background: #edf5ff;
+  color: #7a0e2f;
+  background: #f9edf1;
 }
 .email-link-loading {
   width: 37px;
   height: 5px;
   overflow: hidden;
   border-radius: 20px;
-  background: #c9def9;
+  background: #ecd6dd;
 }
 .email-link-loading > span {
   display: block;
   width: 55%;
   height: 100%;
   border-radius: inherit;
-  background: #0756c5;
+  background: #7a0e2f;
   animation: email-link-progress 1.2s ease-in-out infinite alternate;
 }
 @keyframes email-link-progress {

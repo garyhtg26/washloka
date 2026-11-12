@@ -268,7 +268,7 @@ export default function Tracking({
             .map((h, i) => (
               <li key={`${h.status}-${h.at}`} className="flex min-w-0 gap-3">
                 <span
-                  className={`flex size-8 shrink-0 items-center justify-center rounded-full ${i === 0 ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-400"}`}
+                  className={`flex size-8 shrink-0 items-center justify-center rounded-full ${i === 0 ? "bg-[#7a0e2f] text-white" : "bg-slate-100 text-slate-400"}`}
                 >
                   <Check size={15} />
                 </span>

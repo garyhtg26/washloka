@@ -15,6 +15,7 @@ import type { Order, Store } from "./types";
 import { midtransCheckoutEnabled } from "./payments/midtrans";
 import { bankDetails, safeManualSummary } from "./payments/manual-policy";
 import { normalizeServices } from "./catalog";
+import { brandCopy } from "./brand-copy";
 export async function readStore(
   user: Identity | null,
   requestedBranch: string = DEFAULT_BRANCH,
@@ -31,6 +32,7 @@ export async function readStore(
   const database = connection ?? db();
   const settings = await readBranchSettings(database, branch);
   const data = settings.exists ? settings.data()! : defaultStore;
+  const promo = { ...defaultStore.promo, ...data.promo };
   let orders: Order[] = [];
   let hasMore = false;
   let profile = { name: user?.name || "", phone: "", email: user?.email || "" };
@@ -78,7 +80,13 @@ export async function readStore(
     branchId: branch,
     services: normalizeServices(data.services),
     content: siteContent(data.content),
-    promo: data.promo || defaultStore.promo,
+    promo: {
+      ...promo,
+      title: brandCopy(promo.title, defaultStore.promo.title),
+      description: brandCopy(promo.description, defaultStore.promo.description),
+      button:
+        typeof promo.button === "string" ? brandCopy(promo.button) : undefined,
+    },
     orders,
     configured: true,
     isAdmin: !!user?.admin,

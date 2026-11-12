@@ -71,7 +71,7 @@ export default function AccountPanel({
   return (
     <div className="auth-panel">
       <p className="auth-kicker">
-        EAZYWASH {admin ? "WORKSPACE" : "AKUN PELANGGAN"}
+        WASHLOKA {admin ? "WORKSPACE" : "AKUN PELANGGAN"}
       </p>
       <h2>
         {signedIn

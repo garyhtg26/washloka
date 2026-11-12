@@ -7,12 +7,13 @@ import {
   siteContent,
   siteImage,
   mediaSlots,
+  contentImageKey,
   type MediaSlot,
 } from "@/lib/site-content";
 import type { Store } from "@/lib/types";
 const labels: Record<MediaSlot, string> = {
   promo: "Promo utama",
-  people: "Jemput & antar",
+  people: "Bersih rumah (segera hadir)",
   member: "Membership",
   wash: "Cuci Kering Lipat",
   complete: "Cuci Kering Setrika",
@@ -46,7 +47,10 @@ export default function ContentEditor({
       );
       const data = await r.json();
       if (!r.ok) throw Error(data.error);
-      setContent((c) => ({ ...c, images: { ...c.images, [slot]: data.url } }));
+      setContent((c) => ({
+        ...c,
+        images: { ...c.images, [contentImageKey(slot)]: data.url },
+      }));
       await onSaved();
       setNotice(`Gambar ${labels[slot]} sudah diperbarui di web pelanggan.`);
     } catch (e) {
@@ -118,26 +122,28 @@ export default function ContentEditor({
           <fieldset key={key} className="content-fields">
             <legend>
               {key === "people"
-                ? "Jemput & antar"
+                ? "Bersih rumah (segera hadir)"
                 : key === "member"
                   ? "Membership"
                   : "Lacak pesanan"}
             </legend>
-            <label>
-              Judul
-              <input
-                required
-                maxLength={80}
-                value={content[key].title}
-                onChange={(e) =>
-                  setContent((c) => ({
-                    ...c,
-                    [key]: { ...c[key], title: e.target.value },
-                  }))
-                }
-              />
-            </label>
-            {key !== "tracking" && (
+            {key !== "people" && (
+              <label>
+                Judul
+                <input
+                  required
+                  maxLength={80}
+                  value={content[key].title}
+                  onChange={(e) =>
+                    setContent((c) => ({
+                      ...c,
+                      [key]: { ...c[key], title: e.target.value },
+                    }))
+                  }
+                />
+              </label>
+            )}
+            {key === "member" && (
               <label>
                 Teks tombol
                 <input

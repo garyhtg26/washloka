@@ -489,7 +489,7 @@ export default function PaymentPanel({
     >
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
         <div className="flex items-center gap-2.5">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-[#f9edf1] text-[#7a0e2f]">
             <CreditIcon />
           </span>
           <div>
@@ -523,7 +523,7 @@ export default function PaymentPanel({
         {notice && (
           <p
             role="status"
-            className="!mb-0 rounded-xl bg-blue-50 p-3 text-xs leading-relaxed text-blue-800"
+            className="!mb-0 rounded-xl bg-[#f9f1f4] p-3 text-xs leading-relaxed text-[#5e1931]"
           >
             {notice}
           </p>
@@ -547,16 +547,16 @@ export default function PaymentPanel({
               aria-pressed={mode === "bank"}
               disabled={!!busy || !view}
               onClick={() => void mutate("select")}
-              className={`relative flex min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left transition sm:p-4 ${mode === "bank" ? "border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600" : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50"}`}
+              className={`relative flex min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left transition sm:p-4 ${mode === "bank" ? "border-[#7a0e2f] bg-[#f9edf1] ring-1 ring-[#7a0e2f]" : "border-slate-200 bg-white hover:border-[#c992a3] hover:bg-slate-50"}`}
             >
               <span className="flex w-full items-center justify-between gap-2">
                 <Building2
                   size={22}
                   strokeWidth={1.6}
-                  className="text-blue-700"
+                  className="text-[#7a0e2f]"
                 />
                 {mode === "bank" && (
-                  <span className="flex size-4 items-center justify-center rounded-full bg-indigo-600 text-white">
+                  <span className="flex size-4 items-center justify-center rounded-full bg-[#7a0e2f] text-white">
                     <Check size={10} />
                   </span>
                 )}
@@ -573,7 +573,7 @@ export default function PaymentPanel({
               aria-pressed={mode === "qris"}
               disabled={!view?.enabled || !!busy || !!manual?.hasProof}
               onClick={() => setSelection("qris")}
-              className={`relative flex min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left transition sm:p-4 ${view?.enabled ? (mode === "qris" ? "border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600" : "border-slate-200 bg-white hover:border-indigo-300") : "cursor-not-allowed border-dashed border-slate-200 bg-slate-50 text-slate-400"}`}
+              className={`relative flex min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left transition sm:p-4 ${view?.enabled ? (mode === "qris" ? "border-[#7a0e2f] bg-[#f9edf1] ring-1 ring-[#7a0e2f]" : "border-slate-200 bg-white hover:border-[#c992a3]") : "cursor-not-allowed border-dashed border-slate-200 bg-slate-50 text-slate-400"}`}
             >
               <span className="flex w-full items-center justify-between gap-1">
                 <QrCode size={22} strokeWidth={1.6} />
@@ -626,7 +626,7 @@ export default function PaymentPanel({
               {!pending && !paid && !view?.ready && (
                 <div
                   role="status"
-                  className="payment-order-message rounded-xl border border-blue-100 bg-blue-50 px-3.5 py-3 text-xs leading-relaxed text-blue-800"
+                  className="payment-order-message rounded-xl border border-[#ead8de] bg-[#f9f1f4] px-3.5 py-3 text-xs leading-relaxed text-[#5e1931]"
                 >
                   Metode pembayaran sudah dipilih. Toko akan mengonfirmasi berat
                   aktual dan ongkir sebelum kamu membayar.
@@ -668,7 +668,7 @@ export default function PaymentPanel({
                             );
                           }
                         }}
-                        className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-40"
+                        className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#7a0e2f] transition hover:bg-[#f9edf1] disabled:opacity-40"
                       >
                         {copied ? <Check size={16} /> : <Copy size={16} />}
                       </button>
@@ -708,9 +708,9 @@ export default function PaymentPanel({
                   </p>
                 ))}
               {!admin && !paid && !pending && !review && bankConfigured && (
-                <div className="payment-order-actions rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
+                <div className="payment-order-actions rounded-xl border border-[#ead8de] bg-[#fbf5f7] p-4">
                   <div className="mb-3 flex items-start gap-2.5">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-indigo-600">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#7a0e2f]">
                       <ImagePlus size={18} />
                     </span>
                     <div>
@@ -829,7 +829,7 @@ export default function PaymentPanel({
                         href={proofUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[10px] font-medium text-indigo-600"
+                        className="text-[10px] font-medium text-[#7a0e2f]"
                       >
                         Lihat penuh
                       </a>

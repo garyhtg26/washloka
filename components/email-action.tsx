@@ -114,19 +114,19 @@ export default function EmailAction({
       <a
         href={DFABLE_HOME}
         className="email-brand"
-        aria-label="Eazywash beranda"
+        aria-label="Washloka beranda"
       >
         <Image
-          src="/eazywash-logo.png"
+          src="/washloka/wordmark-burgundy.svg"
           width={190}
-          height={64}
-          alt="Eazywash"
+          height={36}
+          alt="Washloka"
           priority
         />
       </a>
       <div className="email-layout">
         <aside className="email-story">
-          <h1>Akun Eazywash</h1>
+          <h1>Akun Washloka</h1>
           <Image
             src="/unsplash/folding-web.webp"
             width={1536}
@@ -135,7 +135,7 @@ export default function EmailAction({
             className="email-story-photo"
           />
           <span className="email-story-caption">
-            EAZYWASH · LAUNDRY ECOSYSTEM
+            WASHLOKA · LAUNDRY ECOSYSTEM
           </span>
         </aside>
         <section className="email-card" aria-live="polite">
@@ -159,7 +159,7 @@ export default function EmailAction({
             )}
           </span>
           <p className="auth-kicker">
-            {auth.scope === "admin" ? "EAZYWASH WORKSPACE" : "AKUN EAZYWASH"}
+            {auth.scope === "admin" ? "WASHLOKA WORKSPACE" : "AKUN WASHLOKA"}
           </p>
           <h2>
             {state === "loading"
@@ -174,7 +174,7 @@ export default function EmailAction({
                     ? "Lanjutkan ke akunmu."
                     : reset
                       ? "Buat password baru."
-                      : "Selamat datang di Eazywash."}
+                      : "Selamat datang di Washloka."}
           </h2>
           <p className="email-description">
             {success
@@ -263,7 +263,7 @@ export default function EmailAction({
           </div>
         </section>
       </div>
-      <footer className="email-footer">Eazywash</footer>
+      <footer className="email-footer">Washloka</footer>
     </main>
   );
 }

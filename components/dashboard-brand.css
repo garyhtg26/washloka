@@ -1,4 +1,4 @@
-/* Eazywash is the platform; the client identity remains visible in its workspace. */
+/* Washloka dashboard identity: burgundy, white, and charcoal. */
 .dashboard-platform-brand {
   display: block;
   width: 165px;
@@ -11,16 +11,19 @@
   height: auto;
 }
 .admin-shell {
-  --blue: #0756c5;
-  --deep: #061f55;
-  --ink: #172941;
-  --line: #e6ebf2;
-  background: #f5f8fc;
+  --blue: #7a0e2f;
+  --deep: #4e091f;
+  --ink: #1f1f1f;
+  --line: #ece6e8;
+  background: #f8f7f7;
+}
+.admin-shell :is(h1, h2, h3, .metric strong, .pipeline b) {
+  font-family: inherit;
 }
 .admin-shell .sidebar {
   padding: 27px 17px 20px;
   background: #fff;
-  border-color: #e6ebf2;
+  border-color: #ece6e8;
 }
 .admin-shell .sidebar > .dashboard-platform-brand {
   margin: 0 8px 26px;
@@ -32,9 +35,9 @@
   gap: 10px;
   min-width: 0;
   padding: 12px;
-  border: 1px solid #e6edf6;
+  border: 1px solid #ece5e7;
   border-radius: 12px;
-  background: #f7faff;
+  background: #fbf8f9;
 }
 .dashboard-client-logo {
   display: flex;
@@ -44,7 +47,7 @@
   width: 40px;
   height: 40px;
   overflow: hidden;
-  border: 1px solid #eaf0f8;
+  border: 1px solid #eee8ea;
   border-radius: 9px;
   background: #fff;
 }
@@ -62,14 +65,14 @@
   display: block;
 }
 .dashboard-client small {
-  color: #8b99ae;
+  color: #75666b;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.1em;
 }
 .dashboard-client b {
   overflow: hidden;
-  color: #102b53;
+  color: #1f1f1f;
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -77,30 +80,30 @@
 .admin-shell .sidebar .workspace-switch {
   margin-top: 12px;
   margin-bottom: 26px;
-  border-color: #e2e9f2;
+  border-color: #e9e1e4;
 }
 .admin-shell .sidebar .workspace-switch > svg {
-  color: #527399;
+  color: #806870;
 }
 .admin-shell .sidebar .nav-caption {
-  color: #91a0b3;
+  color: #78666d;
   font-weight: 800;
 }
 .admin-shell .sidebar .side-link {
   position: relative;
-  color: #667992;
+  color: #6e6266;
   border-radius: 10px;
   transition:
     background 0.18s,
     color 0.18s;
 }
 .admin-shell .sidebar .side-link:hover {
-  color: #0756c5;
-  background: #f3f8ff;
+  color: #7a0e2f;
+  background: #f9f2f4;
 }
 .admin-shell .sidebar .side-link.active {
-  color: #0756c5;
-  background: #eaf3ff;
+  color: #7a0e2f;
+  background: #f6e9ed;
 }
 .admin-shell .sidebar .side-link.active::before {
   position: absolute;
@@ -109,60 +112,164 @@
   bottom: 11px;
   width: 3px;
   border-radius: 4px;
-  background: #ffb400;
+  background: #7a0e2f;
   content: "";
 }
 .admin-shell .sidebar .count {
-  background: #d6e8ff;
-  color: #0756c5;
+  background: #f1dce2;
+  color: #7a0e2f;
 }
 .admin-shell .admin-top {
-  color: #12335f;
-  border-color: #e6ebf2;
+  color: #302629;
+  border-color: #ece6e8;
 }
 .admin-shell .admin-top .muted {
-  color: #8a9ab0;
+  color: #8c7e83;
 }
 .dashboard-client-crumb {
-  color: #536b89;
+  color: #6f6066;
 }
 .dashboard-platform-brand-compact {
   display: none;
 }
 .admin-shell .primary {
-  background: #0756c5;
+  background: #7a0e2f;
 }
 .admin-shell .primary:hover {
-  background: #06479f;
+  background: #590922;
 }
 .admin-shell .overview-chart-heading strong {
-  color: #0756c5;
+  color: #7a0e2f;
 }
 .admin-shell .overview-line-path,
 .admin-shell .overview-line-point {
-  stroke: #0756c5;
+  stroke: #7a0e2f;
 }
 .admin-shell .overview-line-area {
-  fill: #0756c5;
+  fill: #7a0e2f;
 }
 .admin-shell .overview-line-point.is-selected {
-  fill: #0756c5;
+  fill: #7a0e2f;
   stroke: #fff;
 }
 .admin-shell .overview-line-labels button.is-selected {
-  color: #0756c5;
-  background: #eaf3ff;
+  color: #7a0e2f;
+  background: #f6e9ed;
+}
+.admin-shell .overview-line-labels button:hover {
+  color: #7a0e2f;
+  background: #f9f2f4;
+}
+.admin-shell .overview-line-labels button:focus-visible {
+  outline-color: #7a0e2f;
+}
+.admin-shell .overview-line-selection b {
+  color: #7a0e2f;
+}
+.admin-shell .overview-line-response .overview-line-path,
+.admin-shell .overview-line-response .overview-line-point {
+  stroke: #a55069;
+}
+.admin-shell .metric > span svg {
+  color: #7a0e2f;
+}
+.admin-shell .bar i {
+  background: #7a0e2f;
+}
+.admin-shell .metric,
+.admin-shell .panel {
+  border-color: #ece6e8;
+  box-shadow: 0 4px 20px #4e091f06;
+}
+.admin-shell .blue-note {
+  color: #70505d;
+  border-color: #ead9df;
+  background: #f9f1f4;
+}
+.admin-shell .blue-note h3 {
+  color: #4e091f;
+}
+.admin-shell .tabs {
+  background: #f6f3f4;
+}
+.admin-shell .tabs button.active {
+  color: #7a0e2f;
+}
+.admin-shell .account-trigger:hover,
+.admin-shell .account-trigger.is-open,
+.admin-shell .shop-picker-trigger:hover,
+.admin-shell .shop-picker-trigger.is-open {
+  border-color: #d6aab9;
+  box-shadow: 0 5px 18px #7a0e2f12;
+}
+.admin-shell .account-avatar,
+.admin-shell .shop-picker-monogram {
+  color: #7a0e2f;
+  background: #f8edf1;
+}
+.admin-shell .shop-picker-trigger,
+.admin-shell .shop-picker-panel-heading > span:first-child {
+  color: #1f1f1f;
+}
+.admin-shell .shop-picker-option {
+  color: #7a0e2f;
+  border-color: #e7cdd6;
+  background: #fbf5f7;
+}
+.admin-shell .account-dropdown > button:hover {
+  background: #fbf5f7;
+}
+.admin-shell input[type="checkbox"],
+dialog.dashboard-dialog input[type="checkbox"],
+dialog.staff-detail-dialog input[type="checkbox"] {
+  accent-color: #7a0e2f;
+}
+.admin-shell :is(input, select, textarea):focus-visible,
+:is(dialog.dashboard-dialog, dialog.staff-detail-dialog, dialog.profile-dialog)
+  :is(input, select, textarea):focus-visible {
+  border-color: #b2677d;
+  outline: 2px solid #e9cbd5;
+  outline-offset: 2px;
+}
+/* Dashboard dialogs sit beside the shell in the DOM. */
+dialog.dashboard-dialog,
+dialog.staff-detail-dialog,
+dialog.profile-dialog {
+  --blue: #7a0e2f;
+  --deep: #4e091f;
+  --ink: #1f1f1f;
+  --line: #ece6e8;
+  color: #1f1f1f;
+  border-color: #ece6e8;
+}
+:is(dialog.dashboard-dialog, dialog.staff-detail-dialog, dialog.profile-dialog)
+  .primary {
+  background: #7a0e2f;
+}
+:is(dialog.dashboard-dialog, dialog.staff-detail-dialog, dialog.profile-dialog)
+  .primary:hover {
+  background: #590922;
+}
+:is(dialog.dashboard-dialog, dialog.staff-detail-dialog) .pos-selected-service {
+  border-color: #eadce1;
+  background: #fbf7f8;
+}
+:is(dialog.dashboard-dialog, dialog.staff-detail-dialog)
+  .pos-selected-service-icon,
+dialog.profile-dialog .profile-avatar {
+  color: #7a0e2f;
+  background: #f8edf1;
 }
 .dashboard-login {
-  --blue: #0756c5;
-  --deep: #061f55;
+  --blue: #7a0e2f;
+  --deep: #4e091f;
   display: grid;
   min-height: 100svh;
   place-items: center;
   padding: 40px 20px;
-  color: #172941;
+  color: #1f1f1f;
   background:
-    radial-gradient(ellipse at 15% 5%, #e6f2ff 0, transparent 42%), #f6f9fd;
+    radial-gradient(ellipse at 15% 5%, #f8ebef 0, transparent 42%), #f9f7f8;
 }
 .dashboard-login-inner {
   width: min(100%, 470px);
@@ -173,16 +280,16 @@
 }
 .dashboard-login-card {
   padding: 28px 32px 32px;
-  border: 1px solid #e4eaf3;
+  border: 1px solid #eee5e8;
   border-radius: 20px;
   background: #fff;
-  box-shadow: 0 18px 60px #0c2b5110;
+  box-shadow: 0 18px 60px #5b092010;
 }
 .dashboard-login .primary {
-  background: #0756c5;
+  background: #7a0e2f;
 }
 .dashboard-login .primary:hover {
-  background: #06479f;
+  background: #590922;
 }
 @media (max-width: 800px) {
   .admin-shell .sidebar {
