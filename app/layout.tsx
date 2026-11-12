@@ -4,7 +4,7 @@ import "@/components/customer-mobile-nav.css";
 import "@/components/customer-brand.css";
 import "@/components/customer-inputs.css";
 export const metadata: Metadata = {
-  title: "Washloka — Clean at Your Fingertips",
+  title: "Washloka",
   description:
     "Platform untuk menghubungkan pelanggan dengan layanan laundry pilihan mereka.",
   icons: { icon: "/washloka/app-icon-burgundy.svg" },

@@ -3,7 +3,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import Studio from "@/components/studio";
 
 export const metadata: Metadata = {
-  title: "Washloka — Clean at Your Fingertips",
+  title: "Washloka",
   description: "Temukan laundry pilihanmu dan pantau pesanan dengan Washloka.",
 };
 
