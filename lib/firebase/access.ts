@@ -1,8 +1,9 @@
 import "server-only";
 import type { NextRequest } from "next/server";
 import { adminAuth, firebaseReady, db } from "./admin";
-import { resolveAccess, type AccessRole } from "../access-policy";
+import { accessBranches, resolveAccess, type AccessRole } from "../access-policy";
 import { isPhoneLogin } from "../phone-auth";
+import { normalizeBranchId, type BranchId } from "../branches";
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -18,6 +19,7 @@ export type Identity = {
   admin: boolean;
   manageUsers: boolean;
   role: AccessRole;
+  allowedBranches?: BranchId[];
 };
 export async function identity(
   req: NextRequest,
@@ -53,6 +55,7 @@ export async function identity(
       access.get("role"),
       process.env.ADMIN_EMAILS || "",
     );
+    const allowedBranches = accessBranches(resolved.role, access.get("branches"));
     return {
       uid: token.uid,
       email: phoneLogin ? "" : email,
@@ -60,6 +63,7 @@ export async function identity(
       admin: resolved.dashboard && adminSurface,
       manageUsers: resolved.manageUsers && adminSurface,
       role: resolved.role,
+      allowedBranches,
     };
   } catch {
     throw new ApiError(
@@ -68,11 +72,16 @@ export async function identity(
     );
   }
 }
-export function requireAdmin(user: Identity | null) {
-  if (!user?.admin) throw new ApiError(403, "Akses khusus admin toko.");
+export function canManageStore(user: Identity | null, branch: unknown) {
+  const normalized = normalizeBranchId(branch);
+  return !!user?.admin && !!normalized && accessBranches(user.role, user.allowedBranches).includes(normalized);
 }
-export function requireManager(user: Identity | null) {
-  if (!user?.manageUsers)
+export function requireAdmin(user: Identity | null, branch?: unknown) {
+  if (!user?.admin || (branch !== undefined && !canManageStore(user, branch)))
+    throw new ApiError(403, "Akses khusus admin toko.");
+}
+export function requireManager(user: Identity | null, branch?: unknown) {
+  if (!user?.manageUsers || (branch !== undefined && !canManageStore(user, branch)))
     throw new ApiError(
       403,
       "Akses khusus pemilik atau admin dengan login email–password.",

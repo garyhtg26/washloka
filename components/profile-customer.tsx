@@ -309,9 +309,7 @@ export default function CustomerProfile() {
                 <small>poin</small>
               </strong>
               <div className="profile-points-foot">
-                Dapatkan poin 10% dari biaya layanan setelah potongan poin,
-                ketika pembayaran dikonfirmasi. 1 poin = Rp1 untuk pesanan
-                berikutnya.
+                Poin berlaku di D’Fable dan BuzzWash. Dapatkan 10% dari biaya layanan setelah potongan poin ketika pembayaran dikonfirmasi. 1 poin = Rp1 untuk pesanan berikutnya.
               </div>
               {points?.reconciliationRequired && (
                 <p role="status">

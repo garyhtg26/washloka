@@ -8,6 +8,8 @@ import { manualLocked, safeManualSummary } from "./payments/manual-policy";
 import type { Order } from "./types";
 import { signalPaymentChange } from "./payments/signals";
 import { normalizeBranchId } from "./branches";
+import { isRewardsStore, requireRewardsStore } from "./rewards-store";
+import { releaseReservedReward } from "./reward-release";
 
 type Wallet = { balance?: number; reconciliationRequired?: boolean };
 function balanceOf(value: Wallet | undefined) {
@@ -23,7 +25,12 @@ export async function prepareEarn(
   database: Firestore,
   order: Order,
 ) {
-  if (!order.uid || order.pointsEarned !== undefined || order.actualKg === null)
+  if (
+    !isRewardsStore(order.branchId) ||
+    !order.uid ||
+    order.pointsEarned !== undefined ||
+    order.actualKg === null
+  )
     return null;
   const points = Math.floor(
     (calculateOrderPrice(order, order.actualKg) - (order.pointsUsed || 0)) / 10,
@@ -45,7 +52,7 @@ export function commitEarn(
   earn: Awaited<ReturnType<typeof prepareEarn>>,
   now: string,
 ) {
-  if (!earn || !order.uid) return {};
+  if (!isRewardsStore(order.branchId) || !earn || !order.uid) return {};
   tx.set(
     earn.ref,
     { balance: earn.balance + earn.points, updatedAt: now },
@@ -82,6 +89,7 @@ export async function redeemPoints(
         403,
         "Poin hanya dapat digunakan untuk pesanan sendiri.",
       );
+    requireRewardsStore(order.branchId);
     if (
       order.paid ||
       order.paymentReconciliationRequired ||
@@ -96,11 +104,16 @@ export async function redeemPoints(
       finalAmount(order) === null ||
       order.actualKg === null ||
       order.shippingFee === null
-    )
+    ) {
+      if (points === 0 && order.rewardsReservedAt && (order.pointsUsed || 0) > 0) {
+        const released = releaseReservedReward(tx, database, order, walletRef, balanceOf(walletSnap.data() as Wallet | undefined), "points");
+        return { ...released, pointsUsed: 0 };
+      }
       throw new ApiError(
         409,
         "Tunggu toko mengonfirmasi jumlah dan ongkir sebelum menggunakan poin.",
       );
+    }
     const current = order.pointsUsed || 0;
     const service = calculateOrderPrice(order, order.actualKg);
     const wallet = walletSnap.data() as Wallet | undefined;

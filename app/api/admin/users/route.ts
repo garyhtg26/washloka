@@ -7,11 +7,13 @@ import {
   sameOrigin,
   ApiError,
 } from "@/lib/firebase/access";
-import { adminEmailAllowed } from "@/lib/access-policy";
+import { accessBranches, adminEmailAllowed, type AccessRole } from "@/lib/access-policy";
+import { requestBranch, activeBranchIds, type BranchId } from "@/lib/branches";
 import { phoneFromLoginEmail } from "@/lib/phone-auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const role = z.enum(["customer", "staff", "admin"]);
+const assignedBranches = z.array(z.enum(activeBranchIds)).max(2).optional();
 const schema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("create"),
@@ -19,6 +21,7 @@ const schema = z.discriminatedUnion("action", [
     name: z.string().trim().min(1).max(100),
     password: z.string().min(8).max(128),
     role,
+    branches: assignedBranches,
   }),
   z.object({
     action: z.literal("access"),
@@ -29,6 +32,7 @@ const schema = z.discriminatedUnion("action", [
       .regex(/^[^/]+$/),
     role,
     disabled: z.boolean(),
+    branches: assignedBranches,
   }),
   z.object({
     action: z.literal("delete"),
@@ -66,7 +70,8 @@ function failure(e: unknown) {
 export async function GET(req: NextRequest) {
   try {
     const actor = await identity(req, true);
-    requireManager(actor);
+    const branch = requestBranch(req.url);
+    requireManager(actor, branch);
     const cursor = req.nextUrl.searchParams.get("cursor") || undefined;
     if (cursor && cursor.length > 2048)
       throw new ApiError(400, "Cursor tidak valid.");
@@ -99,11 +104,21 @@ export async function GET(req: NextRequest) {
       )
         ? "owner"
         : access[i]?.get("role") || "customer",
+      branches: accessBranches(
+        adminEmailAllowed(u.email || "", true, process.env.ADMIN_EMAILS || "")
+          ? "owner"
+          : (access[i]?.get("role") || "customer") as AccessRole,
+        access[i]?.get("branches"),
+      ),
       providers: u.providerData.map((p) => p.providerId),
       self: u.uid === actor!.uid,
-    }));
+    })).filter((user) => actor!.role === "owner" || (
+      (user.role === "staff" || user.role === "admin") &&
+      user.branches.includes(branch) &&
+      user.branches.every((value) => actor!.allowedBranches?.includes(value))
+    ));
     return NextResponse.json(
-      { users, cursor: result.pageToken || null },
+      { users, cursor: result.pageToken || null, canDeleteAccounts: actor!.role === "owner" },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (e) {
@@ -114,7 +129,8 @@ export async function POST(req: NextRequest) {
   try {
     sameOrigin(req);
     const actor = await identity(req, true);
-    requireManager(actor);
+    const branch = requestBranch(req.url);
+    requireManager(actor, branch);
     const raw = await req.text();
     if (raw.length > 8000) throw new ApiError(413, "Data terlalu besar.");
     let data: unknown;
@@ -124,7 +140,13 @@ export async function POST(req: NextRequest) {
       throw new ApiError(400, "Data tidak valid.");
     }
     const input = schema.parse(data);
+    const actorBranches = accessBranches(actor!.role, actor!.allowedBranches);
     if (input.action === "create") {
+      if (actor!.role !== "owner" && input.role === "customer")
+        throw new ApiError(403, "Akun pelanggan hanya dapat dikelola pemilik platform.");
+      const branches: BranchId[] = input.role === "customer" ? [] : [...new Set(input.branches ?? [branch])];
+      if (input.role !== "customer" && (!branches.length || !branches.includes(branch) || branches.some((value) => !actorBranches.includes(value))))
+        throw new ApiError(403, "Akses toko yang dipilih tidak diizinkan.");
       if (adminEmailAllowed(input.email, true, process.env.ADMIN_EMAILS || ""))
         throw new ApiError(403, "Akun pemilik harus didaftarkan sendiri.");
       const user = await adminAuth().createUser({
@@ -136,6 +158,7 @@ export async function POST(req: NextRequest) {
       try {
         await db().doc(`access/${user.uid}`).set({
           role: input.role,
+          branches,
           disabled: false,
           updatedBy: actor!.uid,
           updatedAt: new Date().toISOString(),
@@ -146,6 +169,22 @@ export async function POST(req: NextRequest) {
       }
     } else {
       const target = await adminAuth().getUser(input.uid);
+      const targetAccess = await db().doc(`access/${input.uid}`).get();
+      const targetRole = (targetAccess.get("role") || "customer") as AccessRole;
+      const targetBranches = accessBranches(targetRole, targetAccess.get("branches"));
+      if (actor!.role !== "owner") {
+        if (input.action === "delete" || targetRole === "customer" ||
+            !targetBranches.includes(branch) ||
+            targetBranches.some((value) => !actorBranches.includes(value)) ||
+            (input.action === "access" && input.disabled))
+          throw new ApiError(403, "Akun ini hanya dapat dikelola oleh pemilik platform.");
+      }
+      const nextBranches: BranchId[] = input.action === "access" && input.role !== "customer"
+        ? [...new Set(input.branches ?? (targetBranches.length ? targetBranches : [branch]))]
+        : [];
+      if (input.action === "access" && input.role !== "customer" &&
+          (!nextBranches.length || !nextBranches.includes(branch) || nextBranches.some((value) => !actorBranches.includes(value))))
+        throw new ApiError(403, "Akses toko yang dipilih tidak diizinkan.");
       if (
         input.action === "access" &&
         input.role !== "customer" &&
@@ -172,6 +211,7 @@ export async function POST(req: NextRequest) {
         .doc(`access/${target.uid}`)
         .set({
           role: input.action === "delete" ? "customer" : input.role,
+          branches: nextBranches,
           disabled: true,
           updatedBy: actor!.uid,
           updatedAt: new Date().toISOString(),

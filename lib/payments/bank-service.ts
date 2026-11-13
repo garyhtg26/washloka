@@ -8,7 +8,7 @@ import {
   branchSettingsId,
   sameBranch,
 } from "../branches";
-import { readBranchSettings } from "../branch-settings";
+import { readBranchSettings, readStoreBankSettings } from "../branch-settings";
 import { ApiError, requireManager, type Identity } from "../firebase/access";
 import { uploadPhoto } from "../storage/photos";
 import {
@@ -24,8 +24,7 @@ export async function readBankDetails(
   database: Firestore = db(),
 ) {
   const store = branchSchema.parse(branch);
-  const snap = await readBranchSettings(database, store);
-  return bankDetails(snap.get("manualPayment"), store);
+  return bankDetails(await readStoreBankSettings(database, store), store);
 }
 
 export async function saveBankDetails(
@@ -34,8 +33,8 @@ export async function saveBankDetails(
   user: Identity | null,
   database: Firestore = db(),
 ) {
-  requireManager(user);
   const store = branchSchema.parse(branch);
+  requireManager(user, store);
   const account = bankSettingsSchema.parse(input);
   await database.runTransaction(async (tx) => {
     const prior = await readBranchSettings(database, store, tx);
@@ -72,8 +71,8 @@ export async function setBankQr(
   upload: typeof uploadPhoto = uploadPhoto,
   expectedVersion?: string,
 ) {
-  requireManager(user);
   const store = branchSchema.parse(branch);
+  requireManager(user, store);
   const storageBranch = branchSettingsId(store);
   const initial = await readBranchSettings(database, store);
   if (bytes && !bankDetails(initial.get("manualPayment"), branch).configured)

@@ -155,6 +155,22 @@ dialog.staff-detail-dialog {
   color: #168059;
   font-size: 12px;
 }
+.staff-detail-rewards {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  color: #6f6067;
+  font-size: 12px;
+}
+.staff-detail-rewards > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.staff-detail-rewards strong {
+  color: #7a0e2f;
+  white-space: nowrap;
+}
 .staff-detail-total {
   display: flex;
   justify-content: space-between;

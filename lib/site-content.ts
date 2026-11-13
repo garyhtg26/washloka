@@ -25,11 +25,13 @@ export function bannerStoragePath(
   slot: unknown,
   theme: unknown = null,
 ) {
-  branchSchema.parse(branch);
+  const store = branchSchema.parse(branch);
   const selectedSlot = mediaSlotSchema.parse(slot);
   if (theme === null) return branchMediaPath(branch, selectedSlot);
   if (theme === WASHLOKA_MEDIA_THEME)
-    return `banners/washloka/${selectedSlot}/image.jpg`;
+    return store === "buzzwash"
+      ? `banners/buzzwash/washloka/${selectedSlot}/image.jpg`
+      : `banners/washloka/${selectedSlot}/image.jpg`;
   throw new Error("INVALID_BANNER_THEME");
 }
 
@@ -120,7 +122,7 @@ export function siteImage(content: SiteContent, slot: MediaSlot) {
   const value = content.images?.[contentImageKey(slot)];
   return value &&
     new RegExp(
-      `^/api/media/banners/${slot}\\?v=[a-f0-9-]+(?:&branch=(?:dfablelaundry|cinere|bogor))?&theme=washloka$`,
+      `^/api/media/banners/${slot}\\?v=[a-f0-9-]+(?:&branch=(?:dfablelaundry|cinere|bogor|buzzwash))?&theme=washloka$`,
     ).test(value)
     ? value
     : defaultImages[slot];

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { money } from "@/lib/types";
 import { prepareImage } from "@/lib/image-upload";
-import { DEFAULT_BRANCH } from "@/lib/branches";
+import { DEFAULT_BRANCH, activeBranchIds, branches, resolveCustomerBranch, type BranchId } from "@/lib/branches";
 import { useAuth } from "./auth-provider";
 import "./membership-card.css";
 
@@ -53,7 +53,7 @@ export default function MembershipCard() {
   const [data, setData] = useState<Membership | null>(null);
   const [loadedBranch, setLoadedBranch] = useState("");
   const [amount, setAmount] = useState("100000");
-  const branch = DEFAULT_BRANCH;
+  const [branch, setBranch] = useState<BranchId>(DEFAULT_BRANCH);
   const [senderName, setSenderName] = useState("");
   const [proof, setProof] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -66,6 +66,12 @@ export default function MembershipCard() {
   const [codeBusy, setCodeBusy] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const loadRevision = useRef(0);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("branch");
+    let saved: string | null = null;
+    try { saved = localStorage.getItem("eazywash-selected-store"); } catch {}
+    setBranch(resolveCustomerBranch({ requested, saved }));
+  }, []);
   const load = useCallback(async () => {
     const revision = ++loadRevision.current;
     const response = await auth.request(`/api/membership?branch=${branch}`);
@@ -105,6 +111,10 @@ export default function MembershipCard() {
   function open(nextView: DialogView) {
     setMessage("");
     setCopied(false);
+    setCode(null);
+    try {
+      setBranch(resolveCustomerBranch({ saved: localStorage.getItem("eazywash-selected-store") }));
+    } catch {}
     setView(nextView);
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -121,11 +131,14 @@ export default function MembershipCard() {
     setMessage("");
     try {
       const image = await prepareImage(proof);
-      const upload = await auth.request("/api/membership/proof", {
-        method: "POST",
-        headers: { "Content-Type": "image/jpeg" },
-        body: image,
-      });
+      const upload = await auth.request(
+        `/api/membership/proof?branch=${encodeURIComponent(branch)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "image/jpeg" },
+          body: image,
+        },
+      );
       const uploaded = await upload.json();
       if (!upload.ok || typeof uploaded.proofVersion !== "string")
         throw Error(
@@ -213,7 +226,7 @@ export default function MembershipCard() {
           </span>
           <div className="member-summary-title">
             <h2>Membership</h2>
-            <p>Lebih hemat setiap laundry</p>
+            <p>Berlaku di D’Fable dan BuzzWash</p>
           </div>
           {data && (
             <span
@@ -309,6 +322,23 @@ export default function MembershipCard() {
           </button>
         </div>
         <div className="member-dialog-content">
+          {(view === "code" || !isPending) && (
+            <label className="member-field">
+              Toko {view === "code" ? "untuk kode member" : "penerima deposit"}
+              <select
+                value={branch}
+                disabled={busy || codeBusy}
+                onChange={(event) => {
+                  setCode(null);
+                  setCopied(false);
+                  setMessage("");
+                  setBranch(event.target.value as BranchId);
+                }}
+              >
+                {activeBranchIds.map((id) => <option key={id} value={id}>{branches[id]}</option>)}
+              </select>
+            </label>
+          )}
           {view === "code" ? (
             <div className="member-code-panel">
               <div className="member-benefit">
@@ -316,7 +346,7 @@ export default function MembershipCard() {
                   <ShieldCheck size={20} />
                 </span>
                 <div>
-                  <b>Untuk pesanan di D’Fable</b>
+                  <b>Untuk pesanan di {branches[branch]}</b>
                   <p>
                     Tunjukkan kode sekali pakai kepada staf saat mencatat
                     pesanan.
@@ -363,7 +393,7 @@ export default function MembershipCard() {
                 </div>
                 <div>
                   <span>Toko</span>
-                  <b>D’Fable Laundry</b>
+                  <b>{branches[resolveCustomerBranch({ requested: data!.pending!.branchId })]}</b>
                 </div>
                 <div>
                   <span>Bukti transfer</span>
@@ -388,10 +418,9 @@ export default function MembershipCard() {
                   <Gift size={20} />
                 </span>
                 <div>
-                  <b>Diskon layanan 20% di D’Fable</b>
+                  <b>Diskon layanan 20% di kedua toko</b>
                   <p>
-                    Deposit jadi saldo laundry. Diskon berlaku saat saldo
-                    tersedia.
+                    Deposit menjadi saldo Washloka yang dapat digunakan di D’Fable dan BuzzWash. Diskon berlaku saat saldo tersedia.
                   </p>
                 </div>
               </div>

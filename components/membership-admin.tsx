@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { BadgeCheck, Clock3, ImageIcon, RefreshCw } from "lucide-react";
 import { money } from "@/lib/types";
 import { useAuth } from "./auth-provider";
-import { branchLabel } from "@/lib/branches";
+import { branchLabel, type BranchId } from "@/lib/branches";
 import "./membership-admin.css";
 
 type Deposit = {
@@ -189,7 +189,7 @@ function DepositItem({
   );
 }
 
-export default function MembershipAdmin() {
+export default function MembershipAdmin({ branch }: { branch: BranchId }) {
   const auth = useAuth();
   const [items, setItems] = useState<Deposit[]>([]);
   const [message, setMessage] = useState("");
@@ -197,11 +197,11 @@ export default function MembershipAdmin() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const load = useCallback(async () => {
-    const response = await auth.request("/api/admin/membership");
+    const response = await auth.request(`/api/admin/membership?branch=${encodeURIComponent(branch)}`);
     const body = await response.json();
     if (!response.ok) throw Error(body.error || "Pengajuan belum bisa dimuat.");
     setItems(body.requests);
-  }, [auth.request]);
+  }, [auth.request, branch]);
   useEffect(() => {
     let active = true;
     void load()

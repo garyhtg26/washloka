@@ -4,6 +4,7 @@ import { identity, requireManager, ApiError } from "@/lib/firebase/access";
 import { db } from "@/lib/firebase/admin";
 import { downloadPhoto } from "@/lib/storage/photos";
 import { membershipProofPath } from "@/lib/membership-proof";
+import { isRewardsStore } from "@/lib/rewards-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,10 +31,12 @@ export async function GET(req: NextRequest) {
     const version = deposit.get("proofVersion");
     if (
       !deposit.exists ||
+      !isRewardsStore(deposit.get("branchId")) ||
       deposit.get("requestId") !== requestId ||
       typeof version !== "string"
     )
       throw new ApiError(404, "Bukti deposit tidak ditemukan.");
+    requireManager(user, deposit.get("branchId"));
     const bytes = await downloadPhoto(membershipProofPath(uid, version));
     return new NextResponse(new Uint8Array(bytes), {
       headers: {

@@ -116,9 +116,9 @@ import {
   resolveCustomerBranch,
 } from "../lib/branches";
 
-test("only D’Fable is active while legacy links resolve to the same store", () => {
-  assert.deepEqual(Object.keys(branches), [DEFAULT_BRANCH]);
-  assert.deepEqual(Object.keys(branchLocations), [DEFAULT_BRANCH]);
+test("two shops stay separate while legacy D’Fable links remain valid", () => {
+  assert.deepEqual(Object.keys(branches), [DEFAULT_BRANCH, "buzzwash"]);
+  assert.deepEqual(Object.keys(branchLocations), [DEFAULT_BRANCH, "buzzwash"]);
   for (const branch of [undefined, DEFAULT_BRANCH, "cinere", "bogor"]) {
     const suffix = branch ? `?branch=${branch}` : "";
     assert.equal(
@@ -136,12 +136,13 @@ test("only D’Fable is active while legacy links resolve to the same store", ()
   assert.equal(isBranchId("bogor"), false);
   assert.equal(sameBranch("unknown", "unknown"), false);
   assert.equal(sameBranch(DEFAULT_BRANCH, "buzzwash"), false);
-  assert.equal(branchLabel("buzzwash"), "Toko tidak tersedia");
-  assert.throws(() =>
-    requestBranch("https://example.com/api/store?branch=../users"),
+  assert.equal(branchLabel("buzzwash"), "BuzzWash");
+  assert.equal(
+    requestBranch("https://example.com/api/store?branch=buzzwash"),
+    "buzzwash",
   );
   assert.throws(() =>
-    requestBranch("https://example.com/api/store?branch=buzzwash"),
+    requestBranch("https://example.com/api/store?branch=../users"),
   );
 });
 
@@ -164,7 +165,10 @@ test("old banner storage and URLs stay readable without becoming extra store cho
       branchMediaPath(branch, "promo"),
     );
   }
-  assert.throws(() => branchMediaPath("buzzwash", "promo"));
+  assert.notEqual(
+    branchMediaPath("buzzwash", "promo"),
+    branchMediaPath(DEFAULT_BRANCH, "promo"),
+  );
 });
 
 test("new Washloka uploads replace defaults while preserving every legacy image", () => {
@@ -197,14 +201,16 @@ test("new Washloka uploads replace defaults while preserving every legacy image"
 });
 
 test("the Washloka namespace rejects invalid stores, slots and image URLs", () => {
-  assert.throws(() => bannerStoragePath("buzzwash", "promo", "washloka"));
+  assert.notEqual(
+    bannerStoragePath("buzzwash", "promo", "washloka"),
+    bannerStoragePath(DEFAULT_BRANCH, "promo", "washloka"),
+  );
   assert.throws(() =>
     bannerStoragePath(DEFAULT_BRANCH, "../promo", "washloka"),
   );
   assert.throws(() => bannerStoragePath(DEFAULT_BRANCH, "promo", "unknown"));
   assert.throws(() => bannerUploadTarget(DEFAULT_BRANCH, "promo", "invalid"));
   for (const image of [
-    "/api/media/banners/promo?v=abcd&branch=buzzwash&theme=washloka",
     "/api/media/banners/wash?v=abcd&branch=dfablelaundry&theme=washloka",
     "/api/media/banners/promo?v=abcd&branch=dfablelaundry",
     "/api/media/banners/promo?v=abcd&branch=dfablelaundry&theme=unknown",

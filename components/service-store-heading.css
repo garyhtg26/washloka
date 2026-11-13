@@ -1,0 +1,10 @@
+.service-store-heading { align-items: center; justify-content: flex-start; gap: 20px; }
+.service-store-heading .service-store-title { min-width: 0; }
+.service-store-heading .service-store-title p { margin: 6px 0 0; color: #766a6f; font-size: 14px; line-height: 1.4; }
+.service-store-brand { display: flex; align-items: center; justify-content: center; flex: none; width: 144px; height: 68px; padding: 11px 14px; border: 1px solid #e9eaed; border-radius: 14px; background: #fff; }
+.service-store-brand img { display: block; width: 100%; height: 100%; object-fit: contain; }
+@media (max-width: 520px) {
+  .service-store-heading { gap: 14px; }
+  .service-store-heading .service-store-title p { font-size: 12px; }
+  .service-store-brand { width: 100px; height: 58px; padding: 9px; border-radius: 12px; }
+}

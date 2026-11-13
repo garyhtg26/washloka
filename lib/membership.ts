@@ -8,6 +8,8 @@ import { manualLocked, safeManualSummary } from "./payments/manual-policy";
 import type { Order } from "./types";
 import { signalPaymentChange } from "./payments/signals";
 import { normalizeBranchId } from "./branches";
+import { requireRewardsStore } from "./rewards-store";
+import { releaseReservedReward } from "./reward-release";
 
 export function memberBalance(value: unknown) {
   const balance = value ?? 0;
@@ -35,6 +37,9 @@ export async function reviewDeposit(
       throw new ApiError(409, "Permintaan deposit sudah berubah.");
     if (!normalizeBranchId(deposit.get("branchId")))
       throw new ApiError(404, "Permintaan deposit tidak ditemukan.");
+    // The stored deposit, rather than client input, determines access.
+    requireManager(actor, deposit.get("branchId"));
+    requireRewardsStore(deposit.get("branchId"));
     if (deposit.get("status") !== "pending") {
       if (
         deposit.get("status") ===
@@ -97,6 +102,7 @@ export async function redeemMembership(
         403,
         "Saldo hanya dapat dipakai untuk pesanan sendiri.",
       );
+    requireRewardsStore(order.branchId);
     if (
       order.paid ||
       order.paymentReconciliationRequired ||
@@ -108,8 +114,13 @@ export async function redeemMembership(
       finalAmount(order) === null ||
       order.actualKg === null ||
       order.shippingFee === null
-    )
+    ) {
+      if (amount === 0 && order.rewardsReservedAt && (order.membershipUsed || 0) > 0) {
+        const released = releaseReservedReward(tx, database, order, walletRef, memberBalance(walletSnap.get("balance")), "membership");
+        return { ...released, amount: 0 };
+      }
       throw new ApiError(409, "Tunggu toko mengonfirmasi jumlah dan ongkir.");
+    }
     const current = order.membershipUsed || 0;
     const balance = memberBalance(walletSnap.get("balance"));
     if (walletSnap.get("reconciliationRequired") && amount > current)

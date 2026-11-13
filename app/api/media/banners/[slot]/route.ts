@@ -56,7 +56,6 @@ export async function POST(req: NextRequest, context: Context) {
   try {
     sameOrigin(req);
     const user = await identity(req, true);
-    requireManager(user);
     const slot = mediaSlotSchema.safeParse((await context.params).slot);
     if (!slot.success) throw new ApiError(400, "Slot gambar tidak valid.");
     if (
@@ -70,6 +69,7 @@ export async function POST(req: NextRequest, context: Context) {
     } catch {
       throw new ApiError(400, "Toko tidak valid.");
     }
+    requireManager(user, branch);
     const bytes = await readJpeg(req);
     const target = bannerUploadTarget(branch, slot.data, randomUUID());
     await uploadPhoto(target.path, bytes);

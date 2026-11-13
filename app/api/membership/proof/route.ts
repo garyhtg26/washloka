@@ -5,6 +5,8 @@ import { db } from "@/lib/firebase/admin";
 import { readJpeg } from "@/lib/media-validation";
 import { photoStorageReady } from "@/lib/storage/photos";
 import { storeMembershipProof } from "@/lib/membership-proof";
+import { requestBranch } from "@/lib/branches";
+import { requireRewardsStore } from "@/lib/rewards-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,13 +16,15 @@ export async function POST(req: NextRequest) {
   try {
     sameOrigin(req);
     const user = (await identity(req, true))!;
+    const branch = requestBranch(req.url);
+    requireRewardsStore(branch);
     if (!photoStorageReady())
       throw new ApiError(
         503,
         "Penyimpanan bukti belum tersedia. Hubungi toko.",
       );
     const bytes = await readJpeg(req);
-    const result = await storeMembershipProof(db(), user.uid, bytes);
+    const result = await storeMembershipProof(db(), user.uid, bytes, undefined, branch);
     return NextResponse.json(result, {
       headers: { "Cache-Control": "private, no-store" },
     });

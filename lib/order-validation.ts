@@ -26,6 +26,10 @@ export const orderSchema = z.object({
     ),
   source: z.enum(["web", "pos"]),
   insurance: z.boolean().default(false),
+  usePoints: z.boolean().default(false),
+  useMembershipBalance: z.boolean().default(false),
+  pointsLimit: z.number().int().min(0).max(1000000000).optional(),
+  membershipLimit: z.number().int().min(0).max(1000000000).optional(),
   membershipCode: z
     .string()
     .regex(/^[A-F0-9]{10}$/)
@@ -39,14 +43,15 @@ export const updateSchema = z.object({
   actualKg: z.number().min(0.1).max(100),
   paid: z.boolean(),
   shippingFee: z.number().int().min(0).max(10000000).nullable(),
+  confirmedUnitPrice: z.number().int().min(1000).max(10000000).optional(),
 });
 const validPrice = z.number().int().min(1000).max(10000000);
 const ratesSchema = z
   .object({
-    regular: validPrice,
-    oneDay: validPrice,
-    express: validPrice,
-    quick: validPrice,
+    regular: validPrice.optional(),
+    oneDay: validPrice.optional(),
+    express: validPrice.optional(),
+    quick: validPrice.optional(),
   })
   .strict();
 export const pricesSchema = z

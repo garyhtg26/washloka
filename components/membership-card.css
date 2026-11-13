@@ -246,7 +246,8 @@ dialog.member-dialog {
   font-size: 12px;
   font-weight: 700;
 }
-.member-dialog .member-field input {
+.member-dialog .member-field input,
+.member-dialog .member-field select {
   width: 100%;
   min-width: 0;
   min-height: 44px;
@@ -259,7 +260,8 @@ dialog.member-dialog {
   font-size: 14px;
   font-weight: 500;
 }
-.member-dialog .member-field input:focus {
+.member-dialog .member-field input:focus,
+.member-dialog .member-field select:focus {
   outline: 2px solid #ead4dc;
   border-color: #ac6179;
 }

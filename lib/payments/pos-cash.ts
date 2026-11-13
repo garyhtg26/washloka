@@ -20,6 +20,7 @@ export async function confirmPosCash(
     const snapshot = await tx.get(ref);
     if (!snapshot.exists) throw new ApiError(404, "Pesanan tidak ditemukan.");
     const order = snapshot.data() as Order;
+    requireAdmin(user, order.branchId);
     if (order.source !== "pos")
       throw new ApiError(403, "Pembayaran tunai hanya untuk pesanan kasir.");
     if (order.paid && order.paymentMethod === "cash") return;

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     sameOrigin(req);
     const user = await identity(req, true);
-    requireManager(user);
+    requireManager(user, requestBranch(req.url));
     const expectedVersion = req.headers.get("if-match");
     if (!expectedVersion)
       throw new ApiError(
@@ -48,7 +48,7 @@ export async function DELETE(req: NextRequest) {
   try {
     sameOrigin(req);
     const user = await identity(req, true);
-    requireManager(user);
+    requireManager(user, requestBranch(req.url));
     const expectedVersion = req.headers.get("if-match");
     if (!expectedVersion)
       throw new ApiError(

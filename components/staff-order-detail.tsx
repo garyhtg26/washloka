@@ -41,7 +41,7 @@ const statusMessages = [
   "Cucianmu sedang dalam proses pencucian.",
   "Cucianmu sedang dalam tahap finishing dan pemeriksaan.",
   "Cucianmu sedang dalam perjalanan untuk diantar.",
-  "Pesananmu sudah selesai. Terima kasih sudah memilih D’Fable!",
+  "Pesananmu sudah selesai. Terima kasih sudah mempercayakan cucianmu kepada kami!",
 ];
 
 export default function StaffOrderDetail({
@@ -115,6 +115,9 @@ export default function StaffOrderDetail({
         paid: o.paid,
         shippingFee:
           form.get("shipping") === "" ? null : Number(form.get("shipping")),
+        ...(o.pricePending && form.get("confirmedUnitPrice") !== ""
+          ? { confirmedUnitPrice: Number(form.get("confirmedUnitPrice")) }
+          : {}),
       });
       setNotice(
         nextStatus !== previousStatus
@@ -261,6 +264,22 @@ export default function StaffOrderDetail({
                 <small>Isi 0 jika gratis atau ambil di toko.</small>
               </label>
             </div>
+            {o.pricePending && (
+              <label>
+                Harga akhir per {unit} (Rp)
+                <input
+                  name="confirmedUnitPrice"
+                  type="number"
+                  min={o.unitPrice}
+                  max="10000000"
+                  step="1000"
+                  placeholder={`Mulai ${money(o.unitPrice)}`}
+                  readOnly={locked}
+                  aria-readonly={locked}
+                />
+                <small>Isi setelah harga disepakati. Pembayaran tersedia setelah harga dikonfirmasi.</small>
+              </label>
+            )}
             {locked && (
               <p className="staff-detail-lock">
                 <ShieldCheck size={16} /> Tagihan terkunci karena pembayaran
@@ -295,12 +314,20 @@ export default function StaffOrderDetail({
               reviewRequired={o.paymentReconciliationRequired}
               compact={false}
             />
+            {(!!o.membershipUsed || !!o.pointsUsed) && (
+              <div className="staff-detail-rewards" aria-label="Potongan pelanggan">
+                {!!o.membershipUsed && <div><span>Saldo membership</span><strong>−{money(o.membershipUsed)}</strong></div>}
+                {!!o.pointsUsed && <div><span>Poin loyalty</span><strong>−{money(o.pointsUsed)}</strong></div>}
+              </div>
+            )}
             <div className="staff-detail-total">
-              <span>Total saat ini</span>
+              <span>{o.pricePending || o.actualKg === null || o.shippingFee === null ? "Estimasi tersisa" : "Total saat ini"}</span>
               <strong>{money(o.total)}</strong>
             </div>
             <p className="staff-detail-hint">
-              Jumlah akhir dihitung setelah berat dan ongkir disimpan.
+              {o.pricePending
+                ? "Harga akhir perlu dikonfirmasi toko sebelum pembayaran."
+                : "Jumlah akhir dihitung setelah berat dan ongkir disimpan."}
             </p>
           </section>
           <PaymentPanel
@@ -315,7 +342,7 @@ export default function StaffOrderDetail({
             hideProofByDefault
             onChanged={onPaymentChanged}
           />
-          {o.source === "pos" && !o.paid && !locked && (
+          {o.source === "pos" && !o.paid && !locked && !o.pricePending && (
             <div className="staff-detail-card">
               {!cashConfirm ? (
                 <button
@@ -484,7 +511,7 @@ export function StaffReceipt({
         <span>{speedLabel(o.speed, o.express)}</span>
       </div>
       <div className="staff-receipt-row">
-        <span>Biaya layanan</span>
+        <span>{o.pricePending ? "Biaya layanan mulai" : "Biaya layanan"}</span>
         <span>{money(calculateOrderPrice(o, o.actualKg ?? o.kg))}</span>
       </div>
       {o.membershipDiscount && (
@@ -520,7 +547,7 @@ export function StaffReceipt({
       <hr />
       <div className="staff-receipt-row staff-receipt-total">
         <span>
-          {o.actualKg === null || o.shippingFee === null ? "Estimasi" : "Total"}
+          {o.pricePending || o.actualKg === null || o.shippingFee === null ? "Estimasi" : "Total"}
         </span>
         <b>{money(o.total)}</b>
       </div>

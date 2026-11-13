@@ -3,18 +3,19 @@ import type { Firestore } from "firebase-admin/firestore";
 import {
   branchAliases,
   branchSchema,
+  activeBranchIds,
   DEFAULT_BRANCH,
   sameBranch,
 } from "./branches";
-import { readBranchSettings } from "./branch-settings";
+import { readBranchSettings, readStoreBankSettings } from "./branch-settings";
 import { db, firebaseReady } from "./firebase/admin";
 import { siteContent } from "./site-content";
 import { defaultStore } from "./defaults";
-import type { Identity } from "./firebase/access";
+import { canManageStore, type Identity } from "./firebase/access";
 import type { Order, Store } from "./types";
 import { midtransCheckoutEnabled } from "./payments/midtrans";
 import { bankDetails, safeManualSummary } from "./payments/manual-policy";
-import { normalizeServices } from "./catalog";
+import { catalogForBranch, normalizeServices } from "./catalog";
 import { brandCopy } from "./brand-copy";
 export async function readStore(
   user: Identity | null,
@@ -25,19 +26,49 @@ export async function readStore(
   if (!connection && !firebaseReady())
     return {
       ...defaultStore,
+      branchId: branch,
+      services: catalogForBranch(branch),
+      ...(branch === "buzzwash"
+        ? {
+            promo: {
+              ...defaultStore.promo,
+              title: "BuzzWash",
+              description: "Layanan laundry BuzzWash",
+              code: "",
+            },
+            content: siteContent(),
+          }
+        : {}),
       configured: false,
       isAdmin: false,
+      allowedBranches: [],
       paymentEnabled: false,
+      orderingEnabled: false,
     };
   const database = connection ?? db();
   const settings = await readBranchSettings(database, branch);
-  const data = settings.exists ? settings.data()! : defaultStore;
-  const promo = { ...defaultStore.promo, ...data.promo };
+  const data: Partial<Store> = settings.exists
+    ? settings.data()!
+    : branch === "buzzwash"
+      ? { services: catalogForBranch(branch) }
+      : defaultStore;
+  const defaultPromo =
+    branch === "buzzwash"
+      ? {
+          ...defaultStore.promo,
+          title: "BuzzWash",
+          description: "Layanan laundry BuzzWash",
+          code: "",
+        }
+      : defaultStore.promo;
+  const promo = { ...defaultPromo, ...data.promo };
   let orders: Order[] = [];
   let hasMore = false;
+  const isStoreAdmin = canManageStore(user, branch);
+  const allowedBranches = activeBranchIds.filter((id) => canManageStore(user, id));
   let profile = { name: user?.name || "", phone: "", email: user?.email || "" };
   if (user) {
-    const q = user.admin
+    const q = isStoreAdmin
       ? database
           .collection("orders")
           .where("branchId", "in", [...branchAliases(branch)])
@@ -46,7 +77,7 @@ export async function readStore(
           .where("uid", "==", user.uid)
           .orderBy("createdAt", "desc");
     const [snap, p] = await Promise.all([
-      user.admin ? q.get() : q.limit(501).get(),
+      isStoreAdmin ? q.get() : q.limit(501).get(),
       database.doc(`users/${user.uid}`).get(),
     ]);
     const storeOrders = snap.docs.filter((doc) =>
@@ -76,25 +107,38 @@ export async function readStore(
         email: profile.email,
       };
   }
+  const bank = bankDetails(await readStoreBankSettings(database, branch), branch);
   return {
     branchId: branch,
-    services: normalizeServices(data.services),
+    services: normalizeServices(data.services, branch),
     content: siteContent(data.content),
     promo: {
       ...promo,
-      title: brandCopy(promo.title, defaultStore.promo.title),
-      description: brandCopy(promo.description, defaultStore.promo.description),
+      title:
+        branch === "buzzwash"
+          ? promo.title
+          : brandCopy(promo.title, defaultStore.promo.title),
+      description:
+        branch === "buzzwash"
+          ? promo.description
+          : brandCopy(promo.description, defaultStore.promo.description),
       button:
-        typeof promo.button === "string" ? brandCopy(promo.button) : undefined,
+        typeof promo.button === "string"
+          ? branch === "buzzwash"
+            ? promo.button
+            : brandCopy(promo.button)
+          : undefined,
     },
     orders,
     configured: true,
-    isAdmin: !!user?.admin,
-    canManageUsers: !!user?.manageUsers,
-    role: user?.role || "customer",
+    isAdmin: isStoreAdmin,
+    allowedBranches,
+    canManageUsers: !!user?.manageUsers && isStoreAdmin,
+    role: isStoreAdmin ? user?.role || "customer" : "customer",
     profile,
     hasMore,
-    paymentEnabled: midtransCheckoutEnabled(),
-    bank: bankDetails(settings.get("manualPayment"), branch),
+    paymentEnabled: branch !== "buzzwash" && midtransCheckoutEnabled(),
+    orderingEnabled: branch !== "buzzwash" || bank.configured,
+    bank,
   };
 }

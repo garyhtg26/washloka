@@ -14,12 +14,13 @@ export async function PATCH(req: NextRequest) {
   try {
     sameOrigin(req);
     const user = await identity(req, true);
-    requireManager(user);
+    const branch = requestBranch(req.url);
+    requireManager(user, branch);
     const raw = await req.text();
     if (raw.length > 5000) throw new ApiError(413, "Data terlalu besar.");
     const content = contentSchema.parse(JSON.parse(raw));
     await db()
-      .doc(`settings/${branchSettingsId(requestBranch(req.url))}`)
+      .doc(`settings/${branchSettingsId(branch)}`)
       .set({ content, updatedBy: user!.uid }, { merge: true });
     return NextResponse.json({ ok: true });
   } catch (e) {

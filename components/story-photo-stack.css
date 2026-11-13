@@ -98,6 +98,21 @@
 .story-photo-hint span {
   padding: 0 5px;
 }
+@media (max-width: 760px) {
+  /* Keep the fanned photos inside the narrower mobile canvas. */
+  .story-photo-1 {
+    transform: translateX(-76%) rotate(-8deg) scale(0.9);
+  }
+  .story-photo-2 {
+    transform: translateX(-24%) rotate(8deg) scale(0.9);
+  }
+  .story-photo-1:hover {
+    transform: translateX(-78%) rotate(-10deg) translateY(-8px) scale(0.9);
+  }
+  .story-photo-2:hover {
+    transform: translateX(-22%) rotate(10deg) translateY(-8px) scale(0.9);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .story-photo {
     transition: none;

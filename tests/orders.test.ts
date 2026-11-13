@@ -126,12 +126,14 @@ test("price changes require unique services and valid complete speed rates", () 
     ).success,
     false,
   );
+  // The input schema accepts partial rates because BuzzWash offers only some
+  // speeds; the store action checks completeness against each service.
   assert.equal(
     pricesSchema.safeParse([
       { id: "complete", price: 8000, rates: { regular: 8000 } },
       ...prices.slice(1),
     ]).success,
-    false,
+    true,
   );
 });
 

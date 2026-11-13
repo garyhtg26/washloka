@@ -78,6 +78,9 @@ export default function Tracking({
   const currentStatus = Math.max(0, Math.min(statuses.length - 1, o.status));
   const startStep = o.source === "pos" ? 3 : 0;
   const StatusIcon = stepIcons[currentStatus] || ClipboardList;
+  const membershipUsed = o.membershipUsed || 0;
+  const pointsUsed = o.pointsUsed || 0;
+  const rewardsUsed = membershipUsed + pointsUsed;
   return (
     <div>
       {preview && (
@@ -229,16 +232,24 @@ export default function Tracking({
               </Link>
             </section>
           )}
-          <div className="mb-5 flex items-center justify-between gap-3">
-            <span className="text-sm text-slate-500">
-              {o.actualKg === null || o.shippingFee === null
-                ? "Estimasi total"
-                : "Total tagihan"}
-            </span>
-            <strong className="text-2xl tracking-tight">
-              {money(o.total)}
-            </strong>
+          <div className="tracking-price-summary" aria-label="Ringkasan tagihan">
+            {rewardsUsed > 0 && (
+              <div className="tracking-price-details">
+                <div><span>Sebelum saldo & poin</span><s>{money(o.total + rewardsUsed)}</s></div>
+                {membershipUsed > 0 && <div><span>Saldo membership</span><strong>−{money(membershipUsed)}</strong></div>}
+                {pointsUsed > 0 && <div><span>Poin loyalty</span><strong>−{money(pointsUsed)}</strong></div>}
+              </div>
+            )}
+            <div className="tracking-price-total">
+              <span>
+                {o.pricePending || o.actualKg === null || o.shippingFee === null
+                  ? "Estimasi pembayaran"
+                  : "Total pembayaran"}
+              </span>
+              <strong>{money(o.total)}</strong>
+            </div>
           </div>
+          {o.pricePending && <p className="mb-4 text-sm text-amber-800">Harga akhir dikonfirmasi toko sebelum pembayaran.</p>}
           {preview ? (
             <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">
               <ShieldCheck size={18} /> Pembayaran dikonfirmasi

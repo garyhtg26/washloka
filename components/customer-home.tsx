@@ -54,6 +54,9 @@ export default function CustomerHome({
   onServices,
 }: Props) {
   const content = siteContent(store.content);
+  const isBuzzWash = store.branchId === "buzzwash";
+  const orderAvailable = !isBuzzWash || store.orderingEnabled === true;
+  const membershipAvailable = content.member.active;
   const [category, setCategory] = useState("all");
   const [query, setQuery] = useState("");
   const [code, setCode] = useState("");
@@ -78,7 +81,7 @@ export default function CustomerHome({
       return (first < 0 ? 100 : first) - (second < 0 ? 100 : second);
     });
   const showMembership =
-    content.member.active &&
+    membershipAvailable &&
     (category === "member" ||
       (category === "all" &&
         !!term &&
@@ -196,10 +199,10 @@ export default function CustomerHome({
                       <button
                         type="button"
                         className="campaign-order"
-                        onClick={() => onOrder("wash")}
+                        onClick={() => orderAvailable ? onOrder("wash") : onServices()}
                         tabIndex={index === currentSlide ? 0 : -1}
                       >
-                        Pesan sekarang{" "}
+                        {orderAvailable ? "Pesan sekarang" : "Lihat layanan"}{" "}
                         <ArrowRight size={17} aria-hidden="true" />
                       </button>
                     </div>
@@ -339,7 +342,7 @@ export default function CustomerHome({
           data-scroll-reveal
         >
           {categories
-            .filter((item) => item.id !== "member" || content.member.active)
+            .filter((item) => item.id === "member" ? membershipAvailable : store.services.some((service) => service.id === item.id))
             .map(({ id, label, icon: Icon }) => (
               <button
                 type="button"
@@ -374,7 +377,7 @@ export default function CustomerHome({
               key={service.id}
               className={`photo-service service-${service.id}`}
               data-scroll-reveal
-              onClick={() => onOrder(service.id)}
+              onClick={() => orderAvailable ? onOrder(service.id) : onServices()}
             >
               <div className="photo-service-image">
                 <Image
@@ -394,7 +397,9 @@ export default function CustomerHome({
                     <small>
                       {" "}
                       /{" "}
-                      {service.packageSize
+                      {service.pricingModel === "flat-package"
+                        ? `paket maks. ${service.packageSize} kg`
+                        : service.packageSize
                         ? `${service.packageSize} kg`
                         : service.unit}
                     </small>
@@ -446,8 +451,9 @@ export default function CustomerHome({
           </div>
         )}
         <p className="compact-terms">
-          Kiloan minimal 3 kg, cuci kering lipat minimal 10 kg. Ongkir
-          dikonfirmasi toko.
+          {isBuzzWash
+            ? "Kiloan minimal 3 kg, Paket Bahagia maksimal 10 kg."
+            : "Kiloan minimal 3 kg, cuci kering lipat minimal 10 kg. Ongkir dikonfirmasi toko."}
         </p>
       </section>
 
@@ -483,7 +489,7 @@ export default function CustomerHome({
             </form>
           </section>
         )}
-        {content.member.active && (
+        {membershipAvailable && (
           <button type="button" className="monthly-strip" onClick={onMember}>
             <Image
               width={120}

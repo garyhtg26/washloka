@@ -8,6 +8,7 @@ import {
 } from "@/lib/firebase/access";
 import { db } from "@/lib/firebase/admin";
 import { reviewDeposit } from "@/lib/membership";
+import { requestBranch, sameBranch } from "@/lib/branches";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const schema = z
@@ -44,25 +45,35 @@ function fail(error: unknown) {
 export async function GET(req: NextRequest) {
   try {
     const user = await identity(req, true);
-    requireManager(user);
-    const result = await db()
-      .collection("membershipDeposits")
-      .where("status", "==", "pending")
-      .limit(100)
-      .get();
+    const branch = requestBranch(req.url);
+    requireManager(user, branch);
+    // Scan pending requests in pages, applying the store filter before the
+    // result limit. This avoids hiding a store's requests behind another store's
+    // first 100 records without requiring a new Firestore composite index.
+    const query = db().collection("membershipDeposits")
+      .where("status", "==", "pending").limit(100);
+    let cursor: FirebaseFirestore.QueryDocumentSnapshot | undefined;
+    const requests: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    for (;;) {
+      const page = await (cursor ? query.startAfter(cursor) : query).get();
+      requests.push(...page.docs.filter((x) => sameBranch(x.get("branchId"), branch)));
+      if (requests.length >= 100 || page.size < 100) break;
+      cursor = page.docs[page.docs.length - 1];
+    }
     return NextResponse.json(
       {
-        requests: result.docs.map((x) => ({
-          uid: x.get("uid"),
-          requestId: x.get("requestId"),
-          amount: x.get("amount"),
-          name: x.get("name"),
-          senderName: x.get("senderName"),
-          branchId: x.get("branchId"),
-          createdAt: x.get("createdAt"),
-          bank: x.get("bank"),
-          hasProof: typeof x.get("proofVersion") === "string",
-        })),
+        requests: requests.slice(0, 100)
+          .map((x) => ({
+            uid: x.get("uid"),
+            requestId: x.get("requestId"),
+            amount: x.get("amount"),
+            name: x.get("name"),
+            senderName: x.get("senderName"),
+            branchId: x.get("branchId"),
+            createdAt: x.get("createdAt"),
+            bank: x.get("bank"),
+            hasProof: typeof x.get("proofVersion") === "string",
+          })),
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );

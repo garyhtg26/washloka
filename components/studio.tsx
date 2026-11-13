@@ -16,6 +16,7 @@ import UserManagement from "./user-management";
 import DashboardAccount from "./dashboard-account";
 import "./dashboard-brand.css";
 import "./customer-brand.css";
+import "./order-rewards.css";
 import {
   branches,
   branchLocations,
@@ -23,9 +24,12 @@ import {
   type BranchId,
 } from "@/lib/branches";
 import ContentEditor from "./content-editor";
+import BuzzWashCatalogView from "./buzzwash-catalog-view";
+import ServiceStoreHeading from "./service-store-heading";
 import Tracking, { previewTracking } from "./tracking";
 import PaymentPanel from "./payment-panel";
 import LoyaltyRedemption from "./loyalty-redemption";
+import MembershipRedemption from "./membership-redemption";
 import PaymentSettings from "./payment-settings";
 import PaymentStatus from "./payment-status";
 import {
@@ -40,6 +44,8 @@ import type { TrackingOrder } from "@/lib/types";
 import {
   serviceCategoryLabels,
   serviceCategoryOrder,
+  defaultSpeed,
+  serviceAvailableSpeeds,
   serviceRate,
   serviceSpeeds,
   serviceTotal,
@@ -61,6 +67,7 @@ import {
   Search,
   X,
   Camera,
+  Coins,
   CalendarDays,
   LayoutDashboard,
   ShoppingBag,
@@ -185,7 +192,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
     } catch {
       // Storage can be unavailable in strict privacy modes.
     }
-    const selectedStore = resolveCustomerBranch({ requested, saved });
+    const selectedStore = resolveCustomerBranch({ requested, saved: dashboard ? null : saved });
     setBranch(selectedStore);
     if (requested && requested !== selectedStore) {
       const url = new URL(window.location.href);
@@ -287,6 +294,10 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
         sequence !== loadSequence.current
       )
         return;
+      if (dashboard && data.allowedBranches?.length && !data.allowedBranches.includes(branch)) {
+        switchBranch(data.allowedBranches[0], false);
+        return;
+      }
       setStore(data);
       setLoadedSession(capturedSession);
       setProfile({
@@ -457,6 +468,10 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
     }
   }
   function order(id = "complete") {
+    if (branch === "buzzwash" && !store?.orderingEnabled) {
+      notify("Pemesanan BuzzWash sedang disiapkan.");
+      return;
+    }
     setService(id);
     if (!auth.user || !auth.verified) {
       pendingOrder.current = true;
@@ -551,6 +566,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                 branch={branch}
                 onBranchChange={switchBranch}
                 disabled={busy}
+                availableBranches={store.allowedBranches ?? ["dfablelaundry"]}
               />
             </div>
             <span className="nav-caption">OPERASIONAL</span>
@@ -596,7 +612,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
               <span>
                 Washloka{" "}
                 <span className="dashboard-client-crumb">
-                  / D’Fable Laundry
+                  / {branchName}
                 </span>{" "}
                 <span className="muted">
                   /{" "}
@@ -620,6 +636,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                   branch={branch}
                   onBranchChange={switchBranch}
                   disabled={busy}
+                  availableBranches={store.allowedBranches ?? ["dfablelaundry"]}
                 />
               </div>
               <DashboardAccount branchName={branchName} />
@@ -645,7 +662,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                 </div>
               </div>
               {adminView === "users" && store.canManageUsers && (
-                <UserManagement />
+                <UserManagement branch={branch} allowedBranches={store.allowedBranches ?? ["dfablelaundry"]} />
               )}
               {adminView === "overview" && (
                 <>
@@ -1059,14 +1076,12 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                 onServices={() => setView("services")}
               />
             )}
-            {view === "services" && (
+            {view === "services" && branch === "buzzwash" && (
+              <BuzzWashCatalogView services={store.services} orderingEnabled={store.orderingEnabled === true} onOrder={order} onMember={() => setModal("member")} />
+            )}
+            {view === "services" && branch !== "buzzwash" && (
               <section className="services-section">
-                <div className="section-heading" data-scroll-reveal>
-                  <div>
-                    <h2>Layanan & harga</h2>
-                  </div>
-                  <span className="small-note">{branchName}</span>
-                </div>
+                <ServiceStoreHeading branch={branch} />
                 <div className="service-catalog">
                   {serviceCategoryOrder.map((category) => {
                     const group = store.services.filter(
@@ -1394,6 +1409,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
         </button>
         {modal === "order" && (
           <OrderForm
+            branchId={branch}
             branchName={branchName}
             initialLocation={visitorLocation || branchLocations[branch]}
             onPickupLocationChange={(latitude, longitude) => {
@@ -1432,17 +1448,21 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                 : " Berat aktual dan ongkir akan dikonfirmasi toko."}
             </p>
             <div className="total-line">
-              <span>{dashboard ? "Total tagihan" : "Estimasi layanan"}</span>
-              <b>{money(currentSelected.total)}</b>
+              <span>{dashboard ? "Total tagihan" : "Estimasi sisa pembayaran"}</span>
+              <span className="order-success-amount">
+                {!dashboard && ((currentSelected.membershipUsed || 0) + (currentSelected.pointsUsed || 0) > 0) && (
+                  <del><span className="sr-only">Sebelum saldo dan poin: </span>{money(currentSelected.total + (currentSelected.membershipUsed || 0) + (currentSelected.pointsUsed || 0))}</del>
+                )}
+                <b>{money(currentSelected.total)}</b>
+              </span>
             </div>
+            {!dashboard && currentSelected.shippingFee === null && <p className="order-success-shipping-note">Belum termasuk ongkir. Harga akhir mengikuti jumlah yang dikonfirmasi toko.</p>}
             <div className="my-5 text-left">
               {!dashboard && auth.user?.uid === currentSelected.uid && (
-                <LoyaltyRedemption
-                  order={currentSelected}
-                  onChanged={() => {
-                    void load();
-                  }}
-                />
+                <>
+                  <MembershipRedemption order={currentSelected} onChanged={() => { void load(); }} />
+                  <LoyaltyRedemption order={currentSelected} onChanged={() => { void load(); }} />
+                </>
               )}
               <PaymentPanel
                 key={`${currentSelected.id}-${currentSelected.pointsUsed || 0}-${currentSelected.membershipUsed || 0}-${currentSelected.paid}`}
@@ -1591,6 +1611,7 @@ function Empty({ title, text }: { title: string; text: string }) {
   );
 }
 function OrderForm({
+  branchId,
   branchName,
   initialLocation,
   onPickupLocationChange,
@@ -1601,6 +1622,7 @@ function OrderForm({
   busy,
   submit,
 }: {
+  branchId: BranchId;
   branchName: string;
   initialLocation: { latitude: number; longitude: number };
   onPickupLocationChange: (latitude: number, longitude: number) => void;
@@ -1621,10 +1643,16 @@ function OrderForm({
       : services.find((item) => item.id === initialService)?.minimumQuantity ||
         1,
   );
-  const [speed, setSpeed] = useState<ServiceSpeed>("regular");
+  const [speed, setSpeed] = useState<ServiceSpeed>(() => defaultSpeed(services.find((item) => item.id === initialService) || services[0]));
   const [insurance, setInsurance] = useState(false);
   const [posMemberCode, setPosMemberCode] = useState("");
   const [memberActive, setMemberActive] = useState(false);
+  const [rewardBalances, setRewardBalances] = useState<{ points: number; membership: number; pointsBlocked: boolean } | null>(null);
+  const [rewardsLoading, setRewardsLoading] = useState(!pos);
+  const [rewardsError, setRewardsError] = useState(false);
+  const [rewardsRevision, setRewardsRevision] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
+  const [useMembershipBalance, setUseMembershipBalance] = useState(false);
   const [posPayment, setPosPayment] = useState<"later" | "cash" | "transfer">(
     "later",
   );
@@ -1649,23 +1677,57 @@ function OrderForm({
   useEffect(() => {
     if (pos || !auth.user) return;
     let current = true;
-    auth
-      .request("/api/membership")
-      .then(async (response) => {
-        if (!response.ok) return;
-        const data = await response.json();
-        if (current) setMemberActive(data.discountEligible === true);
+    setRewardsLoading(true);
+    setRewardsError(false);
+    Promise.all([
+      auth.request(`/api/membership?branch=${encodeURIComponent(branchId)}`),
+      auth.request("/api/loyalty"),
+    ])
+      .then(async ([membershipResponse, pointsResponse]) => {
+        if (!membershipResponse.ok || !pointsResponse.ok) throw Error("Saldo belum bisa dimuat");
+        const [membership, loyalty] = await Promise.all([membershipResponse.json(), pointsResponse.json()]);
+        if (!Number.isSafeInteger(membership.balance) || membership.balance < 0 || !Number.isSafeInteger(loyalty.balance) || loyalty.balance < 0) throw Error("Saldo tidak valid");
+        if (current) {
+          const eligible = membership.discountEligible === true;
+          setMemberActive(eligible);
+          setRewardBalances({ points: loyalty.balance, membership: membership.balance, pointsBlocked: loyalty.reconciliationRequired === true });
+          setUseMembershipBalance(eligible);
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (current) {
+          setRewardsError(true);
+          setRewardBalances(null);
+          setMemberActive(false);
+          setUsePoints(false);
+          setUseMembershipBalance(false);
+        }
+      })
+      .finally(() => { if (current) setRewardsLoading(false); });
     return () => {
       current = false;
     };
-  }, [pos, auth.user?.uid, auth.request]);
+  }, [pos, branchId, auth.user?.uid, auth.request, rewardsRevision]);
+  const estimatedBaseService = pos && kg === 0 ? 0 : estimate(services, service, kg, speed);
+  const estimatedService = Math.round(
+    estimatedBaseService * (memberActive || (pos && posMemberCode.length === 10) ? 0.8 : 1),
+  );
+  const estimatedMemberDiscount = estimatedBaseService - estimatedService;
+  const estimatedMembership = !pos && useMembershipBalance && memberActive && rewardBalances
+    ? Math.min(rewardBalances.membership, estimatedService) : 0;
+  const estimatedPoints = !pos && usePoints && rewardBalances && !rewardBalances.pointsBlocked
+    ? Math.min(rewardBalances.points, estimatedService - estimatedMembership) : 0;
+  const estimatedRemaining = pos && kg === 0
+    ? 0
+    : estimatedService - estimatedPoints - estimatedMembership + (insurance ? 1000 : 0);
+  const estimatedBeforeDiscounts = estimatedBaseService + (pos && kg === 0 ? 0 : insurance ? 1000 : 0);
+  const showOriginalPrice = !pos && estimatedBeforeDiscounts > estimatedRemaining;
   const selectService = (id: string) => {
     setService(id);
     const next = services.find((item) => item.id === id);
     setKg(pos ? 0 : next?.minimumQuantity || 1);
-    setSpeed("regular");
+    if (next) setSpeed(defaultSpeed(next));
+    setPosPayment("later");
   };
   useEffect(() => {
     if (pickupLocationEdited.current) return;
@@ -1703,6 +1765,10 @@ function OrderForm({
       onSubmit={async (e) => {
         e.preventDefault();
         setError("");
+        if (!pos && (rewardsLoading || rewardsError || !rewardBalances)) {
+          setError("Poin dan saldo belum siap. Silakan coba lagi.");
+          return;
+        }
         if (step === 1) {
           setStep(2);
           return;
@@ -1719,6 +1785,7 @@ function OrderForm({
             photo,
             source: pos ? "pos" : "web",
             insurance,
+            ...(!pos ? { usePoints, useMembershipBalance, membershipLimit: estimatedMembership, pointsLimit: estimatedPoints } : {}),
             ...(pos
               ? {
                   posPayment,
@@ -1895,7 +1962,7 @@ function OrderForm({
                 aria-label={`Jumlah ${selectedService.unit}`}
                 type="number"
                 min={selectedService.minimumQuantity || 1}
-                max={100}
+                max={selectedService.maximumQuantity || 100}
                 step={selectedService.unit === "kg" ? 0.1 : 1}
                 required
                 value={pos && kg === 0 ? "" : kg}
@@ -1918,7 +1985,7 @@ function OrderForm({
                   setKg(
                     kg === 0
                       ? selectedService.minimumQuantity || 1
-                      : Math.min(100, kg + 1),
+                      : Math.min(selectedService.maximumQuantity || 100, kg + 1),
                   )
                 }
               >
@@ -1926,7 +1993,9 @@ function OrderForm({
               </button>
             </div>
             <small>
-              {pos
+              {selectedService.pricingModel === "flat-package"
+                ? `Paket maksimal ${selectedService.maximumQuantity} kg, harga tetap per paket.`
+                : pos
                 ? selectedService.unit === "kg"
                   ? "Masukkan hasil timbangan sebelum lanjut."
                   : "Masukkan jumlah barang sebelum lanjut."
@@ -1939,7 +2008,7 @@ function OrderForm({
             <>
               <label>Kecepatan layanan</label>
               <div className="speed-choice">
-                {serviceSpeeds.map((option) => (
+                {serviceSpeeds.filter((option) => serviceAvailableSpeeds(selectedService).includes(option.id)).map((option) => (
                   <button
                     className={speed === option.id ? "selected" : ""}
                     type="button"
@@ -1951,13 +2020,15 @@ function OrderForm({
                     ) : (
                       <Wind size={18} />
                     )}
-                    <b>{option.label}</b>
+                    <b>{branchId === "buzzwash" && option.id === "quick" ? "Kilat" : option.label}</b>
                     <small>{option.days}</small>
                     <strong>
                       {money(serviceRate(selectedService, option.id))}
                       <small>
                         /{" "}
-                        {selectedService.packageSize
+                        {selectedService.pricingModel === "flat-package"
+                          ? `paket maks. ${selectedService.maximumQuantity} kg`
+                          : selectedService.packageSize
                           ? `${selectedService.packageSize} kg`
                           : selectedService.unit}
                       </small>
@@ -1968,10 +2039,36 @@ function OrderForm({
             </>
           ) : (
             <p className="service-standard-time">
-              <Clock size={15} /> Waktu standar: {selectedService.days}
+              <Clock size={15} /> {selectedService.days === "Dikonfirmasi toko" ? "Waktu pengerjaan dikonfirmasi toko" : `Waktu standar: ${selectedService.days}`}
             </p>
           )}
-          <label className="insurance-choice">
+          {selectedService.startingAt && (
+            <div className="notice"><Info size={18} /><span>Harga mulai dari {money(selectedService.price)} per {selectedService.unit}. Harga akhir dikonfirmasi toko sebelum pembayaran.</span></div>
+          )}
+          {!pos && (
+            <section className="order-rewards" aria-label="Poin dan saldo membership">
+              <div className="order-rewards-heading">
+                <span className="order-rewards-icon"><Wallet size={19} aria-hidden="true" /></span>
+                <div><h3>Poin & saldo membership</h3><p>Gunakan untuk mengurangi biaya layanan.</p></div>
+              </div>
+              {rewardsLoading && <p className="order-rewards-note" role="status">Memuat poin dan saldo…</p>}
+              {rewardsError && <p className="order-rewards-note" role="alert">Poin dan saldo belum bisa dimuat. <button type="button" onClick={() => setRewardsRevision((value) => value + 1)}>Coba lagi</button> untuk melanjutkan pesanan.</p>}
+              {!rewardsLoading && !rewardsError && rewardBalances && <div className="order-rewards-options">
+                <label className="order-rewards-choice">
+                  <span className="order-rewards-choice-icon"><Wallet size={18} aria-hidden="true" /></span>
+                  <span className="order-rewards-copy"><b>Saldo membership</b><small>{money(rewardBalances.membership)}{memberActive ? " · aktif" : " · belum tersedia"}</small></span>
+                  <input type="checkbox" checked={useMembershipBalance} disabled={!memberActive} onChange={(event) => setUseMembershipBalance(event.target.checked)} aria-label="Gunakan saldo membership" />
+                </label>
+                <label className="order-rewards-choice">
+                  <span className="order-rewards-choice-icon"><Coins size={18} aria-hidden="true" /></span>
+                  <span className="order-rewards-copy"><b>Poin loyalty</b><small>{rewardBalances.points.toLocaleString("id-ID")} poin · {money(rewardBalances.points)}{rewardBalances.pointsBlocked ? " · sedang diperiksa" : ""}</small></span>
+                  <input type="checkbox" checked={usePoints} disabled={rewardBalances.points === 0 || rewardBalances.pointsBlocked} onChange={(event) => setUsePoints(event.target.checked)} aria-label="Gunakan poin loyalty" />
+                </label>
+              </div>}
+              {!rewardsLoading && !rewardsError && rewardBalances && <p className="order-rewards-note">Saldo dipakai lebih dulu, lalu poin. Potongan diterapkan saat pesanan dibuat berdasarkan perkiraan. Jika biaya akhir lebih rendah, kelebihannya dikembalikan; jika lebih tinggi, selisih menjadi tagihan tambahan. Ongkir belum termasuk.</p>}
+            </section>
+          )}
+          {branchId !== "buzzwash" && <label className="insurance-choice">
             <input
               type="checkbox"
               checked={insurance}
@@ -1985,7 +2082,7 @@ function OrderForm({
                 penilaian toko; syarat selengkapnya ditetapkan lebih lanjut.
               </small>
             </span>
-          </label>
+          </label>}
           {!pos && (
             <label className="upload">
               {photo ? (
@@ -2090,7 +2187,7 @@ function OrderForm({
                     "Periksa transfer setelah pesanan dibuat",
                   ],
                 ] as const
-              ).map(([value, title, description]) => (
+              ).filter(([value]) => !selectedService.startingAt || value === "later").map(([value, title, description]) => (
                 <label
                   key={value}
                   className={posPayment === value ? "selected" : ""}
@@ -2110,6 +2207,7 @@ function OrderForm({
               ))}
             </fieldset>
           )}
+          {pos && selectedService.startingAt && <p className="small-note">Harga akhir perlu dikonfirmasi toko sebelum pembayaran.</p>}
           {!pos && (
             <>
               <label>Titik penjemputan</label>
@@ -2191,31 +2289,32 @@ function OrderForm({
           <small>
             {pos
               ? "Total layanan"
-              : `Estimasi · ${speedLabel(speed).toLowerCase()}`}
+              : selectedService.startingAt
+                ? "Estimasi dibayar · harga mulai"
+                : serviceAvailableSpeeds(selectedService).length === 0
+                  ? "Estimasi dibayar · waktu dikonfirmasi toko"
+                  : `Estimasi dibayar · ${branchId === "buzzwash" && speed === "quick" ? "kilat" : speedLabel(speed).toLowerCase()}`}
           </small>
-          <strong>
-            {money(
-              pos && kg === 0
-                ? 0
-                : Math.round(
-                    estimate(services, service, kg, speed) *
-                      (memberActive || (pos && posMemberCode.length === 10)
-                        ? 0.8
-                        : 1),
-                  ) + (insurance ? 1000 : 0),
-            )}
-          </strong>
+          <div className="order-summary-amounts">
+            {showOriginalPrice && <del><span className="sr-only">Harga sebelum potongan: </span>{money(estimatedBeforeDiscounts)}</del>}
+            <strong>{money(estimatedRemaining)}</strong>
+          </div>
           <small>
             {kg} {selectedService.unit} ·{" "}
             {pos ? "berat/jumlah aktual" : "belum termasuk ongkir"}
           </small>
-          {(memberActive || (pos && posMemberCode.length === 10)) && (
+          {pos && posMemberCode.length === 10 && (
             <small>
               Diskon membership 20% pada layanan
-              {pos
-                ? " · kode dan saldo diperiksa saat disimpan"
-                : " · saldo diperiksa saat pesanan dibuat"}
+              {" · kode dan saldo diperiksa saat disimpan"}
             </small>
+          )}
+          {!pos && showOriginalPrice && (
+            <div className="order-summary-breakdown" aria-label="Rincian perkiraan potongan">
+              {estimatedMemberDiscount > 0 && <div><span>Diskon member 20%</span><span>−{money(estimatedMemberDiscount)}</span></div>}
+              {estimatedMembership > 0 && <div><span>Saldo membership</span><span>−{money(estimatedMembership)}</span></div>}
+              {estimatedPoints > 0 && <div><span>Poin loyalty</span><span>−{money(estimatedPoints)}</span></div>}
+            </div>
           )}
         </div>
         <div>
@@ -2228,7 +2327,7 @@ function OrderForm({
               Kembali
             </button>
           )}
-          <button disabled={busy || photoBusy} className="primary">
+          <button disabled={busy || photoBusy || (!pos && (rewardsLoading || rewardsError || !rewardBalances))} className="primary">
             {busy
               ? "Menyimpan…"
               : step === 1
@@ -2264,12 +2363,12 @@ function PriceEditor({
           if (!service.rates)
             return { id: service.id, price: Number(f.get(service.id)) };
           const rates = Object.fromEntries(
-            serviceSpeeds.map((speed) => [
-              speed.id,
-              Number(f.get(`${service.id}.${speed.id}`)),
+            serviceAvailableSpeeds(service).map((speed) => [
+              speed,
+              Number(f.get(`${service.id}.${speed}`)),
             ]),
-          ) as Record<ServiceSpeed, number>;
-          return { id: service.id, price: rates.regular, rates };
+          ) as Partial<Record<ServiceSpeed, number>>;
+          return { id: service.id, price: rates[defaultSpeed(service)] ?? service.price, rates };
         });
         if (
           data.some(
@@ -2331,7 +2430,7 @@ function PriceEditor({
                     </small>
                   </span>
                   {service.rates ? (
-                    serviceSpeeds.map((speed) => (
+                    serviceSpeeds.filter((speed) => serviceAvailableSpeeds(service).includes(speed.id)).map((speed) => (
                       <label className="price-editor-input" key={speed.id}>
                         <span
                           className="price-editor-speed-label"

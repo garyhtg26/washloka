@@ -1,0 +1,36 @@
+.delete-user-dialog {
+  width: min(440px, calc(100% - 32px));
+  max-width: none;
+  max-height: min(90dvh, 720px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: #fff;
+  color: #242127;
+  box-shadow: 0 24px 70px rgba(35, 18, 24, .22);
+}
+.delete-user-dialog::backdrop { background: rgba(27, 23, 27, .48); }
+.delete-user-dialog-content { padding: 26px; }
+.delete-user-dialog-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+.delete-user-dialog-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; color: #a4213f; background: #fbedf0; }
+.delete-user-dialog-close { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: #777078; }
+.delete-user-dialog-close:hover { background: #f5f3f4; }
+.delete-user-dialog h2 { margin: 0; font-size: 21px; letter-spacing: -.03em; }
+.delete-user-dialog-description { margin: 9px 0 18px; color: #706b73; font-size: 14px; line-height: 1.55; }
+.delete-user-dialog-person { display: grid; gap: 4px; padding: 13px 15px; border: 1px solid #ece8ea; border-radius: 11px; background: #faf9f9; overflow-wrap: anywhere; font-size: 14px; }
+.delete-user-dialog-person span { color: #69626a; }
+.delete-user-dialog-warning { display: flex; align-items: flex-start; gap: 8px; margin: 17px 0 0; color: #855b43; font-size: 13px; line-height: 1.4; }
+.delete-user-dialog-warning svg { flex: none; }
+.delete-user-dialog-error { margin: 14px 0 0; color: #a21c36; font-size: 13px; line-height: 1.45; }
+.delete-user-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.delete-user-dialog-actions button { min-height: 44px; padding: 0 18px; border-radius: 10px; font-size: 14px; font-weight: 650; }
+.delete-user-dialog-cancel { border: 1px solid #dedade; background: #fff; color: #383238; }
+.delete-user-dialog-confirm { border: 1px solid #a51e3d; background: #a51e3d; color: #fff; }
+.delete-user-dialog-actions button:hover:not(:disabled) { filter: brightness(.96); }
+.delete-user-dialog button:focus-visible { outline: 3px solid #d3a1af; outline-offset: 3px; }
+.delete-user-dialog button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 480px) {
+  .delete-user-dialog-content { padding: 22px; }
+  .delete-user-dialog-actions button { flex: 1; padding-inline: 10px; }
+}

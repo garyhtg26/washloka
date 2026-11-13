@@ -2,16 +2,37 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Store } from "lucide-react";
-import type { BranchId } from "@/lib/branches";
+import { activeBranchIds, type BranchId } from "@/lib/branches";
 import "./shop-selector.css";
+
+const shopDetails: Record<
+  BranchId,
+  { short: string; name: string; area: string; logo: string }
+> = {
+  dfablelaundry: {
+    short: "D’Fable",
+    name: "D’Fable Laundry",
+    area: "Karang Tengah",
+    logo: "/dfable-logo-compact.webp",
+  },
+  buzzwash: {
+    short: "BuzzWash",
+    name: "BuzzWash",
+    area: "Cibubur",
+    logo: "/buzzwash-logo.png",
+  },
+};
 
 export default function ShopSelector({
   branch,
+  onBranchChange,
   disabled = false,
+  availableBranches = activeBranchIds,
 }: {
   branch: BranchId;
   onBranchChange: (branch: BranchId) => void;
   disabled?: boolean;
+  availableBranches?: readonly BranchId[];
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -43,24 +64,23 @@ export default function ShopSelector({
         disabled={disabled}
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        aria-label="Pilih toko. D’Fable Laundry, toko terpilih"
+        aria-label={`Pilih toko. ${shopDetails[branch].name}, toko terpilih`}
       >
         <span
           className={`shop-picker-monogram${branch === "dfablelaundry" ? " shop-picker-monogram--dfable" : ""}`}
           aria-hidden="true"
         >
           {branch === "dfablelaundry" ? (
-            <>
-              <img src="/dfable-icon.png" alt="" />
-              <span className="shop-picker-monogram-letter">D</span>
-            </>
+            <span className="shop-picker-monogram-letter">D</span>
+          ) : branch === "buzzwash" ? (
+            <img src="/buzzwash-icon.png" alt="" />
           ) : (
             <Store size={18} />
           )}
         </span>
         <span className="shop-picker-current">
           <small>Toko pilihan</small>
-          <b>D’Fable</b>
+          <b>{shopDetails[branch].short}</b>
         </span>
         <ChevronDown size={15} aria-hidden="true" />
       </button>
@@ -70,30 +90,37 @@ export default function ShopSelector({
             <span>Pilih toko</span>
             <span>Partner Washloka</span>
           </div>
-          <button
-            className="shop-picker-option"
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              trigger.current?.focus();
-            }}
-            aria-label="D’Fable Laundry, toko terpilih"
-          >
-            <span className="shop-picker-logo">
-              <img src="/dfable-logo-compact.webp" alt="" />
-            </span>
-            <span>
-              <b>D’Fable Laundry</b>
-              <small>Toko terpilih</small>
-            </span>
-            <Check size={17} />
-          </button>
-          <div className="shop-picker-coming">
-            <Store size={18} />
-            <span>
-              <b>Partner lainnya</b>
-              <small>Segera hadir di Washloka</small>
-            </span>
+          <div className="shop-picker-options">
+            {availableBranches.map((id) => {
+              const shop = shopDetails[id];
+              const selected = branch === id;
+              return (
+                <button
+                  className={`shop-picker-option${selected ? " is-selected" : ""}`}
+                  type="button"
+                  key={id}
+                  onClick={() => {
+                    if (!selected) onBranchChange(id);
+                    setOpen(false);
+                    trigger.current?.focus();
+                  }}
+                  aria-label={`${shop.name}, ${shop.area}${selected ? ", toko terpilih" : ""}`}
+                  aria-pressed={selected}
+                >
+                  <span className="shop-picker-logo">
+                    <img src={shop.logo} alt="" />
+                  </span>
+                  <span>
+                    <b>{shop.name}</b>
+                    <small>
+                      {shop.area}
+                      {selected ? " · Toko terpilih" : ""}
+                    </small>
+                  </span>
+                  {selected && <Check size={17} aria-hidden="true" />}
+                </button>
+              );
+            })}
           </div>
         </section>
       )}

@@ -12,7 +12,11 @@ export type Service = {
   category: ServiceCategory;
   rates?: Partial<Record<ServiceSpeed, number>>;
   minimumQuantity?: number;
+  maximumQuantity?: number;
   packageSize?: number;
+  pricingModel?: "flat-package";
+  availableSpeeds?: ServiceSpeed[];
+  startingAt?: boolean;
 };
 export type Order = {
   id: string;
@@ -26,6 +30,10 @@ export type Order = {
   speed?: ServiceSpeed;
   pricingVersion?: 2;
   minimumQuantity?: number;
+  maximumQuantity?: number;
+  pricingModel?: "flat-package";
+  startingAt?: boolean;
+  pricePending?: boolean;
   kg: number;
   actualKg: number | null;
   express: boolean;
@@ -50,6 +58,12 @@ export type Order = {
   total: number;
   pointsUsed?: number;
   pointsEarned?: number;
+  usePoints?: boolean;
+  useMembershipBalance?: boolean;
+  pointsLimit?: number;
+  membershipLimit?: number;
+  rewardsAppliedAt?: string;
+  rewardsReservedAt?: string;
   insurance?: boolean;
   membershipDiscount?: boolean;
   membershipUsed?: number;
@@ -74,11 +88,13 @@ export type Store = {
   };
   configured?: boolean;
   isAdmin?: boolean;
+  allowedBranches?: import("./branches").BranchId[];
   canManageUsers?: boolean;
   role?: "owner" | "admin" | "staff" | "customer";
   profile?: CustomerProfile;
   hasMore?: boolean;
   paymentEnabled?: boolean;
+  orderingEnabled?: boolean;
   bank?: import("./payments/manual-types").BankDetails;
 };
 export type TrackingOrder = Pick<
@@ -89,6 +105,10 @@ export type TrackingOrder = Pick<
   | "speed"
   | "pricingVersion"
   | "minimumQuantity"
+  | "maximumQuantity"
+  | "pricingModel"
+  | "startingAt"
+  | "pricePending"
   | "kg"
   | "actualKg"
   | "express"
@@ -101,6 +121,7 @@ export type TrackingOrder = Pick<
   | "total"
   | "pointsUsed"
   | "pointsEarned"
+  | "rewardsReservedAt"
   | "insurance"
   | "membershipDiscount"
   | "membershipUsed"

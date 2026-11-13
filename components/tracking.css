@@ -185,6 +185,42 @@
   color: #7a0e2f;
   background: #f9edf1;
 }
+.tracking-price-summary {
+  margin: 0 0 20px;
+}
+.tracking-price-details {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 14px;
+  color: #776d72;
+  font-size: 12px;
+}
+.tracking-price-details > div,
+.tracking-price-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tracking-price-details s {
+  color: #8d8388;
+}
+.tracking-price-details strong {
+  color: #7a0e2f;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.tracking-price-total {
+  color: #6b6470;
+  font-size: 14px;
+}
+.tracking-price-total > strong {
+  color: #221f23;
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
 .tracking-history-card {
   margin-top: 18px;
   padding: 24px;

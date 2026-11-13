@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import { ApiError, requireAdmin, type Identity } from "../firebase/access";
 import { db } from "../firebase/admin";
-import { readBranchSettings } from "../branch-settings";
+import { readStoreBankSettings } from "../branch-settings";
 import { uploadPhoto } from "../storage/photos";
 import type { Order } from "../types";
 import { finalAmount } from "./policy";
@@ -53,8 +53,7 @@ export async function selectManualPayment(
     const order = snap.data() as Order;
     if (order.manualPayment?.bank && !manualGatewayConflict(order)) return;
     available(order);
-    const settings = await readBranchSettings(database, order.branchId, tx);
-    const stored = settings.get("manualPayment");
+    const stored = await readStoreBankSettings(database, order.branchId, tx);
     const bank = bankDetails(stored, order.branchId);
     tx.update(ref, {
       paymentRevision: (order.paymentRevision || 0) + 1,
@@ -229,6 +228,7 @@ export async function reviewManualPayment(
       throw new ApiError(404, "Konfirmasi pembayaran tidak ditemukan.");
     const order = orderSnap.data() as Order;
     const record = recordSnap.data() as ManualPaymentRecord;
+    requireAdmin(user, order.branchId);
     if (
       record.proofVersion !== proofVersion ||
       order.manualPayment?.proofVersion !== proofVersion
@@ -298,6 +298,7 @@ export async function confirmManualPayment(
     if (!orderSnap.exists) throw new ApiError(404, "Pesanan tidak ditemukan.");
     const order = orderSnap.data() as Order;
     const existing = recordSnap.data() as ManualPaymentRecord | undefined;
+    requireAdmin(user, order.branchId);
     if (order.paid && order.manualPayment?.status === "paid") return;
     if (order.paid)
       throw new ApiError(409, "Pesanan ini sudah berstatus lunas.");
@@ -312,8 +313,7 @@ export async function confirmManualPayment(
         409,
         "Isi berat aktual dan ongkir sebelum mengonfirmasi pembayaran.",
       );
-    const settingsSnap = await readBranchSettings(database, order.branchId, tx);
-    const settings = settingsSnap.get("manualPayment") as
+    const settings = await readStoreBankSettings(database, order.branchId, tx) as
       Partial<StoredBankSettings> | undefined;
     const configuredBank = bankDetails(settings, order.branchId);
     const bank =

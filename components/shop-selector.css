@@ -40,14 +40,11 @@
 .shop-picker-monogram-letter {
   display: none;
 }
-.customer-header .shop-picker-monogram.shop-picker-monogram--dfable {
+.shop-picker .shop-picker-monogram.shop-picker-monogram--dfable {
   color: #fff;
   background: #1914cf;
 }
-.customer-header .shop-picker-monogram--dfable img {
-  display: none;
-}
-.customer-header .shop-picker-monogram--dfable .shop-picker-monogram-letter {
+.shop-picker .shop-picker-monogram--dfable .shop-picker-monogram-letter {
   display: block;
   font-size: 17px;
   font-weight: 750;
@@ -111,17 +108,30 @@
   gap: 10px;
   width: 100%;
   padding: 11px 10px;
-  border: 1px solid #e8cbd5;
+  border: 1px solid transparent;
   border-radius: 11px;
+  background: #fff;
+  color: #292329;
+  text-align: left;
+}
+.shop-picker-options {
+  display: grid;
+  gap: 6px;
+}
+.shop-picker-option:hover {
+  background: #faf6f7;
+}
+.shop-picker-option.is-selected {
+  border-color: #e8cbd5;
   background: #faf1f4;
   color: #7a0e2f;
-  text-align: left;
 }
 .shop-picker-logo {
   display: grid;
   place-items: center;
   width: 58px;
   height: 35px;
+  flex: none;
   padding: 5px;
   border-radius: 7px;
   background: #fff;

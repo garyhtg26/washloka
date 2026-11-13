@@ -4,7 +4,12 @@ import type {
   Firestore,
   Transaction,
 } from "firebase-admin/firestore";
-import { branchSettingsId, branchSettingsReadIds } from "./branches";
+import {
+  branchSettingsId,
+  branchSettingsReadIds,
+  normalizeBranchId,
+  DEFAULT_BRANCH,
+} from "./branches";
 
 export function mergeBranchSettings(values: (DocumentData | undefined)[]) {
   const merged: DocumentData = {};
@@ -44,5 +49,26 @@ export async function readBranchSettings(
     data: () => value,
     get: (path: string): any =>
       path.split(".").reduce((part, key) => part?.[key], value),
+  };
+}
+
+// The owner explicitly authorized the same transfer account for both shops.
+// Share only the account details; never reuse a potentially one-time QR.
+export async function readStoreBankSettings(
+  database: Firestore,
+  branch: unknown,
+  tx?: Transaction,
+) {
+  const selected = await readBranchSettings(database, branch, tx);
+  const configured = selected.get("manualPayment");
+  if (configured || normalizeBranchId(branch) !== "buzzwash") return configured;
+  const legacy = (await readBranchSettings(database, DEFAULT_BRANCH, tx)).get(
+    "manualPayment",
+  );
+  if (!legacy) return undefined;
+  return {
+    bankName: legacy.bankName,
+    accountNumber: legacy.accountNumber,
+    accountHolder: legacy.accountHolder,
   };
 }

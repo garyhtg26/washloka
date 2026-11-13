@@ -18,6 +18,7 @@ export function paymentLocked(payment?: PaymentSummary) {
 
 export function finalAmount(order: Order): number | null {
   if (
+    order.pricePending ||
     order.actualKg === null ||
     order.shippingFee === null ||
     !Number.isFinite(order.actualKg) ||

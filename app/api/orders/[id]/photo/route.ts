@@ -1,6 +1,6 @@
 import { downloadPhoto } from "@/lib/storage/photos";
 import { NextRequest, NextResponse } from "next/server";
-import { identity, ApiError } from "@/lib/firebase/access";
+import { identity, ApiError, canManageStore } from "@/lib/firebase/access";
 import { db } from "@/lib/firebase/admin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +14,11 @@ export async function GET(
     if (!/^DF-[A-F0-9]{12}$/.test(id))
       throw new ApiError(404, "Foto tidak ditemukan.");
     const snap = await db().doc(`orders/${id}`).get();
-    if (!snap.exists || (!user.admin && snap.get("uid") !== user.uid))
+    if (
+      !snap.exists ||
+      (!canManageStore(user, snap.get("branchId")) &&
+        snap.get("uid") !== user.uid)
+    )
       throw new ApiError(404, "Foto tidak ditemukan.");
     const photoPath = snap.get("photoPath");
     if (!photoPath) throw new ApiError(404, "Foto tidak ditemukan.");

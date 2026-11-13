@@ -3,7 +3,8 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import { ApiError } from "./firebase/access";
 import { uploadPhoto } from "./storage/photos";
-import { branchSchema } from "./branches";
+import { branchSchema, DEFAULT_BRANCH, sameBranch, type BranchId } from "./branches";
+import { requireRewardsStore } from "./rewards-store";
 
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -20,6 +21,7 @@ export async function storeMembershipProof(
   uid: string,
   bytes: Uint8Array,
   upload: typeof uploadPhoto = uploadPhoto,
+  branch: BranchId = DEFAULT_BRANCH,
 ) {
   await database.runTransaction(async (tx) => {
     const depositRef = database.doc(`membershipDeposits/${uid}`);
@@ -52,6 +54,7 @@ export async function storeMembershipProof(
       );
     tx.set(database.doc(`membershipProofs/${uid}`), {
       version,
+      branchId: branch,
       uploadedAt: new Date().toISOString(),
     });
   });
@@ -72,6 +75,7 @@ export async function submitMembershipDeposit(
   },
 ) {
   const branch = branchSchema.parse(input.branch);
+  requireRewardsStore(branch);
   await database.runTransaction(async (tx) => {
     const ref = database.doc(`membershipDeposits/${input.uid}`);
     const proofRef = database.doc(`membershipProofs/${input.uid}`);
@@ -86,6 +90,10 @@ export async function submitMembershipDeposit(
         409,
         "Unggah bukti transfer terbaru sebelum mengajukan deposit.",
       );
+    // Legacy unbound proof uploads are valid only for the original store.
+    const proofBranch = proof.get("branchId") ?? DEFAULT_BRANCH;
+    if (!sameBranch(proofBranch, branch))
+      throw new ApiError(409, "Bukti transfer diunggah untuk toko lain. Unggah kembali untuk toko ini.");
     tx.set(ref, {
       uid: input.uid,
       requestId: input.requestId,

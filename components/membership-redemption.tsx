@@ -19,7 +19,7 @@ export default function MembershipRedemption({
     if (!order.membershipDiscount) return;
     let active = true;
     void auth
-      .request("/api/membership")
+      .request(`/api/membership?branch=${encodeURIComponent(order.branchId)}`)
       .then(async (response) => {
         if (!response.ok) throw Error();
         const data = await response.json();
@@ -36,6 +36,7 @@ export default function MembershipRedemption({
     order.membershipDiscount,
     order.membershipUsed,
     order.pointsUsed,
+    order.branchId,
   ]);
   useEffect(
     () => setAmount(String(order.membershipUsed || "")),
@@ -95,8 +96,20 @@ export default function MembershipRedemption({
       </p>
       {!ready && !order.paid && (
         <p className="!mb-0 !mt-2 text-xs">
-          Saldo bisa digunakan setelah toko mengonfirmasi jumlah dan ongkir.
+          {used > 0
+            ? "Saldo sudah digunakan berdasarkan perkiraan. Tagihan disesuaikan setelah toko mengonfirmasi jumlah dan ongkir."
+            : "Saldo dapat diubah setelah toko mengonfirmasi jumlah dan ongkir."}
         </p>
+      )}
+      {!ready && !locked && used > 0 && order.rewardsReservedAt && (
+        <button
+          type="button"
+          className="text-button mt-3"
+          disabled={busy}
+          onClick={() => void apply(0)}
+        >
+          Batalkan penggunaan saldo
+        </button>
       )}
       {ready && !locked && (max > 0 || used > 0) && (
         <div className="mt-3 flex flex-wrap items-center gap-2">

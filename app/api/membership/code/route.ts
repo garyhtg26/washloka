@@ -9,6 +9,7 @@ import {
 } from "@/lib/membership-code";
 import { eligibleMemberDiscount } from "@/lib/membership-eligibility";
 import { branchSchema } from "@/lib/branches";
+import { requireRewardsStore } from "@/lib/rewards-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
     sameOrigin(req);
     const user = (await identity(req, true))!;
     const { branch } = schema.parse(await req.json());
+    requireRewardsStore(branch);
     const database = db();
     const code = newMemberCode();
     const hash = memberCodeHash(code);

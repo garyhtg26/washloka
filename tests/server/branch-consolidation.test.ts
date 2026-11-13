@@ -5,7 +5,7 @@ import { readStore } from "../../lib/store";
 import { readBranchSettings } from "../../lib/branch-settings";
 import { bankQrPath, readBankDetails } from "../../lib/payments/bank-service";
 import { signalPaymentChange } from "../../lib/payments/signals";
-import type { Identity } from "../../lib/firebase/access";
+import { canManageStore, type Identity } from "../../lib/firebase/access";
 import { DEFAULT_BRANCH, persistedBranchIds } from "../../lib/branches";
 import { defaultStore } from "../../lib/defaults";
 
@@ -128,15 +128,50 @@ test("D’Fable settings preserve the primary configuration and fill missing dat
     "9999999999",
   );
   assert.equal(database.writes.length, 0);
-  await assert.rejects(readBranchSettings(database.firestore(), "buzzwash"));
+  const buzz = await readBranchSettings(database.firestore(), "buzzwash");
+  assert.equal(buzz.exists, false);
+  assert.equal(buzz.get("promo.title"), undefined);
+  assert.equal(
+    (await readBankDetails("buzzwash", database.firestore())).accountNumber,
+    "9999999999",
+  );
+});
+
+test("BuzzWash data is isolated, with access for owner but not legacy staff", async () => {
+  const database = settingsDatabase();
+  database.values.set("settings/buzzwash", {
+    promo: { title: "BuzzWash offer" },
+    content: {
+      images: {
+        washlokaPromo:
+          "/api/media/banners/promo?v=abcd&branch=buzzwash&theme=washloka",
+      },
+    },
+  });
+  const buzz = await readBranchSettings(database.firestore(), "buzzwash");
+  assert.equal(buzz.get("promo.title"), "BuzzWash offer");
+  assert.equal(buzz.get("content.people.title"), undefined);
+  assert.equal(canManageStore(admin, "cinere"), true);
+  assert.equal(canManageStore(admin, "bogor"), true);
+  const legacyStaff = { ...admin, role: "admin" as const, allowedBranches: [DEFAULT_BRANCH] };
+  assert.equal(canManageStore(admin, "buzzwash"), true);
+  assert.equal(canManageStore(legacyStaff, "buzzwash"), false);
+  assert.equal(canManageStore(customer, "buzzwash"), false);
+  const publicStore = await readStore(legacyStaff, "buzzwash", database.firestore());
+  assert.equal(publicStore.isAdmin, false);
+  assert.equal(publicStore.canManageUsers, false);
+  assert.equal(publicStore.paymentEnabled, false);
+  assert.equal(publicStore.promo.title, "BuzzWash offer");
+  assert.deepEqual(publicStore.allowedBranches, [DEFAULT_BRANCH]);
+  const ownerView = await readStore(admin, "buzzwash", database.firestore());
+  assert.equal(ownerView.isAdmin, true);
+  assert.deepEqual(ownerView.allowedBranches, [DEFAULT_BRANCH, "buzzwash"]);
+  assert.equal(database.writes.length, 0);
 });
 
 test("one dashboard includes both legacy order sets and canonical orders, excluding other stores", async () => {
   const database = settingsDatabase();
-  for (const [index, branchId] of [
-    ...persistedBranchIds,
-    "buzzwash",
-  ].entries()) {
+  for (const [index, branchId] of [...persistedBranchIds].entries()) {
     const id = `DF-00000000000${index}`;
     database.values.set(`orders/${id}`, {
       id,
@@ -165,7 +200,7 @@ test("one dashboard includes both legacy order sets and canonical orders, exclud
   );
   assert.deepEqual(
     database.filters.find(({ field }) => field === "branchId")?.value,
-    [...persistedBranchIds],
+    ["dfablelaundry", "cinere", "bogor"],
   );
   const profile = await readStore(
     customer,
@@ -211,16 +246,17 @@ test("existing QR versions resolve to their original files through canonical and
   );
 });
 
-test("payment refreshes for every D’Fable alias target one signal and ignore unsupported stores", () => {
+test("payment refreshes keep BuzzWash and D’Fable signals separate", () => {
   const database = new ReadDatabase();
   const tx = {
     set: (ref: { path: string }) => database.writes.push(ref.path),
   } as unknown as Transaction;
   for (const branch of persistedBranchIds)
     signalPaymentChange(tx, database.firestore(), branch);
-  signalPaymentChange(tx, database.firestore(), "buzzwash");
-  assert.deepEqual(
-    database.writes,
-    persistedBranchIds.map(() => "paymentSignals/dfablelaundry"),
-  );
+  assert.deepEqual(database.writes, [
+    "paymentSignals/dfablelaundry",
+    "paymentSignals/dfablelaundry",
+    "paymentSignals/dfablelaundry",
+    "paymentSignals/buzzwash",
+  ]);
 });

@@ -1,4 +1,5 @@
 import { catalogServices } from "./defaults";
+import { buzzwashServices } from "./buzzwash-catalog";
 import { brandCopy } from "./brand-copy";
 import type { Service, ServiceSpeed } from "./types";
 
@@ -37,6 +38,7 @@ export function serviceUnitRate(
   service: Service,
   speed: ServiceSpeed = "regular",
 ) {
+  if (service.pricingModel === "flat-package") return serviceRate(service, speed);
   return serviceRate(service, speed) / (service.packageSize || 1);
 }
 
@@ -45,27 +47,48 @@ export function serviceTotal(
   quantity: number,
   speed: ServiceSpeed = "regular",
 ) {
+  if (service.pricingModel === "flat-package") return serviceRate(service, speed);
   const billable = Math.max(service.minimumQuantity || 1, quantity);
   return Math.round(billable * serviceUnitRate(service, speed));
 }
 
-export function normalizeServices(value: unknown): Service[] {
-  if (!Array.isArray(value)) return catalogServices;
+export function serviceAvailableSpeeds(service: Service): ServiceSpeed[] {
+  return service.availableSpeeds ?? (service.rates ? serviceSpeeds.map(({ id }) => id) : ["regular"]);
+}
+
+export function defaultSpeed(service: Service): ServiceSpeed {
+  return serviceAvailableSpeeds(service)[0] ?? "regular";
+}
+
+// An empty list means that no turnaround was published. "regular" is a
+// neutral internal value only; the UI must show "Dikonfirmasi toko".
+export function serviceAllowsSpeed(service: Service, speed: ServiceSpeed) {
+  const speeds = serviceAvailableSpeeds(service);
+  return speeds.length ? speeds.includes(speed) : speed === "regular";
+}
+
+export function catalogForBranch(branch?: string): Service[] {
+  return branch === "buzzwash" ? buzzwashServices : catalogServices;
+}
+
+export function normalizeServices(value: unknown, branch?: string): Service[] {
+  const catalog = catalogForBranch(branch);
+  if (!Array.isArray(value)) return catalog;
   const current = value as Partial<Service>[];
   const storedIds = new Set(current.map((service) => service.id));
   const isCurrentCatalog =
-    current.length === catalogServices.length &&
-    catalogServices.every((service) => storedIds.has(service.id)) &&
+    current.length === catalog.length &&
+    catalog.every((service) => storedIds.has(service.id)) &&
     current.every(
       (service) =>
         typeof service.category === "string" &&
         typeof service.price === "number" &&
         Number.isSafeInteger(service.price),
     );
-  if (!isCurrentCatalog) return catalogServices;
+  if (!isCurrentCatalog) return catalog;
 
   const byId = new Map(current.map((service) => [service.id, service]));
-  return catalogServices.map((service) => {
+  return catalog.map((service) => {
     const stored = byId.get(service.id);
     return {
       ...service,

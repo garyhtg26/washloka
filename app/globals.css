@@ -3149,17 +3149,40 @@ dialog.auth-dialog {
   color: #777e94;
 }
 .role-guide {
-  display: flex;
-  gap: 24px;
-  padding: 18px;
-  background: #faf2f5;
-  border-radius: 13px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 7px;
+  border: 1px solid #f0e0e6;
+  border-radius: 16px;
+  background: #fdf8fa;
+  box-shadow: 0 6px 20px rgba(93, 24, 48, 0.035);
   margin-bottom: 22px;
 }
+.role-guide > span {
+  min-width: 0;
+  padding: 12px 16px;
+  color: #786974;
+  line-height: 1.5;
+}
+.role-guide > span + span {
+  border-left: 1px solid #efdee4;
+}
 .role-guide b {
-  display: block;
-  color: #68384a;
-  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #701332;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+.role-guide b::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: #a14260;
 }
 .user-row {
   display: flex;
@@ -3256,8 +3279,14 @@ dialog.auth-dialog {
     flex-direction: column;
   }
   .role-guide {
-    flex-direction: column;
-    gap: 12px;
+    grid-template-columns: 1fr;
+  }
+  .role-guide > span {
+    padding: 11px 13px;
+  }
+  .role-guide > span + span {
+    border-left: 0;
+    border-top: 1px solid #efdee4;
   }
   .user-row {
     flex-wrap: wrap;
@@ -3965,6 +3994,89 @@ input[type="checkbox"] {
 .user-row-controls select {
   padding-right: 38px;
 }
+
+/* Keep account actions and shop access readable as a single control group. */
+.user-row-controls {
+  flex: 0 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+.user-row-main-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.user-role-select { flex: 0 0 auto; }
+.user-disabled { white-space: nowrap; }
+.user-row-controls .user-control-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 8px;
+}
+.user-row-controls .user-control-button:not(:disabled):hover {
+  background: #f8eff2;
+}
+.user-store-access {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.user-store-access legend {
+  margin-bottom: 7px;
+  padding: 0;
+  color: #74798b;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.user-store-access-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.user-row-controls .user-store-access-options label,
+.auth-form .user-store-access-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid #e9e3e6;
+  border-radius: 8px;
+  background: #fff;
+  color: #514b55;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.user-store-access-options input[type="checkbox"] { accent-color: #7a0e2f; }
+.user-store-access-options label:has(input:checked) {
+  border-color: #e6c8d2;
+  background: #fbf4f6;
+  color: #7a0e2f;
+}
+.user-store-access-options label:has(input:disabled) { cursor: not-allowed; }
+@media (max-width: 800px) {
+  .user-row-controls { align-items: stretch; }
+  .user-row-main-controls { justify-content: flex-start; flex-wrap: wrap; }
+  .user-row-main-controls .user-role-select { margin-right: auto; }
+  .user-store-access-options { gap: 7px; }
+}
+@media (max-width: 380px) {
+  .user-row-main-controls { gap: 8px; }
+  .user-row-controls .user-control-button { width: 32px; height: 32px; flex-basis: 32px; }
+}
 .mobile-workspace {
   display: none;
 }
@@ -4239,7 +4351,7 @@ input[type="checkbox"] {
   font-weight: 500;
 }
 .service-item-card > svg:last-child {
-  color: #5650df;
+  color: #7a0e2f;
 }
 .price-editor-catalog {
   display: grid;
@@ -4678,4 +4790,54 @@ input[type="checkbox"] {
   color: #6f6065;
   font-size: 12px;
   line-height: 1.5;
+}
+
+/* Warna daftar layanan mengikuti palet Washloka di kedua toko. */
+.services-section .daily-rate-section,
+.services-section .service-catalog-group {
+  border-color: #eadfe3;
+  box-shadow: 0 5px 18px #4c102408;
+}
+.services-section .service-catalog-heading,
+.services-section .daily-rate-table th,
+.services-section .daily-rate-table td,
+.services-section .service-item-card {
+  border-color: #efe6e9;
+}
+.services-section .daily-rate-table thead th {
+  color: #633a47;
+  background: #f9eef2;
+}
+.services-section .daily-rate-table tbody th {
+  background: #fcf8f9;
+}
+.services-section .daily-rate-table tbody td,
+.services-section .service-item-card > strong {
+  color: #541a2c;
+}
+.services-section .daily-rate-table thead small,
+.services-section .daily-rate-table tbody small,
+.services-section .service-catalog-heading p,
+.services-section .service-catalog-heading > span,
+.services-section .service-item-copy small,
+.services-section .service-item-card > strong small {
+  color: #796970;
+}
+.services-section .daily-rate-table tbody th > span,
+.services-section .service-item-card {
+  color: #30242a;
+}
+.services-section .service-item-card:hover {
+  background: #fcf4f6;
+}
+@media (max-width: 700px) {
+  .services-section .daily-rate-table tbody tr {
+    border-color: #efe6e9;
+  }
+  .services-section .daily-rate-table tbody th {
+    background: #faf1f4;
+  }
+  .services-section .daily-rate-table tbody td::before {
+    color: #796970;
+  }
 }

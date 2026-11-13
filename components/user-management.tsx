@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Plus, ShieldCheck, User, Trash2, Save } from "lucide-react";
 import { useAuth } from "./auth-provider";
 import MembershipAdmin from "./membership-admin";
+import DeleteUserModal from "./delete-user-modal";
+import { branches as branchNames, type BranchId } from "@/lib/branches";
 type Row = {
   uid: string;
   email: string;
@@ -15,8 +17,9 @@ type Row = {
   self: boolean;
   providers: string[];
   phoneAccount?: boolean;
+  branches: BranchId[];
 };
-export default function UserManagement() {
+export default function UserManagement({ branch, allowedBranches }: { branch: BranchId; allowedBranches: BranchId[] }) {
   const auth = useAuth();
   const [users, setUsers] = useState<Row[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -26,30 +29,32 @@ export default function UserManagement() {
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
   const [pending, setPending] = useState<Row | null>(null);
+  const [canDeleteAccounts, setCanDeleteAccounts] = useState(false);
   async function load(next?: string) {
     setError("");
     try {
       const r = await auth.request(
-        "/api/admin/users" +
-          (next ? "?cursor=" + encodeURIComponent(next) : ""),
+        `/api/admin/users?branch=${encodeURIComponent(branch)}` +
+          (next ? "&cursor=" + encodeURIComponent(next) : ""),
       );
       const d = await r.json();
       if (!r.ok) throw Error(d.error);
       setUsers((prev) => (next ? [...prev, ...d.users] : d.users));
       setCursor(d.cursor);
+      setCanDeleteAccounts(d.canDeleteAccounts === true);
     } catch (e) {
       setError((e as Error).message);
     }
   }
   useEffect(() => {
     load();
-  }, []);
+  }, [branch]);
   async function mutate(data: unknown) {
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      const r = await auth.request("/api/admin/users", {
+      const r = await auth.request(`/api/admin/users?branch=${encodeURIComponent(branch)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -68,7 +73,7 @@ export default function UserManagement() {
   }
   return (
     <section className="user-management">
-      <MembershipAdmin />
+      <MembershipAdmin key={branch} branch={branch} />
       <div className="users-toolbar">
         <div>
           <h2>Tim & pelanggan</h2>
@@ -101,6 +106,7 @@ export default function UserManagement() {
               email: f.get("email"),
               password: f.get("password"),
               role: f.get("role"),
+              branches: f.getAll("branches"),
             });
           }}
         >
@@ -115,6 +121,17 @@ export default function UserManagement() {
               <input name="email" type="email" required />
             </label>
           </div>
+          <fieldset className="user-store-access user-store-access-create">
+            <legend>Akses toko untuk staf atau admin</legend>
+            <div className="user-store-access-options">
+              {allowedBranches.map((id) => (
+                <label key={id}>
+                  <input type="checkbox" name="branches" value={id} defaultChecked={id === branch} />
+                  <span>{branchNames[id]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <div className="form-two">
             <label>
               Password awal
@@ -146,7 +163,7 @@ export default function UserManagement() {
           </button>
         </form>
       )}
-      {error && (
+      {error && !pending && (
         <p role="alert" className="auth-error">
           {error}
         </p>
@@ -157,24 +174,14 @@ export default function UserManagement() {
         </p>
       )}
       {pending && (
-        <div className="delete-confirm" role="alert">
-          <div>
-            <b>Hapus akun {pending.email || pending.phone || pending.name}?</b>
-            <p>
-              Akun ini akan dihapus permanen. Riwayat transaksi tetap tersimpan.
-            </p>
-          </div>
-          <button disabled={busy} onClick={() => setPending(null)}>
-            Batal
-          </button>
-          <button
-            className="danger-action"
-            disabled={busy}
-            onClick={() => mutate({ action: "delete", uid: pending.uid })}
-          >
-            Ya, hapus akun
-          </button>
-        </div>
+        <DeleteUserModal
+          name={pending.name}
+          identifier={pending.email || pending.phone || pending.name}
+          busy={busy}
+          error={error}
+          onCancel={() => { setPending(null); setError(""); }}
+          onConfirm={() => mutate({ action: "delete", uid: pending.uid })}
+        />
       )}
       <label className="users-search">
         <span className="sr-only">Cari pengguna dari daftar yang dimuat</span>
@@ -197,10 +204,13 @@ export default function UserManagement() {
               key={u.uid}
               row={u}
               busy={busy}
-              onSave={(role, disabled) =>
-                mutate({ action: "access", uid: u.uid, role, disabled })
+              branch={branch}
+              allowedBranches={allowedBranches}
+              canDeleteAccounts={canDeleteAccounts}
+              onSave={(role, disabled, branches) =>
+                mutate({ action: "access", uid: u.uid, role, disabled, branches })
               }
-              onDelete={() => setPending(u)}
+              onDelete={() => { setError(""); setPending(u); }}
             />
           ))}
       </div>
@@ -220,20 +230,28 @@ export default function UserManagement() {
 function UserRow({
   row,
   busy,
+  branch,
+  allowedBranches,
+  canDeleteAccounts,
   onSave,
   onDelete,
 }: {
   row: Row;
   busy: boolean;
-  onSave: (role: string, disabled: boolean) => void;
+  branch: BranchId;
+  allowedBranches: BranchId[];
+  canDeleteAccounts: boolean;
+  onSave: (role: string, disabled: boolean, branches: BranchId[]) => void;
   onDelete: () => void;
 }) {
   const [role, setRole] = useState(row.role);
   const [disabled, setDisabled] = useState(row.disabled);
+  const [selectedBranches, setSelectedBranches] = useState<BranchId[]>(row.branches);
   const protectedUser = row.self || row.role === "owner";
   useEffect(() => {
     setRole(row.role);
     setDisabled(row.disabled);
+    setSelectedBranches(row.branches);
   }, [row]);
   return (
     <article className="user-row">
@@ -266,8 +284,9 @@ function UserRow({
         </small>
       </div>
       <div className="user-row-controls">
-        <label>
-          <span className="sr-only">Akses {row.email}</span>
+        <div className="user-row-main-controls">
+        <label className="user-role-select">
+          <span className="sr-only">Peran {row.name || row.email || row.phone}</span>
           <select
             value={role}
             disabled={protectedUser || busy}
@@ -287,32 +306,50 @@ function UserRow({
           <input
             type="checkbox"
             checked={disabled}
-            disabled={protectedUser || busy}
+            disabled={protectedUser || busy || !canDeleteAccounts}
             onChange={(e) => setDisabled(e.target.checked)}
           />{" "}
           Nonaktif
         </label>
         <button
+          type="button"
+          className="user-control-button"
           title="Simpan akses"
-          aria-label={`Simpan akses ${row.email}`}
+          aria-label={`Simpan akses ${row.name || row.email || row.phone}`}
           disabled={
             protectedUser ||
             busy ||
-            (role === row.role && disabled === row.disabled)
+            (role === row.role && disabled === row.disabled && selectedBranches.length === row.branches.length && selectedBranches.every((id) => row.branches.includes(id)))
           }
-          onClick={() => onSave(role, disabled)}
+          onClick={() => onSave(role, disabled, role === "customer" ? [] : selectedBranches.length ? selectedBranches : [branch])}
         >
           <Save size={17} />
         </button>
         <button
-          className="danger-action"
+          type="button"
+          className="user-control-button danger-action"
           title="Hapus pengguna"
-          aria-label={`Hapus ${row.email}`}
-          disabled={protectedUser || busy}
+          aria-label={`Hapus ${row.name || row.email || row.phone}`}
+          disabled={protectedUser || busy || !canDeleteAccounts}
           onClick={onDelete}
         >
           <Trash2 size={17} />
         </button>
+        </div>
+        {role !== "customer" && role !== "owner" && (
+          <fieldset className="user-store-access">
+            <legend>Akses toko</legend>
+            <div className="user-store-access-options">
+              {allowedBranches.map((id) => (
+                <label key={id}>
+                  <input type="checkbox" checked={selectedBranches.includes(id)} disabled={protectedUser || busy}
+                    onChange={(event) => setSelectedBranches((current) => event.target.checked ? [...new Set([...current, id])] : current.filter((value) => value !== id))} />
+                  <span>{branchNames[id]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
       </div>
     </article>
   );

@@ -23,12 +23,15 @@ export function calculateOrderPrice(
     express: boolean;
     pricingVersion?: number;
     minimumQuantity?: number;
+    pricingModel?: "flat-package";
     membershipDiscount?: boolean;
   },
   quantity = order.kg,
 ) {
   const price =
-    order.pricingVersion === 2
+    order.pricingVersion === 2 && order.pricingModel === "flat-package"
+      ? order.unitPrice
+      : order.pricingVersion === 2
       ? Math.round(
           Math.max(order.minimumQuantity || 1, quantity) * order.unitPrice,
         )

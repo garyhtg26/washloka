@@ -1,7 +1,7 @@
 import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { ApiError, identity } from "../firebase/access";
+import { ApiError, identity, canManageStore } from "../firebase/access";
 import { firebaseReady } from "../firebase/admin";
 import { orderIdPattern, trackingTokenPattern } from "./policy";
 import { readPaymentOrder } from "./service";
@@ -18,7 +18,7 @@ export async function authorizePayment(
   const order = await readPaymentOrder(orderId);
   const user = await identity(req);
   if (
-    !user?.admin &&
+    !canManageStore(user, order.branchId) &&
     !(user && user.uid === order.uid) &&
     !(token && trackingTokenPattern.test(token) && token === order.token)
   )

@@ -7,6 +7,7 @@ export default async function Page({
   params: Promise<{ laundry: string }>;
   searchParams: Promise<CustomerQuery>;
 }) {
-  if ((await params).laundry.toLowerCase() !== "dfablelaundry") notFound();
-  redirect(customerPath("/", await searchParams));
+  const laundry = (await params).laundry.toLowerCase();
+  if (laundry !== "dfablelaundry" && laundry !== "buzzwash") notFound();
+  redirect(customerPath("/", { ...(await searchParams), branch: laundry }));
 }

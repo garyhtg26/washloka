@@ -14,8 +14,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    requireManager(await identity(req, true));
-    return NextResponse.json(await readBankDetails(requestBranch(req.url)), {
+    const branch = requestBranch(req.url);
+    requireManager(await identity(req, true), branch);
+    return NextResponse.json(await readBankDetails(branch), {
       headers: paymentHeaders,
     });
   } catch (error) {
@@ -27,7 +28,8 @@ export async function PATCH(req: NextRequest) {
   try {
     sameOrigin(req);
     const user = await identity(req, true);
-    requireManager(user);
+    const branch = requestBranch(req.url);
+    requireManager(user, branch);
     const raw = await req.text();
     if (Buffer.byteLength(raw) > 2048)
       throw new ApiError(413, "Data terlalu besar.");
@@ -39,7 +41,7 @@ export async function PATCH(req: NextRequest) {
     }
     const account = bankSettingsSchema.parse(body);
     return NextResponse.json(
-      await saveBankDetails(requestBranch(req.url), account, user),
+      await saveBankDetails(branch, account, user),
       { headers: paymentHeaders },
     );
   } catch (error) {

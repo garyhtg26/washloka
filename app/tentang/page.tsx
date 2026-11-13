@@ -170,7 +170,9 @@ export default function AboutPage() {
               </span>
             </div>
             <div className="about-ew-partner-copy">
-              <span className="about-ew-partner-category">LAUNDRY STUDIO</span>
+              <span className="about-ew-partner-category">
+                KARANG TENGAH · LAUNDRY STUDIO
+              </span>
               <h3>D’Fable Laundry</h3>
               <p>
                 Berdiri pada 2026, D’Fable hadir untuk kebutuhan laundry
@@ -179,7 +181,7 @@ export default function AboutPage() {
               </p>
               <div className="about-ew-partner-actions">
                 <Link
-                  href={`${DFABLE_HOME}?view=services`}
+                  href={`${DFABLE_HOME}?view=services&branch=dfablelaundry`}
                   className="about-ew-partner-link"
                 >
                   Lihat layanan toko <ArrowUpRight size={17} />
@@ -187,6 +189,37 @@ export default function AboutPage() {
                 <a href={whatsappUrl} target="_blank" rel="noreferrer">
                   <MessageCircle size={16} /> Hubungi D’Fable
                 </a>
+              </div>
+            </div>
+          </article>
+          <article className="about-ew-partner">
+            <div className="about-ew-partner-brand">
+              <Image
+                src="/buzzwash-logo.png"
+                alt="BuzzWash"
+                width={1394}
+                height={471}
+              />
+              <span>
+                <Store size={14} /> Partner Washloka
+              </span>
+            </div>
+            <div className="about-ew-partner-copy">
+              <span className="about-ew-partner-category">
+                CIBUBUR · LAUNDRY
+              </span>
+              <h3>BuzzWash</h3>
+              <p>
+                Pilih layanan kiloan, satuan, atau perawatan khusus dari
+                BuzzWash di Cibubur.
+              </p>
+              <div className="about-ew-partner-actions">
+                <Link
+                  href={`${DFABLE_HOME}?view=services&branch=buzzwash`}
+                  className="about-ew-partner-link"
+                >
+                  Lihat layanan toko <ArrowUpRight size={17} />
+                </Link>
               </div>
             </div>
           </article>

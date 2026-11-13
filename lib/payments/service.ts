@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
-import { readBranchSettings } from "../branch-settings";
+import { readStoreBankSettings } from "../branch-settings";
 import type { Order } from "../types";
 import { ApiError } from "../firebase/access";
 import { db } from "../firebase/admin";
@@ -29,6 +29,8 @@ import type { PaymentAttempt, PaymentView, ProviderTransaction } from "./types";
 import { bankDetails, manualLocked, safeManualSummary } from "./manual-policy";
 import { prepareEarn, commitEarn } from "../loyalty";
 import { signalPaymentChange } from "./signals";
+import { DEFAULT_BRANCH, normalizeBranchId, sameBranch } from "../branches";
+import { isRewardsStore } from "../rewards-store";
 export { signalPaymentChange } from "./signals";
 
 export const gateway = {
@@ -42,7 +44,7 @@ export async function paymentView(
   order: Order,
   database: Firestore = db(),
 ): Promise<PaymentView> {
-  const settings = await readBranchSettings(database, order.branchId);
+  const settings = await readStoreBankSettings(database, order.branchId);
   let qrUrl: string | undefined;
   if (
     order.payment?.status === "pending" &&
@@ -62,7 +64,7 @@ export async function paymentView(
   }
   return {
     revision: order.paymentRevision || 0,
-    enabled: midtransCheckoutEnabled(),
+    enabled: normalizeBranchId(order.branchId) !== "buzzwash" && midtransCheckoutEnabled(),
     orderId: order.id,
     paid: order.paid,
     amount: order.total,
@@ -75,7 +77,7 @@ export async function paymentView(
     ...(order.paymentReconciliationRequired ? { reviewRequired: true } : {}),
     branchId: order.branchId,
     bank: bankDetails(
-      order.manualPayment?.bank || settings.get("manualPayment"),
+      order.manualPayment?.bank || settings,
       order.branchId,
     ),
     ...(order.manualPayment
@@ -160,12 +162,16 @@ export async function applyVerifiedTransaction(
         : null;
     const loyaltyReviewRef =
       order?.uid &&
+      isRewardsStore(order.branchId) &&
       financialException(transaction) &&
       (order.pointsEarned || order.pointsUsed)
         ? database.doc(`loyalty/${order.uid}`)
         : null;
     const membershipReviewRef =
-      order?.uid && financialException(transaction) && order.membershipUsed
+      order?.uid &&
+      isRewardsStore(order.branchId) &&
+      financialException(transaction) &&
+      order.membershipUsed
         ? database.doc(`memberships/${order.uid}`)
         : null;
     if (loyaltyReviewRef) await tx.get(loyaltyReviewRef);
@@ -251,6 +257,8 @@ export async function createPayment(
     );
   const config = midtransConfig();
   let order = await readPaymentOrder(orderId, database);
+  if (!sameBranch(order.branchId, DEFAULT_BRANCH))
+    throw new ApiError(409, "Pembayaran toko ini belum tersedia.");
   if (order.payment && !order.paid)
     order = await reconcilePayment(order, database, api, true);
   if (order.paid || order.paymentReconciliationRequired)

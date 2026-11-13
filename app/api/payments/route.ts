@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { ApiError, requireAdmin, sameOrigin } from "@/lib/firebase/access";
+import { normalizeBranchId } from "@/lib/branches";
 import {
   authorizePayment,
   paymentFailure,
@@ -52,8 +53,10 @@ export async function POST(req: NextRequest) {
         action: z.enum(["create", "cancel"]),
       })
       .parse(parsed);
-    const { user } = await authorizePayment(req, input.orderId, input.token);
-    if (input.action === "cancel") requireAdmin(user);
+    const { user, order } = await authorizePayment(req, input.orderId, input.token);
+    if (normalizeBranchId(order.branchId) === "buzzwash")
+      throw new ApiError(409, "QRIS BuzzWash belum tersedia.");
+    if (input.action === "cancel") requireAdmin(user, order.branchId);
     const view =
       input.action === "create"
         ? await createPayment(input.orderId)

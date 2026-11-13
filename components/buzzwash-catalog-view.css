@@ -1,0 +1,49 @@
+.buzz-menu-notice {
+  margin: 0 0 26px;
+  padding: 14px 18px;
+  color: #6e3e13;
+  background: #fff8eb;
+  border: 1px solid #f1e1c4;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.buzz-menu-group { margin-bottom: 22px; }
+.buzz-menu .daily-rate-table thead th { background: #f9eef2; }
+.buzz-menu .daily-rate-table tbody th {
+  position: relative;
+  padding-right: 58px;
+  background: #fcf8f9;
+}
+.buzz-menu .daily-rate-table tbody th > .buzz-menu-add {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border-radius: 10px;
+  color: #7a0e2f;
+  background: #f8eff2;
+  transform: translateY(-50%);
+  transition: background 160ms ease, color 160ms ease;
+}
+.buzz-menu .daily-rate-table tbody th > .buzz-menu-add:hover {
+  color: #fff;
+  background: #7a0e2f;
+}
+.buzz-menu .daily-rate-table tbody th > .buzz-menu-add:focus-visible {
+  outline: 2px solid #7a0e2f;
+  outline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .buzz-menu .daily-rate-table tbody th { background: #faf1f4; }
+  .buzz-menu .daily-rate-table tbody td:nth-child(n)::before { content: attr(data-label); }
+  .buzz-menu .buzz-menu-piece tbody td:nth-child(2) { border-bottom: 0; }
+  .buzz-menu .buzz-menu-premium tbody td { grid-column: 1 / -1; border-right: 0; }
+}

@@ -137,9 +137,17 @@ export default function LoyaltyRedemption({
       )}
       {!reconciliationRequired && !locked && !ready && (
         <p className="loyalty-use-note">
-          Poin bisa digunakan setelah toko memastikan berat dan ongkir. Kembali
-          ke halaman ini sebelum membayar.
+          {used > 0
+            ? "Poin sudah digunakan berdasarkan perkiraan. Toko akan menyesuaikan tagihan setelah berat dan ongkir dipastikan."
+            : "Poin dapat diubah setelah toko memastikan berat dan ongkir."}
         </p>
+      )}
+      {!locked && !ready && used > 0 && order.rewardsReservedAt && (
+        <div className="loyalty-use-actions">
+          <button type="button" disabled={busy} onClick={() => void apply(0)}>
+            Batalkan penggunaan poin
+          </button>
+        </div>
       )}
       {!reconciliationRequired &&
         !locked &&

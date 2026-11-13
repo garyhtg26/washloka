@@ -1,0 +1,112 @@
+.order-rewards {
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid #e9dfe2;
+  border-radius: 16px;
+  background: #fff;
+}
+.order-rewards-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 14px;
+}
+.order-rewards-icon,
+.order-rewards-choice-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  color: #7a0e2f;
+  background: #f8edf1;
+}
+.order-rewards-heading h3 {
+  margin: 0;
+  color: #242025;
+  font-size: 15px;
+  line-height: 1.3;
+}
+.order-rewards-heading p {
+  margin: 3px 0 0;
+  color: #746a70;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.order-rewards-options { display: grid; gap: 8px; }
+form .order-rewards-choice {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  margin: 0;
+  padding: 11px;
+  border: 1px solid #eee8ea;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.order-rewards-choice:has(input:checked) { border-color: #c99aaa; background: #fdf8fa; }
+.order-rewards-choice-icon { width: 34px; height: 34px; border-radius: 10px; }
+.order-rewards-copy { display: grid; gap: 3px; flex: 1; min-width: 0; }
+.order-rewards-copy b { color: #2c2429; font-size: 13px; line-height: 1.3; }
+.order-rewards-copy small { color: #71676d; font-size: 12px; line-height: 1.35; }
+form .order-rewards-choice input[type="checkbox"] {
+  flex: none;
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  accent-color: #7a0e2f;
+}
+.order-rewards-note { margin: 12px 0 0; color: #71676d; font-size: 12px; line-height: 1.5; }
+.order-rewards-note button { color: #7a0e2f; font-weight: 700; text-decoration: underline; }
+.form-summary .order-summary-amounts {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+}
+.form-summary .order-summary-amounts del,
+.order-success-amount del {
+  color: #8c8085;
+  font-size: 12px;
+  font-weight: 500;
+}
+.form-summary .order-summary-breakdown {
+  display: grid;
+  gap: 3px;
+  margin-top: 8px;
+  max-width: 240px;
+  color: #67565e;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.order-summary-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.order-summary-breakdown > div > span:last-child {
+  color: #7a0e2f;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.order-success-amount {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px 9px;
+  text-align: right;
+}
+.success > .order-success-shipping-note {
+  margin: -9px 0 0;
+  color: #746a70;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: left;
+}
+@media (max-width: 520px) {
+  .order-rewards { padding: 14px; }
+  .order-rewards-heading h3 { font-size: 14px; }
+}

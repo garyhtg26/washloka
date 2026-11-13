@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     let documentPath: string;
     let event: "refresh" | "payment";
     if (branch !== null) {
-      requireAdmin(await identity(req, true));
+      requireAdmin(await identity(req, true), branchSchema.parse(branch));
       documentPath = `paymentSignals/${branchSchema.parse(branch)}`;
       event = "refresh";
     } else {

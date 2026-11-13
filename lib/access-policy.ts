@@ -11,6 +11,18 @@ export function adminEmailAllowed(
     .includes(email.trim().toLowerCase());
 }
 export type AccessRole = "owner" | "admin" | "staff" | "customer";
+
+/** Legacy staff were assigned before shops were introduced: they retain only
+ * D’Fable access. An explicit empty grant does not implicitly grant a shop. */
+export function accessBranches(role: AccessRole, assigned: unknown): ("dfablelaundry" | "buzzwash")[] {
+  if (role === "owner") return ["dfablelaundry", "buzzwash"];
+  if (role === "customer") return [];
+  if (!Array.isArray(assigned)) return ["dfablelaundry"];
+  return [...new Set(assigned.flatMap((value) =>
+    value === "buzzwash" ? ["buzzwash" as const] :
+    value === "dfablelaundry" || value === "cinere" || value === "bogor" ? ["dfablelaundry" as const] : []
+  ))];
+}
 export function resolveAccess(
   email: string,
   verified: boolean,

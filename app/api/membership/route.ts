@@ -8,6 +8,7 @@ import { memberBalance } from "@/lib/membership";
 import { eligibleMemberDiscount } from "@/lib/membership-eligibility";
 import { submitMembershipDeposit } from "@/lib/membership-proof";
 import { branchSchema, requestBranch } from "@/lib/branches";
+import { requireRewardsStore } from "@/lib/rewards-store";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const schema = z
@@ -43,6 +44,7 @@ export async function GET(req: NextRequest) {
     const user = (await identity(req, true))!;
     const database = db();
     const branch = requestBranch(req.url);
+    requireRewardsStore(branch);
     const [wallet, pending, history, bank] = await Promise.all([
       database.doc(`memberships/${user.uid}`).get(),
       database.doc(`membershipDeposits/${user.uid}`).get(),
@@ -83,6 +85,7 @@ export async function POST(req: NextRequest) {
     sameOrigin(req);
     const user = (await identity(req, true))!;
     const input = schema.parse(await req.json());
+    requireRewardsStore(input.branch);
     const database = db();
     const bank = await readBankDetails(input.branch, database);
     if (!bank.configured)
