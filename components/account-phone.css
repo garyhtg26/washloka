@@ -5,7 +5,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: #171a3899;
+  background: #24191e99;
   backdrop-filter: blur(4px);
 }
 .auth-confirm-card {
@@ -13,21 +13,21 @@
   padding: 25px;
   border-radius: 20px;
   background: white;
-  box-shadow: 0 20px 60px #16183840;
+  box-shadow: 0 20px 60px #2f152040;
 }
 .auth-confirm-card h3 {
   margin: 0 0 10px;
   font-size: 19px;
 }
 .auth-confirm-card p {
-  color: #73798d;
+  color: #756c71;
   font-size: 13px;
   line-height: 1.6;
 }
 .auth-confirm-card strong {
   display: block;
   margin: 18px 0;
-  color: #2521da;
+  color: #7a0e2f;
   font-size: 19px;
   overflow-wrap: anywhere;
 }

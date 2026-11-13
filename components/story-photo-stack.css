@@ -30,7 +30,7 @@
   height: 80%;
   min-width: 0;
   padding: 8px 8px 0;
-  border: 1px solid #e9ebf1;
+  border: 1px solid #eee6e9;
   border-radius: 19px;
   background: #fff;
   box-shadow: 0 18px 45px #4e091f2b;
@@ -63,6 +63,7 @@
   transform: translateX(-12%) rotate(14deg) translateY(-8px) scale(0.94);
 }
 .story-photo:focus-visible {
+  outline: 2px solid #7a0e2f;
   outline-offset: 4px;
 }
 .story-photo-image {
@@ -72,7 +73,7 @@
   min-height: 0;
   overflow: hidden;
   border-radius: 12px;
-  background: #edf0f8;
+  background: #f7f1f3;
 }
 .story-photo-caption {
   display: flex;
@@ -81,7 +82,7 @@
   gap: 6px;
   min-height: 48px;
   padding: 8px 5px;
-  color: #343a52;
+  color: #30292c;
   font-size: 11px;
   font-weight: 650;
 }
@@ -91,7 +92,7 @@
 }
 .story-photo-hint {
   margin: 0;
-  color: #838a9b;
+  color: #81777b;
   text-align: center;
   font-size: 12px;
 }

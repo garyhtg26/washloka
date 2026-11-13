@@ -61,7 +61,7 @@ export default function PaymentStatus({
               Icon: CreditCard,
               title: "Belum dibayar",
               detail: "Pilih metode pembayaran untuk menyelesaikan tagihan.",
-              className: "border-blue-200 bg-blue-50 text-blue-800",
+              className: "border-[#e6d2d9] bg-[#faf2f5] text-[#6b1731]",
             };
   const Icon = state.Icon;
   if (compact)

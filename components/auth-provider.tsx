@@ -21,6 +21,7 @@ import {
 import { clientAuth, clientReady } from "@/lib/firebase/client";
 import { accountName, type AuthScope } from "@/lib/auth-ui";
 import { isPhoneLogin, phoneLoginEmail } from "@/lib/phone-auth";
+import { requestVerificationEmail } from "@/lib/verification-email-client";
 type Session = {
   user: User | null;
   loading: boolean;
@@ -41,7 +42,7 @@ type AuthContextValue = Session & {
     password: string,
   ) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  verifyEmail: () => Promise<void>;
+  verifyEmail: () => Promise<"sent" | "already-verified">;
   refresh: () => Promise<boolean>;
   logout: () => Promise<void>;
   request: (url: string, init?: RequestInit) => Promise<Response>;
@@ -63,7 +64,7 @@ const AuthContext = createContext<AuthContextValue>({
   loginPhone: async () => {},
   registerPhone: async () => {},
   resetPassword: async () => {},
-  verifyEmail: async () => {},
+  verifyEmail: async () => "sent",
   refresh: async () => false,
   logout: async () => {},
   request: fetch,
@@ -243,7 +244,9 @@ export function AuthProvider({
         },
         verifyEmail: async () => {
           const user = clientAuth(scope).currentUser;
-          if (user) await sendEmailVerification(user, actionSettings());
+          if (!user) throw Object.assign(new Error("Silakan masuk kembali."), { code: "auth/verification-email-failed" });
+          const token = await user.getIdToken();
+          return requestVerificationEmail(token, scope, () => sendEmailVerification(user, actionSettings()));
         },
         logout: async () => {
           await signOut(clientAuth(scope));

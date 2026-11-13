@@ -7,7 +7,7 @@ import {
   sameOrigin,
   ApiError,
 } from "@/lib/firebase/access";
-import { accessBranches, adminEmailAllowed, type AccessRole } from "@/lib/access-policy";
+import { accessBranches, adminEmailAllowed, canAssignStoreAccess, type AccessRole } from "@/lib/access-policy";
 import { requestBranch, activeBranchIds, type BranchId } from "@/lib/branches";
 import { phoneFromLoginEmail } from "@/lib/phone-auth";
 export const runtime = "nodejs";
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
       if (actor!.role !== "owner" && input.role === "customer")
         throw new ApiError(403, "Akun pelanggan hanya dapat dikelola pemilik platform.");
       const branches: BranchId[] = input.role === "customer" ? [] : [...new Set(input.branches ?? [branch])];
-      if (input.role !== "customer" && (!branches.length || !branches.includes(branch) || branches.some((value) => !actorBranches.includes(value))))
+      if (input.role !== "customer" && !canAssignStoreAccess(actor!.role, actorBranches, branch, branches))
         throw new ApiError(403, "Akses toko yang dipilih tidak diizinkan.");
       if (adminEmailAllowed(input.email, true, process.env.ADMIN_EMAILS || ""))
         throw new ApiError(403, "Akun pemilik harus didaftarkan sendiri.");
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
         ? [...new Set(input.branches ?? (targetBranches.length ? targetBranches : [branch]))]
         : [];
       if (input.action === "access" && input.role !== "customer" &&
-          (!nextBranches.length || !nextBranches.includes(branch) || nextBranches.some((value) => !actorBranches.includes(value))))
+          !canAssignStoreAccess(actor!.role, actorBranches, branch, nextBranches))
         throw new ApiError(403, "Akses toko yang dipilih tidak diizinkan.");
       if (
         input.action === "access" &&

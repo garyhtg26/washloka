@@ -134,11 +134,14 @@ export default function AccountPanel({
             disabled={busy || cooldown > 0}
             onClick={() =>
               run(async () => {
-                await auth.verifyEmail();
-                setCooldown(60);
-                setNotice(
-                  "Email verifikasi dikirim. Periksa juga folder spam.",
-                );
+                const result = await auth.verifyEmail();
+                if (result === "already-verified") {
+                  if (await auth.refresh()) onDone?.();
+                  else setNotice("Email sudah diverifikasi. Silakan coba lagi untuk melanjutkan.");
+                } else {
+                  setCooldown(60);
+                  setNotice("Email verifikasi dikirim. Periksa juga folder spam.");
+                }
               })
             }
           >

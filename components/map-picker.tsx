@@ -106,7 +106,7 @@ export default function MapPicker({ lat, lng, onChange, onAddress }: Props) {
           radius: 10,
           color: "#fff",
           weight: 3,
-          fillColor: "#2621df",
+          fillColor: "#7a0e2f",
           fillOpacity: 1,
         }).addTo(map);
         map.on("click", (e) => callback.current(e.latlng.lat, e.latlng.lng));

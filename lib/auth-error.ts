@@ -17,6 +17,8 @@ export function authErrorMessage(error: unknown, hostname = ""): string {
         : "Domain aplikasi belum ditambahkan ke Authorized domains Firebase.";
     case "auth/too-many-requests":
       return "Terlalu banyak percobaan. Coba kembali beberapa saat lagi.";
+    case "auth/verification-email-failed":
+      return "Email verifikasi belum bisa dikirim. Coba lagi beberapa saat lagi.";
     case "auth/popup-closed-by-user":
       return "Login Google dibatalkan.";
     case "auth/popup-blocked":

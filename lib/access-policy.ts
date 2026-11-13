@@ -12,6 +12,19 @@ export function adminEmailAllowed(
 }
 export type AccessRole = "owner" | "admin" | "staff" | "customer";
 
+/** The owner may grant any of their stores from either workspace. Store admins
+ * can only grant their own stores and must keep the current workspace selected. */
+export function canAssignStoreAccess(
+  actorRole: AccessRole,
+  actorBranches: readonly string[],
+  workspace: string,
+  branches: readonly string[],
+) {
+  if (actorRole !== "owner" && actorRole !== "admin") return false;
+  if (!branches.length || branches.some((branch) => !actorBranches.includes(branch))) return false;
+  return actorRole === "owner" || branches.includes(workspace);
+}
+
 /** Legacy staff were assigned before shops were introduced: they retain only
  * D’Fable access. An explicit empty grant does not implicitly grant a shop. */
 export function accessBranches(role: AccessRole, assigned: unknown): ("dfablelaundry" | "buzzwash")[] {

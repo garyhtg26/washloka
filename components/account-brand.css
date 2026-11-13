@@ -57,6 +57,41 @@
 .auth-panel .auth-tabs {
   background: #f7f3f4;
 }
+.auth-panel .auth-subtitle,
+.auth-panel .auth-profile {
+  color: #756c71;
+}
+.auth-panel .auth-profile,
+.email-page .email-address {
+  background: #f8f6f7;
+}
+.auth-panel .auth-profile b {
+  color: #393035;
+}
+.auth-panel .auth-notice {
+  color: #6d3649;
+  background: #f9edf1;
+}
+.auth-panel .auth-error {
+  color: #aa2140;
+  background: #fff1f2;
+}
+.email-page .email-layout {
+  border-color: #ede6e9;
+  box-shadow: 0 16px 70px #3b14210b;
+}
+.email-page .email-description {
+  color: #766d72;
+}
+.email-page .email-security,
+.email-page .email-footer {
+  color: #898086;
+}
+.auth-panel :is(button, a):focus-visible,
+.email-page :is(button, a):focus-visible {
+  outline: 2px solid #a84d6b;
+  outline-offset: 3px;
+}
 dialog.auth-dialog {
   background: linear-gradient(160deg, #faf2f5 0%, #fff 33%);
 }
