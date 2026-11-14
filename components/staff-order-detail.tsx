@@ -457,6 +457,7 @@ export function StaffReceipt({
 }) {
   const service = services.find((item) => item.id === o.service);
   const unit = unitLabel(o.unit ?? service?.unit);
+  const branch = branchLabel(o.branchId);
   const tracking =
     typeof window !== "undefined"
       ? `${window.location.origin}${dfableTrackingPath(o.token)}`
@@ -476,7 +477,7 @@ export function StaffReceipt({
         : "Belum lunas";
   return (
     <div className="staff-receipt" aria-hidden="true">
-      <h1>D’FABLE LAUNDRY STUDIO</h1>
+      <h1>{branch}</h1>
       <h2>STRUK PESANAN</h2>
       <div className="staff-receipt-row">
         <span>No. pesanan</span>
@@ -556,7 +557,7 @@ export function StaffReceipt({
         <b>{payment}</b>
       </div>
       <p>Lacak pesanan: {tracking}</p>
-      <p>Terima kasih telah memilih D’Fable.</p>
+      <p>Terima kasih telah memilih {branch}.</p>
     </div>
   );
 }
