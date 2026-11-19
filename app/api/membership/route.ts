@@ -9,6 +9,7 @@ import { eligibleMemberDiscount } from "@/lib/membership-eligibility";
 import { submitMembershipDeposit } from "@/lib/membership-proof";
 import { branchSchema, requestBranch } from "@/lib/branches";
 import { requireRewardsStore } from "@/lib/rewards-store";
+import { isStaticQrisAccount } from "@/lib/payments/manual-policy";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const schema = z
@@ -17,6 +18,7 @@ const schema = z
     branch: branchSchema,
     senderName: z.string().trim().min(2).max(100),
     proofVersion: z.string().uuid(),
+    paymentMethod: z.enum(["bank_transfer", "qris_static"]).default("bank_transfer"),
   })
   .strict();
 function fail(error: unknown) {
@@ -55,6 +57,7 @@ export async function GET(req: NextRequest) {
         .get(),
       readBankDetails(branch, database),
     ]);
+    const approvedBank = isStaticQrisAccount(bank);
     return NextResponse.json(
       {
         active: wallet.get("active") === true,
@@ -66,13 +69,16 @@ export async function GET(req: NextRequest) {
                 amount: pending.get("amount"),
                 branchId: pending.get("branchId"),
                 senderName: pending.get("senderName"),
+                paymentMethod: pending.get("paymentMethod") === "qris_static" ? "qris_static" : "bank_transfer",
+                ...(pending.get("qris") ? { qris: pending.get("qris") } : {}),
                 bank: pending.get("bank"),
                 hasProof: typeof pending.get("proofVersion") === "string",
                 createdAt: pending.get("createdAt"),
               }
             : null,
         history: history.docs.map((x) => ({ id: x.id, ...x.data() })),
-        bank,
+        bank: approvedBank ? bank : { bankName: "BCA", accountNumber: "", accountHolder: "", configured: false },
+        staticQrisAvailable: approvedBank,
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
@@ -88,8 +94,8 @@ export async function POST(req: NextRequest) {
     requireRewardsStore(input.branch);
     const database = db();
     const bank = await readBankDetails(input.branch, database);
-    if (!bank.configured)
-      throw new ApiError(409, "Rekening toko belum tersedia. Hubungi toko.");
+    if (!bank.configured || !isStaticQrisAccount(bank))
+      throw new ApiError(409, "Pembayaran deposit belum tersedia. Hubungi toko.");
     const requestId = randomUUID();
     await submitMembershipDeposit(database, {
       uid: user.uid,

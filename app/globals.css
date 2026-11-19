@@ -4744,7 +4744,7 @@ input[type="checkbox"] {
     content: "One Day · 1 hari";
   }
   .daily-rate-table tbody td:nth-child(4)::before {
-    content: "Express · 6–8 jam";
+    content: "Express · 6-8 jam";
   }
   .daily-rate-table tbody td:nth-child(5)::before {
     content: "Quick · 3 jam";

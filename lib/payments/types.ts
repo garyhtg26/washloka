@@ -23,6 +23,7 @@ export type PaymentView = {
   qrUrl?: string;
   reviewRequired?: boolean;
   branchId: string;
+  staticQrisAvailable: boolean;
   bank: import("./manual-types").BankDetails;
   manual?: import("./manual-types").ManualPaymentSummary;
 };

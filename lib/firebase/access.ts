@@ -84,7 +84,7 @@ export function requireManager(user: Identity | null, branch?: unknown) {
   if (!user?.manageUsers || (branch !== undefined && !canManageStore(user, branch)))
     throw new ApiError(
       403,
-      "Akses khusus pemilik atau admin dengan login email–password.",
+      "Akses khusus pemilik atau admin dengan login email dan password.",
     );
 }
 export function sameOrigin(req: NextRequest) {

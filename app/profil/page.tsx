@@ -5,7 +5,7 @@ import { normalizeBranchId } from "@/lib/branches";
 import type { CustomerQuery } from "@/lib/dfable-path";
 
 export const metadata: Metadata = {
-  title: "Profil Saya — Washloka",
+  title: "Profil Saya - Washloka",
 };
 
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<CustomerQuery> }) {

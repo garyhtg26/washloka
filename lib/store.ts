@@ -13,7 +13,6 @@ import { siteContent } from "./site-content";
 import { defaultStore } from "./defaults";
 import { canManageStore, type Identity } from "./firebase/access";
 import type { Order, Store } from "./types";
-import { midtransCheckoutEnabled } from "./payments/midtrans";
 import { bankDetails, safeManualSummary } from "./payments/manual-policy";
 import { catalogForBranch, normalizeServices } from "./catalog";
 import { brandCopy } from "./brand-copy";
@@ -137,7 +136,7 @@ export async function readStore(
     role: isStoreAdmin ? user?.role || "customer" : "customer",
     profile,
     hasMore,
-    paymentEnabled: branch !== "buzzwash" && midtransCheckoutEnabled(),
+    paymentEnabled: false,
     orderingEnabled: branch !== "buzzwash" || bank.configured,
     bank,
   };

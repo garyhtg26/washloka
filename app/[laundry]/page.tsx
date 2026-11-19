@@ -8,7 +8,11 @@ export async function generateMetadata({ params }: { params: Promise<{ laundry: 
   const branch = tenantFromSlug((await params).laundry);
   return {
     title: branch === "buzzwash" ? "BuzzWash" : branch === "dfablelaundry" ? "D’Fable Laundry" : "Washloka",
-    ...(branch === "buzzwash" ? { icons: { icon: "/buzzwash-icon.png" } } : {}),
+    ...(branch === "buzzwash"
+      ? { icons: { icon: "/buzzwash-icon.png" } }
+      : branch === "dfablelaundry"
+        ? { icons: { icon: { url: "/dfable-monogram.svg", type: "image/svg+xml" } } }
+        : {}),
     referrer: "no-referrer",
   };
 }

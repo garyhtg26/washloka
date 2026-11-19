@@ -69,6 +69,8 @@ export async function GET(req: NextRequest) {
             amount: x.get("amount"),
             name: x.get("name"),
             senderName: x.get("senderName"),
+            paymentMethod: x.get("paymentMethod") === "qris_static" ? "qris_static" : "bank_transfer",
+            ...(x.get("qris") ? { qris: x.get("qris") } : {}),
             branchId: x.get("branchId"),
             createdAt: x.get("createdAt"),
             bank: x.get("bank"),

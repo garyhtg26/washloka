@@ -214,6 +214,49 @@ dialog.staff-detail-dialog {
 .staff-wa-button:hover {
   background: #d8f1e1;
 }
+.staff-whatsapp .staff-detail-card-heading {
+  margin-bottom: 9px;
+}
+.staff-whatsapp-description {
+  margin: 0 0 14px;
+  color: #5f6471;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.staff-whatsapp-description strong {
+  color: #30333b;
+}
+.staff-whatsapp-warning {
+  margin: 0 0 12px;
+  color: #87591d;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.staff-wa-button:disabled {
+  cursor: not-allowed;
+  color: #7b8580;
+  background: #f1f3f1;
+}
+.staff-whatsapp-preview {
+  margin-top: 12px;
+  color: #137344;
+  font-size: 12px;
+}
+.staff-whatsapp-preview summary {
+  width: fit-content;
+  font-weight: 650;
+  cursor: pointer;
+}
+.staff-whatsapp-preview p {
+  margin: 10px 0 0;
+  padding: 12px;
+  border-radius: 10px;
+  color: #444c47;
+  background: #f6faf7;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .staff-detail-actions .text-button {
   display: flex;
   align-items: center;

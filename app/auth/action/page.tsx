@@ -2,7 +2,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import EmailAction from "@/components/email-action";
 import { emailScope } from "@/lib/auth-ui";
 export const metadata = {
-  title: "Verifikasi akun — Washloka",
+  title: "Verifikasi akun - Washloka",
   robots: { index: false, follow: false },
   referrer: "no-referrer" as const,
 };

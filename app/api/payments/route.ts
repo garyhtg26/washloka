@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { ApiError, requireAdmin, sameOrigin } from "@/lib/firebase/access";
-import { normalizeBranchId } from "@/lib/branches";
 import {
   authorizePayment,
   paymentFailure,
@@ -9,7 +8,6 @@ import {
 } from "@/lib/payments/http";
 import {
   cancelPayment,
-  createPayment,
   paymentView,
   reconcilePayment,
 } from "@/lib/payments/service";
@@ -54,13 +52,10 @@ export async function POST(req: NextRequest) {
       })
       .parse(parsed);
     const { user, order } = await authorizePayment(req, input.orderId, input.token);
-    if (normalizeBranchId(order.branchId) === "buzzwash")
-      throw new ApiError(409, "QRIS BuzzWash belum tersedia.");
-    if (input.action === "cancel") requireAdmin(user, order.branchId);
-    const view =
-      input.action === "create"
-        ? await createPayment(input.orderId)
-        : await cancelPayment(input.orderId);
+    if (input.action === "create")
+      throw new ApiError(409, "Pembayaran otomatis masih dalam pengembangan. Silakan gunakan metode pembayaran manual.");
+    requireAdmin(user, order.branchId);
+    const view = await cancelPayment(input.orderId);
     return NextResponse.json(view, { headers: paymentHeaders });
   } catch (error) {
     return paymentFailure(error);

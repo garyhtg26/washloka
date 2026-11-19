@@ -35,7 +35,7 @@ export default function PaymentStatus({
           Icon: Clock3,
           title: "Perlu konfirmasi",
           detail:
-            "Bukti transfer sudah terkirim. Pembayaran menunggu pemeriksaan toko.",
+            "Bukti pembayaran sudah terkirim. Pembayaran menunggu pemeriksaan toko.",
           className: "border-amber-300 bg-amber-400 text-amber-950",
         }
       : paid || manualPayment?.status === "paid"
@@ -54,14 +54,14 @@ export default function PaymentStatus({
               title: "Bukti perlu diperbaiki",
               detail:
                 manualPayment.rejectionReason ||
-                "Periksa kembali bukti transfer, lalu kirim ulang.",
+                "Periksa kembali bukti pembayaran, lalu kirim ulang.",
               className: "border-rose-300 bg-rose-100 text-rose-900",
             }
           : {
               Icon: CreditCard,
               title: "Belum dibayar",
               detail: "Pilih metode pembayaran untuk menyelesaikan tagihan.",
-              className: "border-[#e6d2d9] bg-[#faf2f5] text-[#6b1731]",
+              className: "payment-status-unpaid border-[#e6d2d9] bg-[#faf2f5] text-[#6b1731]",
             };
   const Icon = state.Icon;
   if (compact)

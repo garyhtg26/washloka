@@ -9,9 +9,11 @@ import type { Order } from "../types";
 import { finalAmount } from "./policy";
 import {
   bankDetails,
+  isStaticQrisAccount,
   manualGatewayConflict,
   manualLocked,
   safeManualSummary,
+  STATIC_QRIS_ID,
 } from "./manual-policy";
 import { paymentView, readPaymentOrder, signalPaymentChange } from "./service";
 import { prepareEarn, commitEarn } from "../loyalty";
@@ -47,17 +49,26 @@ const unpaid = (): ManualPaymentSummary => ({
 export async function selectManualPayment(
   orderId: string,
   database: Firestore = db(),
+  manualMethod?: "bank" | "manual-qris",
 ) {
   await database.runTransaction(async (tx) => {
     const ref = database.doc(`orders/${orderId}`);
     const snap = await tx.get(ref);
     if (!snap.exists) throw new ApiError(404, "Pesanan tidak ditemukan.");
     const order = snap.data() as Order;
-    if (order.manualPayment?.bank && !manualGatewayConflict(order) &&
+    const previousBank = order.manualPayment?.bank;
+    const currentMethod = previousBank?.staticQrId === STATIC_QRIS_ID ? "manual-qris" : "bank";
+    if (previousBank && (!manualMethod || manualMethod === currentMethod) && !manualGatewayConflict(order) &&
         !(order.source === "web" && order.fulfillment && finalAmount(order) === null)) return;
     available(order);
-    const stored = await readStoreBankSettings(database, order.branchId, tx);
+    if (previousBank && order.manualPayment?.hasProof)
+      throw new ApiError(409, "Metode pembayaran tidak dapat diganti setelah bukti diunggah.");
+    const stored = previousBank || await readStoreBankSettings(database, order.branchId, tx);
+    if (!previousBank && !isStaticQrisAccount(stored))
+      throw new ApiError(409, "Pengaturan rekening perlu diperiksa toko sebelum pembayaran.");
     const bank = bankDetails(stored, order.branchId);
+    if (manualMethod === "manual-qris" && (!bank.configured || !isStaticQrisAccount(bank)))
+      throw new ApiError(409, "QRIS manual belum tersedia untuk rekening ini. Hubungi toko.");
     tx.update(ref, {
       paymentRevision: (order.paymentRevision || 0) + 1,
       manualPayment: {
@@ -69,7 +80,8 @@ export async function selectManualPayment(
                 accountNumber: bank.accountNumber,
                 accountHolder: bank.accountHolder,
                 ...(stored.version ? { version: stored.version } : {}),
-                ...(stored.qrVersion ? { qrVersion: stored.qrVersion } : {}),
+                ...(previousBank?.qrVersion ? { qrVersion: previousBank.qrVersion } : {}),
+                ...(manualMethod === "manual-qris" ? { staticQrId: STATIC_QRIS_ID } : {}),
               },
             }
           : {}),

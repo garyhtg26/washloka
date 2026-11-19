@@ -39,6 +39,7 @@ Firestore rules deny direct browser access. Supabase photos are kept in a privat
 - Use Node 22.x. Build command `npm run build`, install command `npm ci`. Keep the default Next.js output directory. **Do not use static export or deploy `out/`.** Route handlers require the Vercel Node runtime.
 - Configure every key in `.env.example` under Vercel Environment Variables for the intended environment. Keep server credentials secret. Browser Firebase/Maps keys are public configuration and require the documented restrictions.
 - Add the final Vercel domain to Firebase Authentication and Google Maps HTTP-referrer restrictions. Preview deployments with different domains also need authorization; prefer a stable staging domain/project.
+- Set optional `NEXT_PUBLIC_SITE_URL` to the live public HTTPS origin when using a custom domain. Staff WhatsApp drafts use this address for customer tracking links, including when opened locally or from a Vercel preview. Without it, local and preview drafts use `https://washloka.vercel.app`.
 - Deploy. `/api/health` must return `{"status":"ok"}`. `setup_required` (503) means missing credentials; `database_unavailable` (503) means a project/permissions/connectivity issue. `/api/store` is an actual serverless route, not a file generated into static output.
 - Check login → order → dashboard → update weight/ongkir/status → tracking → reload. Test a second customer account: it must not see the first customer's order or photos. Test an account outside `ADMIN_EMAILS`: admin writes must return 403.
 

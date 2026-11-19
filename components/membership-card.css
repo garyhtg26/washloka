@@ -272,6 +272,47 @@ dialog.member-dialog {
   font-size: 10px;
   font-weight: 400;
 }
+.member-methods {
+  min-width: 0;
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+}
+.member-methods legend { color: #51464c; font-size: 12px; font-weight: 700; }
+.member-methods > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.member-methods label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #e9e1e4;
+  border-radius: 10px;
+  color: #51464c;
+  background: white;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.member-methods label.selected { border-color: #9f3154; color: #7a0e2f; background: #fbf3f6; }
+.member-methods input { accent-color: #7a0e2f; }
+.member-methods label:focus-within { outline: 2px solid #d9a9b9; outline-offset: 2px; }
+.member-qris {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #ede6e9;
+  border-radius: 13px;
+  text-align: center;
+  background: #fdfbfc;
+}
+.member-qris strong { color: #292328; font-size: 12px; }
+.member-qris p { margin: 0; color: #81777c; font-size: 11px; line-height: 1.5; }
+.member-qris button { min-height: 40px; padding: 8px 14px; border: 1px solid #e4c5d0; border-radius: 9px; color: #7a0e2f; background: #fff; font-size: 12px; font-weight: 700; }
+.member-qris a { color: #7a0e2f; font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.member-qris img { display: block; width: min(100%, 280px); height: auto; border-radius: 10px; }
 .member-bank {
   display: flex;
   align-items: center;

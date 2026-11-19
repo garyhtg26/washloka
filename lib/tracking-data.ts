@@ -23,6 +23,9 @@ export function publicTracking(o: Order): TrackingOrder {
     express: o.express,
     status: o.status,
     paid: o.paid,
+    ...(Number.isSafeInteger(o.paymentRevision) && (o.paymentRevision ?? -1) >= 0
+      ? { paymentRevision: o.paymentRevision }
+      : {}),
     ...(o.manualPayment
       ? { manualPayment: safeManualSummary(o.manualPayment) }
       : {}),

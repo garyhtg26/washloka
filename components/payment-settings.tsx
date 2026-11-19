@@ -1,24 +1,22 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowUpRight,
   Building2,
   Check,
   CheckCircle2,
   Copy,
-  ImagePlus,
   Landmark,
   Loader2,
   QrCode,
   Save,
   ShieldCheck,
-  Trash2,
 } from "lucide-react";
 import { useAuth } from "./auth-provider";
-import { prepareImage } from "@/lib/image-upload";
 import { branches, type BranchId } from "@/lib/branches";
 import type { BankAccount, BankDetails } from "@/lib/payments/manual-types";
+import { isStaticQrisAccount, STATIC_QRIS_URL } from "@/lib/payments/manual-policy";
 
 const initialAccount: BankAccount = {
   bankName: "BCA",
@@ -49,23 +47,19 @@ export default function PaymentSettings({
   onSaved: () => void;
 }) {
   const auth = useAuth();
-  const uploadId = useId();
   const [account, setAccount] = useState<BankAccount>(initialAccount);
   const [saved, setSaved] = useState<BankDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<"" | "account" | "qr" | "remove">("");
+  const [busy, setBusy] = useState<"" | "account">("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(false);
   const [retry, setRetry] = useState(0);
   const generation = useRef(0);
-  const changeBranch = useRef(branchId);
-  changeBranch.current = branchId;
   const onSavedRef = useRef(onSaved);
   onSavedRef.current = onSaved;
   const endpoint = `/api/admin/payments?branch=${branchId}`;
-  const qrEndpoint = `/api/admin/payments/qr?branch=${branchId}`;
-  const qrUrl = saved?.qrUrl;
+  const qrAvailable = !!saved && isStaticQrisAccount(saved);
   const changed =
     account.bankName !== saved?.bankName ||
     account.accountNumber !== saved?.accountNumber ||
@@ -149,62 +143,13 @@ export default function PaymentSettings({
         );
       const bank = parseBank(result);
       if (current !== generation.current) return;
-      const needsNewQr = !!saved?.qrUrl && !bank.qrUrl;
       setSaved(bank);
       setAccount({
         bankName: bank.bankName,
         accountNumber: bank.accountNumber,
         accountHolder: bank.accountHolder,
       });
-      setNotice(
-        needsNewQr
-          ? `Rekening ${branches[branchId]} diperbarui. Unggah ulang QR yang sesuai dengan rekening ini.`
-          : `Rekening ${branches[branchId]} sudah diperbarui.`,
-      );
-      onSavedRef.current();
-    } catch (cause) {
-      if (current === generation.current) setError((cause as Error).message);
-    } finally {
-      if (current === generation.current) setBusy("");
-    }
-  }
-
-  async function updateQr(file?: File) {
-    if (busy || loading || (file && changed)) return;
-    const current = generation.current;
-    const requestedBranch = branchId;
-    setBusy(file ? "qr" : "remove");
-    setError("");
-    setNotice("");
-    try {
-      const image = file ? await prepareImage(file, 1600) : undefined;
-      if (
-        current !== generation.current ||
-        changeBranch.current !== requestedBranch
-      )
-        return;
-      const response = await auth.request(qrEndpoint, {
-        method: file ? "POST" : "DELETE",
-        headers: {
-          "If-Match": saved?.version || "unconfigured",
-          ...(image ? { "Content-Type": "image/jpeg" } : {}),
-        },
-        ...(image ? { body: image } : {}),
-      });
-      const result: unknown = await response.json();
-      if (!response.ok)
-        throw Error(
-          (result as { error?: string }).error ||
-            "Gambar QR belum berhasil diperbarui.",
-        );
-      const bank = parseBank(result);
-      if (current !== generation.current) return;
-      setSaved(bank);
-      setNotice(
-        file
-          ? `QR pembayaran ${branches[branchId]} sudah diperbarui.`
-          : "QR pembayaran dihapus. Pelanggan tetap bisa transfer ke rekening.",
-      );
+      setNotice(`Rekening ${branches[branchId]} sudah diperbarui.`);
       onSavedRef.current();
     } catch (cause) {
       if (current === generation.current) setError((cause as Error).message);
@@ -360,99 +305,20 @@ export default function PaymentSettings({
 
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5 sm:px-6">
-                <QrCode
-                  size={21}
-                  strokeWidth={1.7}
-                  className="text-[#7a0e2f]"
-                  aria-hidden="true"
-                />
+                <QrCode size={21} strokeWidth={1.7} className="text-[#7a0e2f]" aria-hidden="true" />
                 <div>
-                  <h2 className="!mb-0 !text-base font-semibold text-slate-900">
-                    QR pembayaran
-                  </h2>
-                  <p className="!mb-0 !mt-1 !text-xs text-slate-500">
-                    Opsional. Toko tetap perlu memeriksa pembayaran.
-                  </p>
+                  <h2 className="!mb-0 !text-base font-semibold text-slate-900">QRIS manual</h2>
+                  <p className="!mb-0 !mt-1 !text-xs text-slate-500">Berlaku untuk D’Fable dan BuzzWash.</p>
                 </div>
               </div>
-              <div className="px-5 py-5 sm:px-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-1.5">
-                    <img
-                      src={qrUrl || "/payment-qr-placeholder.svg"}
-                      alt={
-                        qrUrl
-                          ? "QR pembayaran toko"
-                          : "Contoh QR yang belum dapat dibayar"
-                      }
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="!mb-1 !text-sm font-medium text-slate-800">
-                      {qrUrl ? "QR toko sudah tersedia" : "Belum ada QR toko"}
-                    </p>
-                    <p className="!mb-0 !text-xs leading-relaxed text-slate-500">
-                      Unggah JPG, PNG, atau WebP maksimal 8 MB. Pastikan QR
-                      sesuai rekening dan nama toko.
-                    </p>
-                    {!qrUrl && (
-                      <p className="!mb-0 !mt-2 !text-[11px] font-medium text-amber-700">
-                        Contoh QR · belum dapat dibayar
-                      </p>
-                    )}
-                  </div>
+              <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
+                <img src={STATIC_QRIS_URL} alt="QRIS BUZZWASH CIBUBUR" className="h-32 w-24 rounded-lg border border-slate-100 bg-white object-contain" />
+                <div className="min-w-0">
+                  <p className="!mb-1 !text-sm font-semibold text-slate-800">BUZZWASH CIBUBUR</p>
+                  <p className="!mb-0 !text-xs leading-relaxed text-slate-500">Pelanggan memasukkan nominal sendiri dan mengunggah bukti untuk diperiksa toko.</p>
+                  {!qrAvailable && <p role="status" className="!mb-0 !mt-2 !text-xs text-amber-700">QRIS belum tersedia. Pastikan rekening tersimpan adalah BCA 6560655132 a.n. Novel Ruspandi.</p>}
+                  <a href={STATIC_QRIS_URL} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-semibold text-[#7a0e2f]">Lihat QRIS</a>
                 </div>
-                <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-                  <label
-                    htmlFor={uploadId}
-                    aria-disabled={!!busy || changed}
-                    className={`secondary !relative !flex !cursor-pointer !items-center !justify-center !gap-2 !rounded-xl !px-4 !py-2.5 !text-xs focus-within:!ring-4 focus-within:!ring-[#efdae1] ${busy || changed ? "pointer-events-none opacity-50" : ""}`}
-                  >
-                    {busy === "qr" ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <ImagePlus size={16} />
-                    )}
-                    {busy === "qr"
-                      ? "Mengunggah…"
-                      : qrUrl
-                        ? "Ganti QR pembayaran"
-                        : "Unggah QR pembayaran"}
-                    <input
-                      id={uploadId}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      disabled={!!busy || changed}
-                      className="sr-only"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        event.target.value = "";
-                        if (file) void updateQr(file);
-                      }}
-                    />
-                  </label>
-                  {qrUrl && (
-                    <button
-                      type="button"
-                      disabled={!!busy}
-                      onClick={() => void updateQr()}
-                      className="!flex !items-center !justify-center !gap-2 !rounded-xl !border !border-red-100 !bg-white !px-4 !py-2.5 !text-xs !font-medium !text-red-600 hover:!bg-red-50 disabled:!opacity-50"
-                    >
-                      {busy === "remove" ? (
-                        <Loader2 size={15} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={15} />
-                      )}
-                      {busy === "remove" ? "Menghapus…" : "Hapus QR"}
-                    </button>
-                  )}
-                </div>
-                <p className="!mb-0 !mt-3 !text-[11px] text-slate-400">
-                  {changed
-                    ? "Simpan perubahan rekening terlebih dahulu sebelum mengunggah QR."
-                    : "QR baru langsung tampil setelah diunggah."}
-                </p>
               </div>
             </div>
           </div>
@@ -524,22 +390,10 @@ export default function PaymentSettings({
                     </span>
                   )}
                 </div>
-                <div className="mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-2xl border border-slate-100 bg-white p-2">
-                  <img
-                    src={qrUrl || "/payment-qr-placeholder.svg"}
-                    alt={
-                      qrUrl
-                        ? "Pratinjau QR pembayaran pelanggan"
-                        : "Contoh QR, bukan kode pembayaran"
-                    }
-                    className="h-full w-full object-contain"
-                  />
+                <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                  <strong className="block text-slate-900">QRIS manual · BUZZWASH CIBUBUR</strong>
+                  <span className="mt-1 block">{qrAvailable ? "Tersedia untuk pembayaran manual." : "Tersedia setelah rekening yang disetujui disimpan."}</span>
                 </div>
-                {!qrUrl && (
-                  <p className="!mb-0 !mt-3 text-center !text-[11px] font-semibold text-amber-700">
-                    Contoh QR · belum dapat dibayar
-                  </p>
-                )}
                 <div className="mt-5 flex items-start gap-2 rounded-xl bg-slate-50 p-3">
                   <ShieldCheck
                     size={16}
@@ -547,7 +401,7 @@ export default function PaymentSettings({
                     aria-hidden="true"
                   />
                   <p className="!mb-0 !text-[11px] leading-relaxed text-slate-500">
-                    Pelanggan mengunggah bukti transfer. Toko memeriksa
+                    Pelanggan mengunggah bukti pembayaran. Toko memeriksa
                     pembayaran sebelum status berubah menjadi lunas.
                   </p>
                 </div>

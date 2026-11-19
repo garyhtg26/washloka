@@ -24,7 +24,11 @@ import type { PaymentSummary, PaymentView } from "@/lib/payments/types";
 import type { ManualPaymentSummary } from "@/lib/payments/manual-types";
 import PaymentStatus from "./payment-status";
 import MidtransPayment from "./midtrans-payment";
-import { canUploadManualProof } from "@/lib/payments/manual-ui";
+import { canUploadManualProof, manualPaymentMode } from "@/lib/payments/manual-ui";
+import { STATIC_QRIS_ID } from "@/lib/payments/manual-policy";
+import ManualQris from "./manual-qris";
+import PaymentAmount from "./payment-amount";
+import ManualPaymentMethod from "./manual-payment-method";
 
 type Props = {
   orderId: string;
@@ -38,6 +42,9 @@ type Props = {
   initialReviewRequired?: boolean;
   hideQrByDefault?: boolean;
   hideProofByDefault?: boolean;
+  orderTotal?: number;
+  pointsUsed?: number;
+  membershipUsed?: number;
   onChanged?: () => void;
 };
 
@@ -70,6 +77,9 @@ export default function PaymentPanel({
   initialReviewRequired = false,
   hideQrByDefault = false,
   hideProofByDefault = false,
+  orderTotal,
+  pointsUsed,
+  membershipUsed,
   onChanged,
 }: Props) {
   const auth = useAuth();
@@ -79,7 +89,7 @@ export default function PaymentPanel({
   const payment = view ? view.payment : initialPayment;
   const paid = initialPaid || !!view?.paid || manual?.status === "paid";
   const review = view ? view.reviewRequired : initialReviewRequired;
-  const [selection, setSelection] = useState<"bank" | "qris" | "">("");
+  const [selection, setSelection] = useState<"bank" | "manual-qris" | "">("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -122,18 +132,16 @@ export default function PaymentPanel({
   const paymentDeferred = Boolean(
     deferUntilReady && !view?.ready && !paid && !pending && !review && !gatewayActive,
   );
-  const bankSelected = selection === "bank" || !!manual;
+  const bankSelected = !!selection || !!manual;
   const bank = view?.bank || manual?.bank;
   const bankConfigured =
     !!bank?.accountNumber &&
     !!bank?.accountHolder &&
     (view ? view.bank.configured : true);
-  const realQrUrl =
-    bankConfigured &&
-    view?.bank?.qrUrl &&
-    /^\/api\/payments\/bank-qr\?/.test(view.bank.qrUrl)
-      ? view.bank.qrUrl
-      : "";
+  const hasStaticQris = !!view?.staticQrisAvailable;
+  const usesStaticQris = manual?.bank?.staticQrId === STATIC_QRIS_ID;
+  const historicQrUrl = manual?.bank?.qrVersion && view?.bank?.qrUrl && /^\/api\/payments\/bank-qr\?/.test(view.bank.qrUrl)
+    ? view.bank.qrUrl : "";
   const canSubmit =
     !!view?.ready &&
     bankConfigured &&
@@ -159,7 +167,7 @@ export default function PaymentPanel({
     !pending &&
     !review &&
     !gatewayActive;
-  const mode = gatewayActive ? "qris" : selection || (manual ? "bank" : "");
+  const mode = gatewayActive ? "qris" : manualPaymentMode(selection, manual);
 
   const accept = useCallback(
     (value: unknown) => {
@@ -374,6 +382,7 @@ export default function PaymentPanel({
 
   async function mutate(
     action: "select" | "submit" | "approve" | "reject" | "confirm",
+    manualMethod: "bank" | "manual-qris" = "bank",
   ) {
     if (operation.current) return;
     const controller = new AbortController();
@@ -393,6 +402,7 @@ export default function PaymentPanel({
           orderId,
           token: trackingToken,
           action,
+          ...(action === "select" ? { manualMethod } : {}),
           ...(!["select", "confirm"].includes(action)
             ? { proofVersion: manual?.proofVersion }
             : {}),
@@ -410,15 +420,15 @@ export default function PaymentPanel({
         currentGeneration === generation.current
       ) {
         accept(result);
-        if (action === "select") setSelection("bank");
+        if (action === "select") setSelection(manualMethod);
         if (action === "submit")
           setNotice(
-            "Bukti transfer terkirim. Toko akan memeriksa pembayaranmu.",
+            "Bukti pembayaran terkirim. Toko akan memeriksa pembayaranmu.",
           );
         if (action === "approve")
           setNotice("Pembayaran telah dikonfirmasi lunas.");
         if (action === "confirm")
-          setNotice("Transfer dikonfirmasi lunas oleh toko.");
+          setNotice("Pembayaran dikonfirmasi lunas oleh toko.");
         if (action === "reject") {
           setRejecting(false);
           setNote("");
@@ -462,14 +472,14 @@ export default function PaymentPanel({
       if (!response.ok || !isPaymentView(result, orderId))
         throw Error(
           (result as { error?: string })?.error ||
-            "Bukti transfer belum berhasil diunggah.",
+            "Bukti pembayaran belum berhasil diunggah.",
         );
       if (
         !controller.signal.aborted &&
         currentGeneration === generation.current
       ) {
         accept(result);
-        setSelection("bank");
+        setSelection((current) => current || "bank");
         setNotice(
           "Bukti sudah diunggah. Ajukan konfirmasi untuk mengirimkannya ke toko.",
         );
@@ -513,9 +523,9 @@ export default function PaymentPanel({
                 ? "Total tagihan"
                 : "Estimasi tagihan"}
             </span>
-            <b className="text-lg font-semibold tracking-tight text-slate-900">
-              {(quantityPending && !view.ready) || paymentDeferred ? "Menunggu toko" : money(view.amount)}
-            </b>
+            {(quantityPending && !view.ready) || paymentDeferred
+              ? <b className="text-lg font-semibold tracking-tight text-slate-900">Menunggu toko</b>
+              : <PaymentAmount amount={view.amount} orderTotal={orderTotal} pointsUsed={pointsUsed} membershipUsed={membershipUsed} />}
           </div>
         )}
       </div>
@@ -527,6 +537,7 @@ export default function PaymentPanel({
           reviewRequired={review}
           compact={false}
         />
+        {manual?.bank && (pending || paid || (admin && manual.hasProof)) && <ManualPaymentMethod manual={manual} />}
         {notice && (
           <p
             role="status"
@@ -550,7 +561,7 @@ export default function PaymentPanel({
               : "Pembayaran tersedia setelah toko mengonfirmasi pesanan, menimbang atau menghitung cucian, dan menentukan ongkir."}
           </div>
         )}
-        {!admin && !paid && !pending && !review && !paymentDeferred && (
+        {!admin && !paid && !pending && !review && !paymentDeferred && !gatewayActive && (
           <div
             className="grid grid-cols-2 gap-2"
             role="group"
@@ -559,7 +570,7 @@ export default function PaymentPanel({
             <button
               type="button"
               aria-pressed={mode === "bank"}
-              disabled={!!busy || !view}
+              disabled={!!busy || !view || (!!manual?.hasProof && mode !== "bank")}
               onClick={() => void mutate("select")}
               className={`relative flex min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left transition sm:p-4 ${mode === "bank" ? "border-[#7a0e2f] bg-[#f9edf1] ring-1 ring-[#7a0e2f]" : "border-slate-200 bg-white hover:border-[#c992a3] hover:bg-slate-50"}`}
             >
@@ -576,7 +587,7 @@ export default function PaymentPanel({
                 )}
               </span>
               <span className="text-sm font-semibold text-slate-900">
-                {view?.bank?.bankName || "BCA"} manual
+                Transfer bank
               </span>
               <span className="text-[10px] leading-relaxed text-slate-500">
                 Transfer & unggah bukti
@@ -584,25 +595,27 @@ export default function PaymentPanel({
             </button>
             <button
               type="button"
-              aria-pressed={mode === "qris"}
-              disabled={!view?.enabled || !!busy || !!manual?.hasProof}
-              onClick={() => setSelection("qris")}
-              className={`relative flex min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left transition sm:p-4 ${view?.enabled ? (mode === "qris" ? "border-[#7a0e2f] bg-[#f9edf1] ring-1 ring-[#7a0e2f]" : "border-slate-200 bg-white hover:border-[#c992a3]") : "cursor-not-allowed border-dashed border-slate-200 bg-slate-50 text-slate-400"}`}
+              aria-pressed={mode === "manual-qris"}
+              disabled={!hasStaticQris || !!busy || (!!manual?.hasProof && mode !== "manual-qris")}
+              onClick={() => void mutate("select", "manual-qris")}
+              className={`relative flex min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left transition sm:p-4 ${mode === "manual-qris" ? "border-[#7a0e2f] bg-[#f9edf1] ring-1 ring-[#7a0e2f]" : "border-slate-200 bg-white hover:border-[#c992a3]"} disabled:opacity-50`}
             >
               <span className="flex w-full items-center justify-between gap-1">
                 <QrCode size={22} strokeWidth={1.6} />
-                {!view?.enabled && (
-                  <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-medium text-slate-500">
-                    Segera hadir
-                  </span>
+                {mode === "manual-qris" && (
+                  <span className="flex size-4 items-center justify-center rounded-full bg-[#7a0e2f] text-white"><Check size={10} /></span>
                 )}
               </span>
-              <span className="text-sm font-semibold">QRIS otomatis</span>
+              <span className="text-sm font-semibold">QRIS manual</span>
               <span className="text-[10px] leading-relaxed">
-                Mobile banking & e-wallet
+                Scan & unggah bukti
               </span>
             </button>
           </div>
+        )}
+
+        {!admin && !paid && !pending && !review && !paymentDeferred && !gatewayActive && (
+          <p className="!mb-0 text-xs leading-relaxed text-slate-500">{view && !hasStaticQris ? "QRIS manual belum tersedia. Hubungi toko untuk bantuan. " : ""}Pembayaran otomatis masih dalam pengembangan. Pembayaran manual diperiksa oleh toko.</p>
         )}
 
         {loading && !view ? (
@@ -647,12 +660,12 @@ export default function PaymentPanel({
                     : "Toko akan mengonfirmasi pesanan, jumlah aktual, dan ongkir sebelum kamu membayar."}
                 </div>
               )}
-              {bank && (
+              {bank && mode !== "manual-qris" && (
                 <div className="payment-order-bank overflow-hidden rounded-xl border border-slate-200">
                   <div className="flex items-center justify-between gap-2 bg-slate-50 px-4 py-3">
                     <span className="inline-flex items-center gap-2 text-xs font-semibold text-slate-800">
                       <Building2 size={16} />
-                      {bank.bankName || "BCA"}
+                      {bank.bankName || "Rekening toko"}
                     </span>
                     <span className="text-[10px] text-slate-400">
                       Transfer manual
@@ -722,6 +735,22 @@ export default function PaymentPanel({
                       : "Rekening toko sedang disiapkan. Hubungi toko sebelum melakukan transfer."}
                   </p>
                 ))}
+              {admin && hasStaticQris && !paid && !pending && !manual?.hasProof && mode !== "manual-qris" && (
+                <button type="button" disabled={!!busy || !view?.ready} onClick={() => void mutate("select", "manual-qris")} className="secondary !w-full !rounded-xl !py-3 !text-sm">
+                  Pilih QRIS manual
+                </button>
+              )}
+              {admin && !paid && !pending && !manual?.hasProof && mode === "manual-qris" && (
+                <button type="button" disabled={!!busy || !view?.ready} onClick={() => void mutate("select", "bank")} className="secondary !w-full !rounded-xl !py-3 !text-sm">
+                  Pilih transfer bank
+                </button>
+              )}
+              {!paid && !pending && usesStaticQris && mode === "manual-qris" && (
+                <ManualQris key={`${orderId}-static`} id={`manual-payment-qr-${orderId}`} initiallyHidden={hideQrByDefault} />
+              )}
+              {manual?.hasProof && !pending && !paid && (
+                <p className="!mb-0 text-xs leading-relaxed text-slate-500">Bukti sudah diunggah. Gunakan metode yang sama atau ganti bukti jika diperlukan.</p>
+              )}
               {!admin && !paid && !pending && !review && bankConfigured && (
                 <div className="payment-order-actions rounded-xl border border-[#ead8de] bg-[#fbf5f7] p-4">
                   <div className="mb-3 flex items-start gap-2.5">
@@ -730,7 +759,7 @@ export default function PaymentPanel({
                     </span>
                     <div>
                       <b className="block text-sm font-semibold text-slate-900">
-                        Unggah bukti transfer
+                        Unggah bukti pembayaran
                       </b>
                       <p className="!mb-0 !mt-1 text-[11px] leading-relaxed text-slate-500">
                         {manual?.hasProof && !view?.ready
@@ -746,7 +775,7 @@ export default function PaymentPanel({
                     className="sr-only"
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
-                    aria-label="Pilih bukti transfer"
+                    aria-label="Pilih bukti pembayaran"
                     onChange={(event) => void upload(event.target.files?.[0])}
                     disabled={!canUploadProof}
                   />
@@ -764,8 +793,8 @@ export default function PaymentPanel({
                     {busy === "upload"
                       ? "Mengunggah bukti…"
                       : manual?.hasProof
-                        ? "Ganti bukti transfer"
-                        : "Pilih bukti transfer"}
+                        ? "Ganti bukti pembayaran"
+                        : "Pilih bukti pembayaran"}
                   </button>
                   <p className="!mb-0 !mt-2 text-center text-[10px] text-slate-400">
                     JPG, PNG, atau WebP, maksimal 8 MB.
@@ -784,7 +813,7 @@ export default function PaymentPanel({
                       )}
                       {busy === "submit"
                         ? "Mengajukan…"
-                        : "Saya sudah transfer · Ajukan konfirmasi"}
+                        : "Saya sudah bayar · Ajukan konfirmasi"}
                     </button>
                   )}
                 </div>
@@ -801,7 +830,7 @@ export default function PaymentPanel({
                         Konfirmasi pembayaran
                       </b>
                       <p className="!mb-0 !mt-1 text-[11px] leading-relaxed text-emerald-800">
-                        Cocokkan mutasi rekening. Konfirmasi admin tidak
+                        Cocokkan mutasi rekening atau transaksi QRIS. Konfirmasi admin tidak
                         memerlukan unggahan pelanggan.
                       </p>
                     </div>
@@ -818,7 +847,7 @@ export default function PaymentPanel({
                       )}
                       {busy === "confirm"
                         ? "Menyimpan…"
-                        : "Transfer sudah diterima"}
+                        : "Pembayaran sudah diterima"}
                     </button>
                     {!view?.ready && (
                       <p className="!mb-0 !mt-2 text-[10px] leading-relaxed text-emerald-800">
@@ -833,7 +862,7 @@ export default function PaymentPanel({
                     <span className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
                       <FileCheck2 size={15} />
                       {pending || paid
-                        ? "Bukti transfer"
+                        ? "Bukti pembayaran"
                         : rejected
                           ? "Bukti sebelumnya"
                           : "Bukti siap diajukan"}
@@ -858,15 +887,15 @@ export default function PaymentPanel({
                     >
                       {showProof ? <EyeOff size={15} /> : <Eye size={15} />}
                       {showProof
-                        ? "Sembunyikan bukti transfer"
-                        : "Lihat bukti transfer"}
+                        ? "Sembunyikan bukti pembayaran"
+                        : "Lihat bukti pembayaran"}
                     </button>
                   )}
                   {showProof &&
                     (proofUrl ? (
                       <img
                         src={proofUrl}
-                        alt="Bukti transfer pesanan ini"
+                        alt="Bukti pembayaran pesanan ini"
                         className="mx-auto max-h-64 w-full rounded-lg bg-slate-50 object-contain"
                       />
                     ) : proofError ? (
@@ -875,7 +904,7 @@ export default function PaymentPanel({
                         className="text-button !text-xs"
                         onClick={() => setProofRevision((value) => value + 1)}
                       >
-                        Muat ulang bukti transfer
+                        Muat ulang bukti pembayaran
                       </button>
                     ) : (
                       <div className="flex items-center gap-2 py-5 text-xs text-slate-400">
@@ -885,7 +914,7 @@ export default function PaymentPanel({
                     ))}
                 </div>
               )}
-              {!paid && !pending && (bankSelected || admin) && (
+              {!paid && !pending && mode === "bank" && historicQrUrl && (
                 <div className="payment-order-qr rounded-xl border border-slate-100 bg-slate-50/60 p-4 text-center">
                   {hideQrByDefault && !showQr ? (
                     <button
@@ -901,29 +930,15 @@ export default function PaymentPanel({
                     <>
                       <img
                         id={`manual-payment-qr-${orderId}`}
-                        src={realQrUrl || "/payment-qr-placeholder.svg"}
-                        width={180}
-                        height={180}
-                        alt={
-                          realQrUrl
-                            ? `QR pembayaran ${bank?.bankName || "bank"} toko`
-                            : "Contoh QR, belum dapat digunakan untuk pembayaran"
-                        }
-                        className="mx-auto aspect-square w-full max-w-[180px] rounded-lg bg-white object-contain"
+                        src={historicQrUrl}
+                        width={300}
+                        alt={`QR pembayaran yang sebelumnya dipilih untuk pesanan ini`}
+                        className="mx-auto h-auto w-full max-w-[300px] rounded-lg bg-white object-contain"
                         referrerPolicy="no-referrer"
                       />
-                      <p
-                        className={`!mb-0 !mt-3 text-[11px] font-medium ${realQrUrl ? "text-slate-500" : "text-amber-700"}`}
-                      >
-                        {realQrUrl
-                          ? "Pembayaran QR ini tetap dikonfirmasi toko setelah bukti dikirim."
-                          : "Contoh QR · belum dapat dibayar"}
+                      <p className="!mb-0 !mt-3 text-[11px] font-medium text-slate-500">
+                        QR yang tersimpan untuk pesanan ini. Pembayaran tetap dikonfirmasi toko.
                       </p>
-                      {!realQrUrl && (
-                        <p className="!mb-0 !mt-1 text-[10px] text-slate-400">
-                          Gunakan nomor rekening di atas untuk transfer.
-                        </p>
-                      )}
                       {hideQrByDefault && (
                         <button
                           type="button"
@@ -942,13 +957,13 @@ export default function PaymentPanel({
               {pending && !admin && (
                 <p className="payment-order-actions !mb-0 rounded-xl bg-amber-50 px-3 py-3 text-center text-xs leading-relaxed text-amber-900">
                   Kamu tidak perlu membayar ulang. Status akan berubah setelah
-                  toko memeriksa bukti transfer.
+                  toko memeriksa bukti pembayaran.
                 </p>
               )}
               {pending && admin && !review && (
                 <div className="payment-order-actions rounded-xl border border-amber-200 bg-amber-50/50 p-4">
                   <p className="!mb-3 text-xs font-medium leading-relaxed text-amber-900">
-                    Cocokkan bukti dengan mutasi rekening sebelum mengonfirmasi.
+                    Cocokkan bukti dengan transaksi rekening atau QRIS sebelum mengonfirmasi.
                   </p>
                   {rejecting ? (
                     <div className="space-y-3">
@@ -1031,7 +1046,7 @@ export default function PaymentPanel({
         )}
         <div className="flex items-center justify-center gap-1.5 border-t border-slate-100 pt-3 text-[10px] text-slate-400">
           <ShieldCheck size={12} />
-          Bukti transfer hanya untuk pesanan ini
+          Bukti pembayaran hanya untuk pesanan ini
         </div>
       </div>
     </section>

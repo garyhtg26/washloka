@@ -51,6 +51,9 @@ import {
 } from "@/lib/dfable-path";
 import { consumePaymentEvents } from "@/lib/payment-stream";
 import { requestBranchStore } from "@/lib/branch-loading";
+import { scrollMobileTrackingTop } from "@/lib/tracking-scroll";
+import { acceptTrackingSnapshot, preferOwnerTracking } from "@/lib/tracking-freshness";
+import { publicTracking as toPublicTracking } from "@/lib/tracking-data";
 import type { TrackingOrder } from "@/lib/types";
 import {
   serviceCategoryLabels,
@@ -235,15 +238,22 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
     setBranch(next);
   }
   const pendingOrder = useRef(false);
-  const [publicOrder, setPublicOrder] = useState<TrackingOrder | null>(null);
+  const [publicTracking, setPublicTracking] = useState<{ token: string; order: TrackingOrder } | null>(null);
+  const trackingRequest = useRef<AbortController | null>(null);
+  const trackingSequence = useRef(0);
   const [trackingError, setTrackingError] = useState("");
   const [store, setStore] = useState<Store | null>(null);
   const [error, setError] = useState("");
   const [loadedSession, setLoadedSession] = useState("");
   const [view, setView] = useState("home");
+  function navigateCustomer(next: "home" | "services" | "tracking") {
+    if (next === "tracking" && view === "tracking") scrollMobileTrackingTop(window);
+    setView(next);
+  }
   const [adminView, setAdminView] = useState("overview");
   const [posCategory, setPosCategory] = useState<ServiceCategory>("daily");
   const [modal, setModal] = useState("");
+  const scrollTrackingAfterDialog = useRef(false);
   const [service, setService] = useState("complete");
   const [toast, setToast] = useState("");
   const [busy, setBusy] = useState(false);
@@ -405,39 +415,54 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
       setView("tracking");
     }
   }, [dashboard]);
+  async function refreshTracking(requestedTrack: string) {
+    if (activeTrack.current.trim() !== requestedTrack) return;
+    trackingRequest.current?.abort();
+    const controller = new AbortController();
+    trackingRequest.current = controller;
+    const sequence = ++trackingSequence.current;
+    try {
+      const response = await fetch(
+        `/api/tracking?token=${encodeURIComponent(requestedTrack)}`,
+        { signal: controller.signal, cache: "no-store" },
+      );
+      const data = await response.json();
+      if (!response.ok) throw Error(data.error);
+      if (controller.signal.aborted || sequence !== trackingSequence.current || activeTrack.current.trim() !== requestedTrack) return;
+      const orderBranch = !dashboard && !tenantBranch
+        ? normalizeBranchId(data.branchId)
+        : trackingBranch(currentBranch.current, data.branchId, dashboard);
+      if (orderBranch) switchBranch(orderBranch, false);
+      setPublicTracking((previous) => ({
+        token: requestedTrack,
+        order: acceptTrackingSnapshot(previous?.token === requestedTrack ? previous.order : null, data),
+      }));
+      setTrackingError("");
+    } catch (error) {
+      if (!controller.signal.aborted && sequence === trackingSequence.current && activeTrack.current.trim() === requestedTrack)
+        setTrackingError(error instanceof Error ? error.message : "Tracking sementara tidak tersedia.");
+    } finally {
+      if (trackingRequest.current === controller) trackingRequest.current = null;
+    }
+  }
   useEffect(() => {
-    setPublicOrder(null);
+    setPublicTracking(null);
     setTrackingError("");
     const requestedTrack = track.trim();
     if (!/^[0-9a-f-]{36}$/i.test(requestedTrack)) return;
-    const controller = new AbortController();
-    const fetchTracking = async () => {
-      try {
-        const r = await fetch(
-          `/api/tracking?token=${encodeURIComponent(requestedTrack)}`,
-          { signal: controller.signal, cache: "no-store" },
-        );
-        const data = await r.json();
-        if (!r.ok) throw Error(data.error);
-        if (controller.signal.aborted || activeTrack.current.trim() !== requestedTrack) return;
-        const orderBranch = !dashboard && !tenantBranch
-          ? normalizeBranchId(data.branchId)
-          : trackingBranch(currentBranch.current, data.branchId, dashboard);
-        if (orderBranch) switchBranch(orderBranch, false);
-        setPublicOrder(data);
-        setTrackingError("");
-      } catch (e) {
-        if (!controller.signal.aborted) setTrackingError((e as Error).message);
-      }
-    };
-    fetchTracking();
-    const timer = setInterval(fetchTracking, 15000);
+    void refreshTracking(requestedTrack);
+    const timer = setInterval(() => void refreshTracking(requestedTrack), 15000);
     return () => {
-      controller.abort();
+      trackingRequest.current?.abort();
+      trackingSequence.current += 1;
       clearInterval(timer);
     };
   }, [track, dashboard, tenantBranch]);
   useEffect(() => {
+    if (!dashboard && view === "tracking" && window.matchMedia("(max-width: 800px)").matches) {
+      if (modal !== "success") scrollMobileTrackingTop(window);
+      return;
+    }
     window.scrollTo({ top: 0 });
   }, [view, adminView]);
   useEffect(() => {
@@ -451,6 +476,14 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
       document.body.style.overflow = previousOverflow;
     };
   }, [modal, dialogAvailable]);
+  useEffect(() => {
+    if (modal || !scrollTrackingAfterDialog.current) return;
+    const frame = requestAnimationFrame(() => {
+      scrollTrackingAfterDialog.current = false;
+      scrollMobileTrackingTop(window);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [modal]);
   useEffect(() => {
     if (toast) {
       const t = setTimeout(() => setToast(""), 4500);
@@ -510,11 +543,12 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
-  const tracked =
-    publicOrder ||
-    orders.find(
-      (o) => o.token === track.trim() || o.id === track.trim().toUpperCase(),
-    );
+  const publicOrder = publicTracking?.token === track.trim() ? publicTracking.order : null;
+  const ownerOrder = auth.user ? orders.find(
+    (o) => o.uid === auth.user?.uid &&
+      (o.id === publicOrder?.id || o.token === track.trim() || o.id === track.trim().toUpperCase()),
+  ) : undefined;
+  const tracked = preferOwnerTracking(publicOrder, ownerOrder ? toPublicTracking(ownerOrder) : undefined);
   if (pageLoading || loadingProgress.visible)
     return (
       <main className={`loading${!dashboard && tenantBranch ? ` tenant-${tenantBranch === "dfablelaundry" ? "dfable" : "buzzwash"}` : ""}`}>
@@ -1041,7 +1075,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
         <div className={tenantBranch === "dfablelaundry" ? "tenant-dfable" : tenantBranch === "buzzwash" ? "tenant-buzzwash" : undefined}>
           <header className="customer-header">
             {tenantBranch ? <TenantBrand branch={tenantBranch} /> : <Brand />}
-            <CustomerNavigation tenant={!!tenantBranch} view={view} onView={setView} />
+            <CustomerNavigation tenant={!!tenantBranch} view={view} onView={navigateCustomer} />
             <div className="header-right">
               {tenantBranch ? <ShopSelector
                 branch={branch}
@@ -1264,20 +1298,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
                       void load();
                       const requestedTrack = track.trim();
                       if (/^[0-9a-f-]{36}$/i.test(requestedTrack))
-                        void fetch(
-                          `/api/tracking?token=${encodeURIComponent(requestedTrack)}`,
-                          {
-                            cache: "no-store",
-                          },
-                        )
-                          .then(async (response) => {
-                            if (
-                              response.ok &&
-                              activeTrack.current.trim() === requestedTrack
-                            )
-                              setPublicOrder(await response.json());
-                          })
-                          .catch(() => {});
+                        void refreshTracking(requestedTrack);
                     }}
                   />
                 ) : !store.configured && !track ? (
@@ -1304,7 +1325,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
                   <section className="history">
                     <h3>Pesanan kamu</h3>
                     {myOrders.map((o) => (
-                      <button key={o.id} onClick={() => setTrack(o.id)}>
+                      <button key={o.id} onClick={() => { setTrack(o.id); scrollMobileTrackingTop(window); }}>
                         <Package size={20} />
                         <span>
                           <b>{o.id}</b>
@@ -1333,12 +1354,12 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
               </section>
             )}
           </main>
-          <footer>
+          <footer className={tenantBranch ? "tenant-footer" : undefined}>
             {tenantBranch ? <TenantBrand branch={tenantBranch} /> : <Brand />}
             {tenantBranch && <Link href={DFABLE_HOME} className="tenant-platform-link">Semua laundry di Washloka <span aria-hidden="true">→</span></Link>}
             <span>© {new Date().getFullYear()} Washloka. All rights reserved.</span>
           </footer>
-          <CustomerNavigation tenant={!!tenantBranch} view={view} mobile onView={setView} />
+          <CustomerNavigation tenant={!!tenantBranch} view={view} mobile onView={navigateCustomer} />
         </div>
       )}
       <dialog
@@ -1425,7 +1446,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
               try { await navigator.clipboard.writeText(`${location.origin}${dfableTrackingPath(customerOrder.token, branch)}`); notify("Link tracking disalin"); }
               catch { notify("Salin alamat halaman ini untuk menyimpan tautan tracking."); }
             }}><Copy size={17} /> Salin link tracking</button>
-            <button type="button" className="secondary" onClick={() => { setModal(""); setView("tracking"); }}>Lacak pesanan</button>
+            <button type="button" className="secondary" onClick={() => { scrollTrackingAfterDialog.current = true; setModal(""); setView("tracking"); }}>Lacak pesanan</button>
           </div>
         )}
         {modal === "success" && dashboard && selected && currentSelected && (
@@ -1659,7 +1680,7 @@ function OrderForm({
   const [form, setForm] = useState({
     name: pos ? "" : profile.name,
     phone: pos ? "" : profile.phone,
-    address: pos ? `Datang langsung — ${branchName}` : "",
+    address: pos ? `Datang langsung - ${branchName}` : "",
     date: today(),
     slot: "09.00–12.00",
     notes: "",
@@ -2248,7 +2269,7 @@ function OrderForm({
                   onChange={(e) => set("slot", e.target.value)}
                 >
                   {["09.00–12.00", "12.00–15.00", "15.00–18.00"].map((t) => (
-                    <option key={t}>{t}</option>
+                    <option key={t} value={t}>{t.replaceAll("–", "-")}</option>
                   ))}
                 </select>
               </label>

@@ -13,6 +13,7 @@ export type BankDetails = BankAccount & {
 export type BankSnapshot = BankAccount & {
   version?: string;
   qrVersion?: string;
+  staticQrId?: "buzzwash-cibubur-v1";
 };
 
 export type ManualPaymentSummary = {

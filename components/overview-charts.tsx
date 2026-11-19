@@ -14,7 +14,7 @@ const dayKey = (date: Date) =>
   }).format(date);
 const minutesText = (value: number | null) =>
   value === null
-    ? "—"
+    ? "-"
     : value < 60
       ? `${Math.round(value)} menit`
       : `${(value / 60).toFixed(1).replace(".", ",")} jam`;

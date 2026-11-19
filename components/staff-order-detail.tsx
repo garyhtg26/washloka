@@ -15,13 +15,14 @@ import { branchLabel } from "@/lib/branches";
 import { canSelectOrderStatus } from "@/lib/order-fulfillment";
 import { speedLabel, unitLabel } from "@/lib/catalog";
 import { money, statuses, type Order, type Service } from "@/lib/types";
-import { calculateOrderPrice, normalizePhone } from "@/lib/pricing";
+import { calculateOrderPrice } from "@/lib/pricing";
 import PaymentPanel from "./payment-panel";
 import PaymentStatus from "./payment-status";
 import { useAuth } from "./auth-provider";
 import AuthorizedPhoto from "./authorized-photo";
 import "./staff-order-detail.css";
 import { dfableTrackingPath } from "@/lib/dfable-path";
+import { orderWhatsAppDraft } from "@/lib/whatsapp-order";
 
 const formatDate = (date: string) => {
   const parsed = new Date(date);
@@ -34,17 +35,6 @@ const formatDate = (date: string) => {
         year: "numeric",
       }).format(parsed);
 };
-const statusMessages = [
-  "Pesananmu sudah kami terima dan menunggu konfirmasi toko.",
-  "Penjemputan cucianmu sudah dijadwalkan.",
-  "Kurir sedang menuju lokasi untuk menjemput cucianmu.",
-  "Cucianmu sudah tiba di toko dan sedang ditimbang.",
-  "Cucianmu sedang dalam proses pencucian.",
-  "Cucianmu sedang dalam tahap finishing dan pemeriksaan.",
-  "Cucianmu sedang dalam perjalanan untuk diantar.",
-  "Pesananmu sudah selesai. Terima kasih sudah mempercayakan cucianmu kepada kami!",
-];
-
 export default function StaffOrderDetail({
   order: o,
   services,
@@ -67,13 +57,15 @@ export default function StaffOrderDetail({
   const [err, setErr] = useState("");
   const [notice, setNotice] = useState("");
   const [status, setStatus] = useState(o.status);
-  const [waStatus, setWaStatus] = useState<number | null>(null);
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(window.location.origin), []);
   useEffect(() => {
     setStatus(o.status);
-    setWaStatus(null);
     setErr("");
     setNotice("");
   }, [o.id]);
+  // Another staff member may update the order while this detail is open.
+  useEffect(() => setStatus(o.status), [o.status]);
   const service = services.find((item) => item.id === o.service);
   const unit = unitLabel(o.unit ?? service?.unit);
   const locked = Boolean(
@@ -94,18 +86,8 @@ export default function StaffOrderDetail({
     typeof window !== "undefined"
       ? `${window.location.origin}${dfableTrackingPath(o.token, o.branchId)}`
       : "";
-  const phone = normalizePhone(o.phone).replace(/\D/g, "");
-  const messageStatus = waStatus ?? o.status;
-  const statusMessage =
-    (o.source === "pos" || dropoff) && ([1, 2, 6].includes(messageStatus) || (o.source === "pos" && messageStatus < 4))
-      ? `Status pesananmu: ${statuses[messageStatus]}.`
-      : statusMessages[messageStatus] ||
-        `Status pesananmu: ${statuses[messageStatus]}.`;
-  const message = `Halo ${o.name}, ${statusMessage}\n\nNomor pesanan: ${o.id}\nLacak pesananmu di sini: ${tracking}\n\nTerima kasih, ${branch}`;
-  const waUrl =
-    phone && tracking
-      ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-      : "";
+  const waDraft = origin ? orderWhatsAppDraft(o, origin) : null;
+  const statusNotSaved = status !== o.status;
 
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -131,7 +113,6 @@ export default function StaffOrderDetail({
           ? "Status tersimpan. Kirim kabar ke pelanggan melalui WhatsApp."
           : "Perubahan tersimpan.",
       );
-      if (nextStatus !== previousStatus) setWaStatus(nextStatus);
     } catch (error) {
       setErr(
         error instanceof Error
@@ -317,6 +298,7 @@ export default function StaffOrderDetail({
               {busy ? "Menyimpan…" : "Simpan perubahan"}
             </button>
           </form>
+          <StaffWhatsAppAction status={o.status} statusNotSaved={statusNotSaved} draft={waDraft} originReady={!!origin} />
         </div>
         <aside className="staff-detail-side">
           <section className="staff-detail-card">
@@ -431,19 +413,6 @@ export default function StaffOrderDetail({
             </div>
           )}
           <div className="staff-detail-actions">
-            {waUrl && (
-              <a
-                className="staff-wa-button"
-                href={waUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <MessageCircle size={18} />{" "}
-                {waStatus !== null
-                  ? "Kirim pembaruan via WhatsApp"
-                  : "Kabar pelanggan via WhatsApp"}
-              </a>
-            )}
             <button
               type="button"
               className="secondary"
@@ -467,6 +436,35 @@ export default function StaffOrderDetail({
       <StaffReceipt order={o} services={services} />
     </div>
   );
+}
+
+export function StaffWhatsAppAction({ status, statusNotSaved, draft, originReady }: {
+  status: number;
+  statusNotSaved: boolean;
+  draft: ReturnType<typeof orderWhatsAppDraft>;
+  originReady: boolean;
+}) {
+  return <section className="staff-detail-card staff-whatsapp" aria-labelledby="staff-whatsapp-heading">
+    <div className="staff-detail-card-heading">
+      <MessageCircle size={19} />
+      <h3 id="staff-whatsapp-heading">Kabar untuk pelanggan</h3>
+    </div>
+    <p className="staff-whatsapp-description">
+      Pesan mengikuti status tersimpan: <strong>{statuses[status] || "Belum diketahui"}</strong>.
+      WhatsApp akan terbuka dengan pesan siap diperiksa dan dikirim.
+    </p>
+    {statusNotSaved && <p className="staff-whatsapp-warning" role="status">Simpan perubahan status terlebih dahulu agar pesan sesuai.</p>}
+    {!statusNotSaved && !draft && originReady && <p className="staff-whatsapp-warning" role="status">Nomor WhatsApp atau tautan pelacakan belum tersedia. Periksa data pelanggan terlebih dahulu.</p>}
+    {draft && !statusNotSaved ? <>
+      <a className="staff-wa-button" href={draft.url} target="_blank" rel="noreferrer">
+        <MessageCircle size={18} /> Buka WhatsApp
+      </a>
+      <details className="staff-whatsapp-preview">
+        <summary>Lihat isi pesan</summary>
+        <p>{draft.message}</p>
+      </details>
+    </> : <button type="button" className="staff-wa-button" disabled><MessageCircle size={18} /> Buka WhatsApp</button>}
+  </section>;
 }
 
 export function StaffReceipt({

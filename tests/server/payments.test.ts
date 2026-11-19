@@ -306,6 +306,16 @@ test("a QR from another environment is suppressed before any image fetch", async
   assert.equal(view.qrUrl, undefined);
 });
 
+test("automatic checkout is unavailable for new orders while active payments remain accessible", async () => {
+  const fresh = new MemoryDatabase();
+  assert.equal((await paymentView(fresh.order(), fresh.asFirestore())).enabled, false);
+
+  const value = attempt();
+  const existing = new MemoryDatabase({ ...baseOrder(), payment: value });
+  existing.values.set(`paymentAttempts/${value.attemptId}`, value);
+  assert.equal((await paymentView(existing.order(), existing.asFirestore())).enabled, true);
+});
+
 test("concurrent create requests reserve exactly one provider invoice", async () => {
   const database = new MemoryDatabase();
   const created: string[] = [];

@@ -33,17 +33,20 @@ export async function POST(req: NextRequest) {
         orderId: z.string().max(30),
         token: z.string().max(40).optional(),
         action: z.enum(["select", "submit", "approve", "reject", "confirm"]),
+        manualMethod: z.enum(["bank", "manual-qris"]).optional(),
         proofVersion: z.string().uuid().optional(),
         note: z.string().trim().max(400).optional(),
       })
       .strict()
       .parse(body);
     const { user } = await authorizePayment(req, input.orderId, input.token);
+    if (input.manualMethod && input.action !== "select")
+      throw new ApiError(400, "Pilihan metode hanya berlaku saat memilih pembayaran.");
     if (["submit", "approve", "reject"].includes(input.action) && !input.proofVersion)
       throw new ApiError(400, "Versi bukti pembayaran diperlukan.");
     const view =
       input.action === "select"
-        ? await selectManualPayment(input.orderId)
+        ? await selectManualPayment(input.orderId, undefined, input.manualMethod)
         : input.action === "submit"
           ? await submitManualPayment(input.orderId, input.proofVersion!)
           : input.action === "confirm"

@@ -301,7 +301,7 @@ export default function CustomerProfile({ initialTenant = null }: { initialTenan
               </div>
               <p>Poin kamu</p>
               <strong>
-                {points ? formatPoints(points.balance) : "—"}{" "}
+                {points ? formatPoints(points.balance) : "-"}{" "}
                 <small>poin</small>
               </strong>
               <div className="profile-points-foot">
@@ -384,7 +384,7 @@ export default function CustomerProfile({ initialTenant = null }: { initialTenan
           </div>
         </div>
       </div>
-      <footer>
+      <footer className="profile-footer">
         <Link
           className="brand eazy-customer-brand washloka-lockup"
           href="/"

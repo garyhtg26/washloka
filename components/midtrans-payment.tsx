@@ -463,16 +463,9 @@ export default function MidtransPayment({
                     <p className="!mb-0 text-xs text-slate-500">
                       Tunggu konfirmasi sebelum membuat pembayaran baru.
                     </p>
-                    <button
-                      type="button"
-                      disabled={!!action || checking}
-                      onClick={() => void mutate("create")}
-                      className="secondary !mt-2 !rounded-xl !px-4 !py-2 !text-xs"
-                    >
-                      {action === "create"
-                        ? "Memeriksa…"
-                        : "Coba tampilkan QR kembali"}
-                    </button>
+                    <p className="!mb-0 text-xs text-slate-500">
+                      Jika belum berubah, hubungi toko untuk memeriksa pembayaran ini.
+                    </p>
                   </div>
                 ) : (
                   <>
@@ -561,7 +554,7 @@ export default function MidtransPayment({
                         <>
                           Berlaku selama{" "}
                           <b className="tabular-nums text-[#680c2a]">
-                            {expiresIn || "—"}
+                            {expiresIn || "-"}
                           </b>
                         </>
                       )}

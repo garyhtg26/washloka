@@ -122,6 +122,7 @@ export type TrackingOrder = Pick<
   | "payment"
   | "paymentReconciliationRequired"
   | "manualPayment"
+  | "paymentRevision"
   | "branchId"
   | "total"
   | "pointsUsed"

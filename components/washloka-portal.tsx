@@ -26,6 +26,9 @@ export default function WashlokaPortal({ onSelectShop, onTrack }: {
         <p className="wash-portal-hero-description">Dapatkan poin dan temukan laundry pilihanmu, semua dalam satu aplikasi.</p>
         <a href="#laundry-pilihan" className="wash-portal-hero-link">Lihat pilihan laundry</a>
       </div>
+      <svg className="wash-portal-hero-wave" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <path d="M0 35C360 70 1080 70 1440 35V100H0Z" />
+      </svg>
     </section>
 
     <section className="wash-portal-partners" id="laundry-pilihan" aria-labelledby="wash-portal-partners-title">

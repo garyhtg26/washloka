@@ -5,6 +5,7 @@ import { ApiError } from "./firebase/access";
 import { uploadPhoto } from "./storage/photos";
 import { branchSchema, DEFAULT_BRANCH, sameBranch, type BranchId } from "./branches";
 import { requireRewardsStore } from "./rewards-store";
+import { isStaticQrisAccount, STATIC_QRIS_ID } from "./payments/manual-policy";
 
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -71,11 +72,14 @@ export async function submitMembershipDeposit(
     branch: string;
     name: string;
     senderName: string;
+    paymentMethod?: "bank_transfer" | "qris_static";
     bank: { bankName: string; accountNumber: string; accountHolder: string };
   },
 ) {
   const branch = branchSchema.parse(input.branch);
   requireRewardsStore(branch);
+  if (input.paymentMethod === "qris_static" && !isStaticQrisAccount(input.bank))
+    throw new ApiError(409, "QRIS belum tersedia untuk rekening ini.");
   await database.runTransaction(async (tx) => {
     const ref = database.doc(`membershipDeposits/${input.uid}`);
     const proofRef = database.doc(`membershipProofs/${input.uid}`);
@@ -102,6 +106,8 @@ export async function submitMembershipDeposit(
       status: "pending",
       name: input.name,
       senderName: input.senderName,
+      paymentMethod: input.paymentMethod ?? "bank_transfer",
+      ...(input.paymentMethod === "qris_static" ? { qris: { id: STATIC_QRIS_ID, recipient: "BUZZWASH CIBUBUR" } } : {}),
       proofVersion: input.proofVersion,
       createdAt: new Date().toISOString(),
       bank: input.bank,

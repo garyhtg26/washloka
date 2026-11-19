@@ -13,6 +13,13 @@ const manual: ManualPaymentSummary = {
   proofVersion: "test-proof",
 };
 
+test("an unpaid status exposes a store theme hook without changing payment state", () => {
+  const html = renderToStaticMarkup(createElement(PaymentStatus, { compact: false }));
+  assert.match(html, /payment-status-unpaid/);
+  assert.match(html, /Belum dibayar/);
+  assert.doesNotMatch(html, /Lunas|Perlu konfirmasi/);
+});
+
 test("submitted transfer proof is visibly pending and never labelled paid", () => {
   const html = renderToStaticMarkup(
     createElement(PaymentStatus, {

@@ -16,6 +16,8 @@ type Deposit = {
   branchId: string;
   createdAt: string;
   hasProof?: boolean;
+  paymentMethod?: "bank_transfer" | "qris_static";
+  qris?: { id: string; recipient: string };
   bank: { bankName: string; accountNumber: string };
 };
 
@@ -87,7 +89,9 @@ function DepositItem({
       <div className="membership-review-meta">
         <span>{branchLabel(item.branchId)}</span>
         <span>
-          {item.bank.bankName} · {item.bank.accountNumber}
+          {item.paymentMethod === "qris_static"
+            ? `QRIS manual · ${item.qris?.recipient || "BUZZWASH CIBUBUR"}`
+            : `Transfer ${item.bank.bankName} · ${item.bank.accountNumber}`}
         </span>
         <span>
           {new Date(item.createdAt).toLocaleString("id-ID", {

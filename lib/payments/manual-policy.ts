@@ -4,8 +4,22 @@ import { normalizeBranchId } from "../branches";
 import type {
   ManualPaymentSummary,
   BankDetails,
+  BankAccount,
+  BankSnapshot,
   StoredBankSettings,
 } from "./manual-types";
+export const STATIC_QRIS_ID = "buzzwash-cibubur-v1" as const;
+export const STATIC_QRIS_URL = "/buzzwash-qris-static.png";
+
+/** Only pair the supplied QR with the account explicitly approved for it. */
+export function isStaticQrisAccount(value: Partial<BankAccount> | undefined) {
+  return typeof value?.bankName === "string" &&
+    value.bankName.trim().toUpperCase() === "BCA" &&
+    typeof value.accountNumber === "string" &&
+    value.accountNumber.replace(/\s/g, "") === "6560655132" &&
+    typeof value.accountHolder === "string" &&
+    value.accountHolder.trim().replace(/\s+/g, " ").toUpperCase() === "NOVEL RUSPANDI";
+}
 export const proofVersionSchema = z.string().uuid();
 export const bankSettingsSchema = z
   .object({
@@ -16,7 +30,7 @@ export const bankSettingsSchema = z
       .pipe(
         z
           .string()
-          .regex(/^\d{6,30}$/, "Nomor rekening harus berisi 6–30 angka."),
+          .regex(/^\d{6,30}$/, "Nomor rekening harus berisi 6-30 angka."),
       ),
     accountHolder: z.string().trim().min(2).max(100),
   })
@@ -48,13 +62,16 @@ export function safeManualSummary(
             ...(value.bank.qrVersion
               ? { qrVersion: value.bank.qrVersion }
               : {}),
+            ...(value.bank.staticQrId === STATIC_QRIS_ID
+              ? { staticQrId: STATIC_QRIS_ID }
+              : {}),
           },
         }
       : {}),
   };
 }
 export function bankDetails(
-  value: Partial<StoredBankSettings> | undefined,
+  value: Partial<StoredBankSettings & Pick<BankSnapshot, "staticQrId">> | undefined,
   branch: string,
 ): BankDetails {
   const bank = {
@@ -70,7 +87,9 @@ export function bankDetails(
     ...bank,
     configured: bankSettingsSchema.safeParse(bank).success,
     ...(value?.version ? { version: value.version } : {}),
-    ...(qrVersion.success && store
+    ...(value?.staticQrId === STATIC_QRIS_ID && store && isStaticQrisAccount(bank)
+      ? { qrUrl: STATIC_QRIS_URL }
+      : qrVersion.success && store
       ? {
           qrUrl: `/api/payments/bank-qr?branch=${encodeURIComponent(store)}&v=${qrVersion.data}`,
         }

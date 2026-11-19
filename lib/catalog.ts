@@ -10,7 +10,7 @@ export const serviceSpeeds: Array<{
 }> = [
   { id: "regular", label: "Reguler", days: "3 hari" },
   { id: "oneDay", label: "One Day", days: "1 hari" },
-  { id: "express", label: "Express", days: "6–8 jam" },
+  { id: "express", label: "Express", days: "6-8 jam" },
   { id: "quick", label: "Quick", days: "3 jam" },
 ];
 

@@ -35,16 +35,16 @@ export default function BuzzWashCatalogView({ services, orderingEnabled, onOrder
             <thead><tr><th>Layanan</th>{serviceSpeeds.map((speed) => <th key={speed.id}>{speed.id === "quick" ? "Kilat" : speed.label}<small>{speed.days}</small></th>)}</tr></thead>
             <tbody>{kiloan.map((service) => <tr key={service.id}>
               <th scope="row"><span>{service.name}</span><small>{service.pricingModel === "flat-package" ? "Maks. 10 kg / paket" : `Min. ${service.minimumQuantity} kg`}</small>{orderingEnabled && <button type="button" className="buzz-menu-add" aria-label={`Pesan ${service.name}`} onClick={() => onOrder(service.id)}><Plus size={18} aria-hidden="true" /></button>}</th>
-              {serviceSpeeds.map((speed) => <td key={speed.id} data-label={`${speed.id === "quick" ? "Kilat" : speed.label} · ${speed.days}`}>{serviceAllowsSpeed(service, speed.id) ? <>{money(serviceRate(service, speed.id))}<small>{service.pricingModel === "flat-package" ? "/ paket" : "/ kg"}</small></> : "—"}</td>)}
+              {serviceSpeeds.map((speed) => <td key={speed.id} data-label={`${speed.id === "quick" ? "Kilat" : speed.label} · ${speed.days}`}>{serviceAllowsSpeed(service, speed.id) ? <>{money(serviceRate(service, speed.id))}<small>{service.pricingModel === "flat-package" ? "/ paket" : "/ kg"}</small></> : "-"}</td>)}
             </tr>)}</tbody>
           </table>
         </div>
       </section>
       <section className="daily-rate-section buzz-menu-group">
-        <div className="service-catalog-heading"><div><h3>Layanan satuan</h3><p>One Day: 1 hari · Express: 6–8 jam</p></div></div>
+        <div className="service-catalog-heading"><div><h3>Layanan satuan</h3><p>One Day: 1 hari · Express: 6-8 jam</p></div></div>
         <div className="daily-rate-scroll">
-          <table className="daily-rate-table buzz-menu-piece"><thead><tr><th>Layanan</th><th>One Day<small>1 hari</small></th><th>Express<small>6–8 jam</small></th></tr></thead>
-            <tbody>{satuan.map((service) => <tr key={service.id}><th scope="row"><span>{service.name}</span>{orderingEnabled && <button type="button" className="buzz-menu-add" aria-label={`Pesan ${service.name}`} onClick={() => onOrder(service.id)}><Plus size={18} aria-hidden="true" /></button>}</th><td data-label="One Day · 1 hari">{money(serviceRate(service, "oneDay"))}</td><td data-label="Express · 6–8 jam">{money(serviceRate(service, "express"))}</td></tr>)}</tbody>
+          <table className="daily-rate-table buzz-menu-piece"><thead><tr><th>Layanan</th><th>One Day<small>1 hari</small></th><th>Express<small>6-8 jam</small></th></tr></thead>
+            <tbody>{satuan.map((service) => <tr key={service.id}><th scope="row"><span>{service.name}</span>{orderingEnabled && <button type="button" className="buzz-menu-add" aria-label={`Pesan ${service.name}`} onClick={() => onOrder(service.id)}><Plus size={18} aria-hidden="true" /></button>}</th><td data-label="One Day · 1 hari">{money(serviceRate(service, "oneDay"))}</td><td data-label="Express · 6-8 jam">{money(serviceRate(service, "express"))}</td></tr>)}</tbody>
           </table>
         </div>
       </section>

@@ -24,6 +24,7 @@ import LoyaltyRedemption from "./loyalty-redemption";
 import MembershipRedemption from "./membership-redemption";
 import { useAuth } from "./auth-provider";
 import { DFABLE_HOME } from "@/lib/dfable-path";
+import { formatOrderCreatedAt } from "@/lib/tracking-date";
 import "./tracking.css";
 
 export const previewTracking: TrackingOrder = {
@@ -77,6 +78,7 @@ export default function Tracking({
   isOwner?: boolean;
 }) {
   const auth = useAuth();
+  const createdAt = formatOrderCreatedAt(o.createdAt);
   const currentStatus = Math.max(0, Math.min(statuses.length - 1, o.status));
   const dropoff = o.fulfillment === "dropoff";
   const pendingStoreConfirmation = !o.paid && o.source !== "pos" && !!o.fulfillment && !isOrderReadyForBilling(o);
@@ -187,7 +189,11 @@ export default function Tracking({
               <span className="text-slate-400">Toko</span>
               <b className="font-medium">{branchLabel(o.branchId)}</b>
             </div>
-            {o.fulfillment ? <div className="flex justify-between gap-3"><span className="text-slate-400">Pengantaran</span><b className="text-right font-medium">{dropoff ? "Antar & ambil sendiri" : "Antar-jemput"}</b></div> : <div className="flex justify-between gap-3"><span className="text-slate-400">Jadwal masuk / jemput</span><b className="text-right font-medium">{o.date}<small className="block text-slate-400">{o.slot}</small></b></div>}
+            <div className="flex justify-between gap-3">
+              <span className="text-slate-400">Tanggal pesanan</span>
+              {createdAt ? <time className="text-right font-medium" dateTime={o.createdAt}>{createdAt}</time> : <span className="text-right text-slate-400">Tidak tersedia</span>}
+            </div>
+            {o.fulfillment ? <div className="flex justify-between gap-3"><span className="text-slate-400">Pengantaran</span><b className="text-right font-medium">{dropoff ? "Antar & ambil sendiri" : "Antar-jemput"}</b></div> : <div className="flex justify-between gap-3"><span className="text-slate-400">Jadwal masuk / jemput</span><b className="text-right font-medium">{o.date}<small className="block text-slate-400">{o.slot?.replaceAll("–", "-")}</small></b></div>}
             <div className="flex justify-between gap-3">
               <span className="text-slate-400">Ongkir</span>
               <span>
@@ -259,6 +265,9 @@ export default function Tracking({
               initialPayment={o.payment}
               initialManualPayment={o.manualPayment}
               initialReviewRequired={o.paymentReconciliationRequired}
+              orderTotal={o.total}
+              pointsUsed={pointsUsed}
+              membershipUsed={membershipUsed}
               hideQrByDefault
               onChanged={onOrderChanged}
             />

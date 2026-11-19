@@ -1,8 +1,17 @@
 .profile-page {
   min-height: 100svh;
   background: #f8f7f7;
-  padding-bottom: 80px;
 }
+.profile-footer {
+  width: 100%;
+  max-width: none;
+  margin: 48px auto 0;
+  padding: 27px max(24px, calc((100% - 1180px) / 2));
+  border-top: 1px solid #eee8ea;
+  background: #fff;
+}
+.profile-footer .washloka-lockup { width: 150px; }
+.profile-footer > span { color: #766d72; line-height: 1.5; }
 .profile-header {
   display: flex;
   align-items: center;
@@ -347,6 +356,22 @@
   color: #81777c;
   font-size: 14px;
   line-height: 1.6;
+}
+@media (max-width: 800px) {
+  .profile-footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-top: 32px;
+    padding: 28px 20px calc(90px + env(safe-area-inset-bottom));
+    text-align: center;
+  }
+  .profile-footer > span {
+    width: min(100%, 460px);
+    margin: 0;
+    padding-top: 16px;
+    border-top: 1px solid #eee8ea;
+  }
 }
 @media (max-width: 760px) {
   .profile-layout {

@@ -26,7 +26,7 @@ import {
   validateTransaction,
 } from "./policy";
 import type { PaymentAttempt, PaymentView, ProviderTransaction } from "./types";
-import { bankDetails, manualLocked, safeManualSummary } from "./manual-policy";
+import { bankDetails, isStaticQrisAccount, manualLocked, safeManualSummary } from "./manual-policy";
 import { prepareEarn, commitEarn } from "../loyalty";
 import { signalPaymentChange } from "./signals";
 import { DEFAULT_BRANCH, normalizeBranchId, sameBranch } from "../branches";
@@ -45,6 +45,10 @@ export async function paymentView(
   database: Firestore = db(),
 ): Promise<PaymentView> {
   const settings = await readStoreBankSettings(database, order.branchId);
+  // Existing orders retain their original destination; new selections must use
+  // only the account explicitly approved for the current payment setup.
+  const selectedBank = order.manualPayment?.bank;
+  const visibleBank = selectedBank || (isStaticQrisAccount(settings) ? settings : undefined);
   let qrUrl: string | undefined;
   if (
     order.payment?.status === "pending" &&
@@ -64,7 +68,8 @@ export async function paymentView(
   }
   return {
     revision: order.paymentRevision || 0,
-    enabled: normalizeBranchId(order.branchId) !== "buzzwash" && midtransCheckoutEnabled(),
+    // Keep existing transactions accessible for reconciliation, without offering new ones.
+    enabled: !!order.payment && ["creating", "pending"].includes(order.payment.status) && midtransReady(),
     orderId: order.id,
     paid: order.paid,
     amount: order.total,
@@ -76,10 +81,8 @@ export async function paymentView(
     ...(qrUrl ? { qrUrl } : {}),
     ...(order.paymentReconciliationRequired ? { reviewRequired: true } : {}),
     branchId: order.branchId,
-    bank: bankDetails(
-      order.manualPayment?.bank || settings,
-      order.branchId,
-    ),
+    staticQrisAvailable: !!normalizeBranchId(order.branchId) && isStaticQrisAccount(visibleBank),
+    bank: bankDetails(selectedBank || (visibleBank ? { ...visibleBank, qrVersion: undefined } : undefined), order.branchId),
     ...(order.manualPayment
       ? { manual: safeManualSummary(order.manualPayment) }
       : {}),

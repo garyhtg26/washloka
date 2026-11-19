@@ -6,6 +6,7 @@
 .wash-portal-track-label { color: #e7becb; font-size: 10px; font-weight: 750; letter-spacing: .15em; }
 .wash-portal-hero h1 { margin: 0; color: #fff; font-size: clamp(38px, 4.4vw, 61px); font-weight: 750; letter-spacing: -.05em; line-height: 1.06; }
 .wash-portal-hero-description { max-width: 320px; margin: 15px 0 0; color: #f2e7ea; font-size: 14px; line-height: 1.6; }
+.wash-portal-hero-wave { display: none; }
 .wash-portal-hero-link { display: inline-flex; align-items: center; gap: 12px; min-height: 45px; margin-top: 24px; padding: 0 19px; border-radius: 100px; background: #fff; color: #740e31; font-size: 13px; font-weight: 700; text-decoration: none; transition: transform .2s, background .2s; }
 .wash-portal-hero-link:hover { transform: translateY(-2px); background: #f7ecef; }
 .wash-portal-partners { padding: 58px 0 48px; scroll-margin-top: 100px; }
@@ -37,4 +38,12 @@
 @media (max-width: 700px) { .wash-portal-hero, .wash-portal-hero-content { min-height: 360px; } .wash-portal-hero picture img { object-position: center; } .wash-portal-hero-content { justify-content: flex-start; padding: 33px 26px; } .wash-portal-hero h1 { font-size: 36px; } .wash-portal-partners { padding: 40px 0 34px; } .wash-portal-partner-grid { gap: 12px; } .wash-portal-partner-image { height: 140px; padding: 26px; } .wash-portal-partner-index { top: 13px; left: 14px; font-size: 8px; } .wash-portal-partner-info { display: block; padding: 15px 14px 0; } .wash-portal-partner-info strong { font-size: 14px; } .wash-portal-partner-cta { margin-top: 12px; } .wash-portal-partner-description { padding: 10px 14px 16px; font-size: 12px; } .wash-portal-track { align-items: stretch; flex-direction: column; gap: 18px; padding: 24px 20px; } .wash-portal-track form { width: 100%; } }
 @media (max-width: 360px) { .wash-portal-partner-grid { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .wash-portal-hero-description { max-width: 185px; font-size: 13px; } }
+@media (max-width: 800px) {
+  /* The banner meets the header; the content below retains comfortable gutters. */
+  .customer-main-home:has(> .wash-portal) { margin-inline: 0; padding-top: 0; }
+  .wash-portal-hero { border-radius: 0; }
+  .wash-portal-hero-wave { position: absolute; z-index: 2; right: 0; bottom: -1px; left: 0; display: block; width: 100%; height: 27px; fill: #fff; pointer-events: none; }
+  .wash-portal-hero::after { position: absolute; z-index: 2; right: 0; bottom: 0; left: 0; height: 1px; background: #fff; pointer-events: none; content: ""; }
+  .wash-portal-partners, .wash-portal-track { margin-inline: 20px; }
+}
 @media (prefers-reduced-motion: reduce) { .wash-portal-partner, .wash-portal-hero-link { transition: none; } }

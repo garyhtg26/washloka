@@ -10,6 +10,7 @@ import {
 import {
   ArrowRight,
   BadgeCheck,
+  Building2,
   Check,
   ChevronRight,
   Clock3,
@@ -17,6 +18,7 @@ import {
   CreditCard,
   Gift,
   ImagePlus,
+  QrCode,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -31,12 +33,15 @@ type Deposit = {
   branchId: string;
   senderName: string;
   hasProof?: boolean;
+  paymentMethod?: "bank_transfer" | "qris_static";
+  qris?: { id: string; recipient: string };
   bank: { bankName: string; accountNumber: string; accountHolder: string };
 };
 type Membership = {
   active: boolean;
   discountEligible: boolean;
   balance: number;
+  staticQrisAvailable: boolean;
   pending: Deposit | null;
   bank: {
     bankName: string;
@@ -55,6 +60,8 @@ export default function MembershipCard() {
   const [amount, setAmount] = useState("100000");
   const [branch, setBranch] = useState<BranchId>(DEFAULT_BRANCH);
   const [senderName, setSenderName] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "qris_static">("bank_transfer");
+  const [showQr, setShowQr] = useState(false);
   const [proof, setProof] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -123,8 +130,12 @@ export default function MembershipCard() {
       setMessage("Tunggu informasi rekening toko selesai dimuat.");
       return;
     }
+    if (paymentMethod === "qris_static" && !data.staticQrisAvailable) {
+      setMessage("QRIS belum tersedia untuk rekening ini. Pilih transfer bank.");
+      return;
+    }
     if (!proof) {
-      setMessage("Pilih bukti transfer terlebih dahulu.");
+      setMessage("Pilih bukti pembayaran terlebih dahulu.");
       return;
     }
     setBusy(true);
@@ -142,7 +153,7 @@ export default function MembershipCard() {
       const uploaded = await upload.json();
       if (!upload.ok || typeof uploaded.proofVersion !== "string")
         throw Error(
-          uploaded.error || "Bukti transfer belum berhasil diunggah.",
+          uploaded.error || "Bukti pembayaran belum berhasil diunggah.",
         );
       const response = await auth.request("/api/membership", {
         method: "POST",
@@ -151,6 +162,7 @@ export default function MembershipCard() {
           amount: Number(amount),
           branch,
           senderName,
+          paymentMethod,
           proofVersion: uploaded.proofVersion,
         }),
       });
@@ -159,7 +171,7 @@ export default function MembershipCard() {
         throw Error(result.error || "Deposit belum berhasil diajukan.");
       setProof(null);
       await load();
-      setMessage("Bukti terkirim. Toko akan memeriksa transfermu.");
+      setMessage("Bukti terkirim. Toko akan memeriksa pembayaranmu.");
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -243,7 +255,7 @@ export default function MembershipCard() {
         </div>
         <div className="member-summary-balance">
           <span>Saldo membership</span>
-          <strong>{data ? money(data.balance) : "—"}</strong>
+          <strong>{data ? money(data.balance) : "-"}</strong>
         </div>
         {isPending && (
           <p className="member-summary-pending">
@@ -332,6 +344,8 @@ export default function MembershipCard() {
                   setCode(null);
                   setCopied(false);
                   setMessage("");
+                  setPaymentMethod("bank_transfer");
+                  setShowQr(false);
                   setBranch(event.target.value as BranchId);
                 }}
               >
@@ -384,7 +398,7 @@ export default function MembershipCard() {
               </span>
               <h3>Deposit sedang diperiksa</h3>
               <p>
-                Tim toko akan mencocokkan transfer sebelum saldo ditambahkan.
+                Tim toko akan mencocokkan pembayaran sebelum saldo ditambahkan.
               </p>
               <div className="member-pending-details">
                 <div>
@@ -396,7 +410,11 @@ export default function MembershipCard() {
                   <b>{branches[resolveCustomerBranch({ requested: data!.pending!.branchId })]}</b>
                 </div>
                 <div>
-                  <span>Bukti transfer</span>
+                  <span>Metode pembayaran</span>
+                  <b>{data!.pending!.paymentMethod === "qris_static" ? "QRIS manual" : "Transfer bank"}</b>
+                </div>
+                <div>
+                  <span>Bukti pembayaran</span>
                   <b>
                     {data!.pending!.hasProof
                       ? "Sudah diunggah"
@@ -439,21 +457,47 @@ export default function MembershipCard() {
                 <small>Minimal Rp100.000</small>
               </label>
               <label className="member-field">
-                Nama pemilik rekening pengirim
+                  Nama pengirim
                 <input
                   value={senderName}
                   onChange={(event) => setSenderName(event.target.value)}
-                  placeholder="Nama sesuai rekening"
+                  placeholder={paymentMethod === "qris_static" ? "Nama sesuai akun pembayaran" : "Nama sesuai rekening"}
                   minLength={2}
                   maxLength={100}
                   required
                   disabled={busy}
                 />
               </label>
+              <fieldset className="member-methods">
+                <legend>Metode pembayaran</legend>
+                <div>
+                  <label className={paymentMethod === "bank_transfer" ? "selected" : ""}>
+                    <input type="radio" name="member-payment" value="bank_transfer" checked={paymentMethod === "bank_transfer"} disabled={busy} onChange={() => { setPaymentMethod("bank_transfer"); setShowQr(false); }} />
+                    <Building2 size={18} /> Transfer bank
+                  </label>
+                  {loadedBranch === branch && data?.staticQrisAvailable && <label className={paymentMethod === "qris_static" ? "selected" : ""}>
+                    <input type="radio" name="member-payment" value="qris_static" checked={paymentMethod === "qris_static"} disabled={busy} onChange={() => setPaymentMethod("qris_static")} />
+                    <QrCode size={18} /> QRIS manual
+                  </label>}
+                </div>
+              </fieldset>
               {loadedBranch !== branch ? (
                 <p className="member-form-message" role="status">
                   Memuat rekening toko…
                 </p>
+              ) : paymentMethod === "qris_static" && data?.staticQrisAvailable ? (
+                <div className="member-qris">
+                  <strong>QRIS BUZZWASH CIBUBUR</strong>
+                  <p>Masukkan nominal deposit saat membayar, lalu unggah bukti pembayaran.</p>
+                  <button type="button" onClick={() => setShowQr((value) => !value)} aria-expanded={showQr} aria-controls="member-qris-image">
+                    {showQr ? "Sembunyikan QRIS" : "Tampilkan QRIS"}
+                  </button>
+                  {showQr && <>
+                    <img id="member-qris-image" src="/buzzwash-qris-static.png" alt="QRIS manual BUZZWASH CIBUBUR" />
+                    <a href="/buzzwash-qris-static.png" download="QRIS-BuzzWash.png">Simpan gambar QRIS</a>
+                    <p>Simpan gambar untuk membayar dari aplikasi di HP yang sama.</p>
+                  </>}
+                </div>
               ) : data?.bank.configured ? (
                 <div className="member-bank">
                   <div>
@@ -489,7 +533,7 @@ export default function MembershipCard() {
                   <ImagePlus size={21} />
                 </span>
                 <div>
-                  <b>{proof ? proof.name : "Unggah bukti transfer"}</b>
+                  <b>{proof ? proof.name : "Unggah bukti pembayaran"}</b>
                   <small>
                     {proof
                       ? "Ketuk untuk mengganti foto"
@@ -505,6 +549,7 @@ export default function MembershipCard() {
                   busy ||
                   loadedBranch !== branch ||
                   !data?.bank.configured ||
+                  (paymentMethod === "qris_static" && !data?.staticQrisAvailable) ||
                   !proof
                 }
               >
@@ -517,7 +562,7 @@ export default function MembershipCard() {
                 )}
               </button>
               <p className="member-form-foot">
-                Saldo ditambahkan setelah transfer dikonfirmasi toko.
+                Saldo ditambahkan setelah pembayaran dikonfirmasi toko.
               </p>
             </form>
           )}
