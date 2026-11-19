@@ -2,21 +2,25 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import AboutHeader from "@/components/about-header";
+import CustomerSecondaryNav from "@/components/customer-secondary-nav";
 import StoryPhotoStack from "@/components/story-photo-stack";
 import ScrollReveal from "@/components/scroll-reveal";
-import { DFABLE_HOME, DFABLE_ABOUT } from "@/lib/dfable-path";
+import { DFABLE_HOME, tenantStorePath, type CustomerQuery } from "@/lib/dfable-path";
+import { normalizeBranchId, type BranchId } from "@/lib/branches";
+import { customerContextPaths } from "@/lib/customer-context";
+import TenantBrand from "@/components/tenant-brand";
+import "@/components/tenant-brand.css";
 import {
   ArrowRight,
   ArrowUpRight,
-  LayoutDashboard,
   MessageCircle,
   Package,
   Shirt,
   Store,
   Truck,
-  User,
 } from "lucide-react";
 import "@/components/about-eazywash.css";
+import "@/components/customer-tenant-context.css";
 
 export const metadata: Metadata = {
   title: "Tentang Washloka",
@@ -26,7 +30,8 @@ export const metadata: Metadata = {
 const whatsappUrl =
   "https://wa.me/6285199300110?text=Halo%20D%27Fable%2C%20saya%20ingin%20bertanya%20tentang%20layanan%20laundry.";
 
-function Brand() {
+function Brand({ branch }: { branch: BranchId | null }) {
+  if (branch) return <TenantBrand branch={branch} />;
   return (
     <Link
       className="brand eazy-customer-brand washloka-lockup washloka-lockup-light"
@@ -47,10 +52,13 @@ function Brand() {
   );
 }
 
-export default function AboutPage() {
+export default async function AboutPage({ searchParams }: { searchParams: Promise<CustomerQuery> }) {
+  const query = await searchParams;
+  const branch = normalizeBranchId(Array.isArray(query.branch) ? query.branch[0] : query.branch);
+  const paths = customerContextPaths(branch);
   return (
-    <div className="about-eazywash">
-      <AboutHeader />
+    <div className={`about-eazywash${branch ? ` tenant-${branch === "dfablelaundry" ? "dfable" : "buzzwash"}` : ""}`}>
+      <AboutHeader initialTenant={branch} />
       <ScrollReveal />
       <main className="about-ew-content">
         <section className="about-ew-hero">
@@ -66,10 +74,10 @@ export default function AboutPage() {
               pesananmu. Semuanya ada di Washloka.
             </p>
             <Link
-              href={`${DFABLE_HOME}?view=services`}
+              href={branch ? paths.view("services") : "/#laundry-pilihan"}
               className="about-ew-primary"
             >
-              Lihat layanan <ArrowRight size={17} />
+              {branch ? "Lihat layanan" : "Pilih laundry"} <ArrowRight size={17} />
             </Link>
           </div>
           <div className="about-ew-hero-photo">
@@ -181,7 +189,7 @@ export default function AboutPage() {
               </p>
               <div className="about-ew-partner-actions">
                 <Link
-                  href={`${DFABLE_HOME}?view=services&branch=dfablelaundry`}
+                  href={`${tenantStorePath("dfablelaundry")}?view=services`}
                   className="about-ew-partner-link"
                 >
                   Lihat layanan toko <ArrowUpRight size={17} />
@@ -215,7 +223,7 @@ export default function AboutPage() {
               </p>
               <div className="about-ew-partner-actions">
                 <Link
-                  href={`${DFABLE_HOME}?view=services&branch=buzzwash`}
+                  href={`${tenantStorePath("buzzwash")}?view=services`}
                   className="about-ew-partner-link"
                 >
                   Lihat layanan toko <ArrowUpRight size={17} />
@@ -226,31 +234,10 @@ export default function AboutPage() {
         </section>
       </main>
       <footer>
-        <Brand />
+        <Brand branch={branch} />
         <span>© {new Date().getFullYear()} Washloka. All rights reserved.</span>
       </footer>
-      <nav className="mobile-nav" aria-label="Navigasi utama">
-        <Link href={`${DFABLE_HOME}?view=home`}>
-          <LayoutDashboard size={20} />
-          Beranda
-        </Link>
-        <Link href={`${DFABLE_HOME}?view=services`}>
-          <Shirt size={20} />
-          Layanan
-        </Link>
-        <Link href={`${DFABLE_HOME}?view=tracking`}>
-          <Package size={20} />
-          Tracking
-        </Link>
-        <Link className="active" href={DFABLE_ABOUT}>
-          <Store size={20} />
-          Tentang
-        </Link>
-        <Link href={`${DFABLE_HOME}?account=1`}>
-          <User size={20} />
-          Akun
-        </Link>
-      </nav>
+      <CustomerSecondaryNav branch={branch} active="about" />
     </div>
   );
 }

@@ -6,7 +6,19 @@ import {
   DFABLE_ABOUT,
   dfableTrackingPath,
   customerPath,
+  tenantStorePath,
+  tenantFromSlug,
 } from "../lib/dfable-path";
+
+test("public storefront aliases resolve without changing persisted store IDs", () => {
+  assert.equal(tenantStorePath("dfablelaundry"), "/dfabel");
+  assert.equal(tenantStorePath("buzzwash"), "/buzzwash");
+  assert.equal(tenantFromSlug("dfabel"), "dfablelaundry");
+  assert.equal(tenantFromSlug("dfable"), "dfablelaundry");
+  assert.equal(tenantFromSlug("BuzzWash"), "buzzwash");
+  assert.equal(tenantFromSlug("unknown"), null);
+  assert.equal(customerPath("/dfabel", { track: "a&b", account: "1" }), "/dfabel?track=a%26b&account=1");
+});
 
 test("Customer links use the unified app and tracking tokens are encoded", () => {
   assert.equal(DFABLE_HOME, "/");

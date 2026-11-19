@@ -6,19 +6,19 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Gift,
-  LayoutDashboard,
   LockKeyhole,
-  Package,
-  Shirt,
-  Store,
-  User,
   UserRound,
 } from "lucide-react";
 import { useAuth } from "./auth-provider";
 import { CustomerHeader } from "./about-header";
+import LoadingProgress, { useLoadingProgress } from "./loading-progress";
+import CustomerSecondaryNav from "./customer-secondary-nav";
 import MembershipCard from "./membership-card";
-import { DFABLE_HOME, DFABLE_PROFILE, DFABLE_ABOUT } from "@/lib/dfable-path";
+import { customerContextPaths, customerTenantContext } from "@/lib/customer-context";
+import type { BranchId } from "@/lib/branches";
+import "./tenant-brand.css";
 import "./profile-customer.css";
+import "./customer-tenant-context.css";
 
 type Profile = {
   name: string;
@@ -54,8 +54,11 @@ const formatDate = (date: string) => {
       }).format(value);
 };
 
-export default function CustomerProfile() {
+export default function CustomerProfile({ initialTenant = null }: { initialTenant?: BranchId | null }) {
   const auth = useAuth();
+  const [tenant, setTenant] = useState<BranchId | null>(initialTenant);
+  useEffect(() => setTenant(customerTenantContext(window.location.search)), []);
+  const paths = customerContextPaths(tenant);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -146,33 +149,26 @@ export default function CustomerProfile() {
     }
   }
 
-  if (
-    auth.loading ||
-    (auth.user && auth.verified && loadedUser !== auth.user.uid)
-  )
+  const profileLoading = auth.loading || !!(auth.user && auth.verified && loadedUser !== auth.user.uid);
+  const loadingProgress = useLoadingProgress(profileLoading);
+  if (profileLoading || loadingProgress.visible)
     return (
       <main className="loading">
         <Link
           className="brand eazy-customer-brand"
-          href={DFABLE_HOME}
+          href={paths.home}
           aria-label="Washloka beranda"
         >
           <img src="/washloka/wordmark-burgundy.svg" alt="Washloka" />
         </Link>
         <p role="status">Menyiapkan profil…</p>
-        <div
-          className="loading-progress"
-          role="progressbar"
-          aria-label="Memuat profil"
-        >
-          <span />
-        </div>
+        <LoadingProgress progress={loadingProgress.progress} label="Memuat profil" />
       </main>
     );
   if (!auth.user || !auth.verified)
     return (
       <main className="profile-gate">
-        <Link className="profile-brand" href={DFABLE_HOME}>
+        <Link className="profile-brand" href="/">
           <img src="/washloka/wordmark-burgundy.svg" alt="Washloka" />
         </Link>
         <span className="profile-gate-icon">
@@ -186,7 +182,7 @@ export default function CustomerProfile() {
             ? "Selesaikan verifikasi email untuk melihat data dan poin kamu."
             : "Data diri dan poin kamu ada di sini setelah masuk."}
         </p>
-        <Link className="primary" href={`${DFABLE_HOME}?account=1`}>
+        <Link className="primary" href={paths.login}>
           {auth.user ? "Verifikasi akun" : "Masuk"}
         </Link>
       </main>
@@ -194,7 +190,7 @@ export default function CustomerProfile() {
 
   return (
     <main className="profile-page">
-      <CustomerHeader active="profile" />
+      <CustomerHeader active="profile" initialTenant={tenant} />
       <div className="profile-content">
         <div className="profile-title">
           <span>AKUN SAYA</span>
@@ -391,7 +387,7 @@ export default function CustomerProfile() {
       <footer>
         <Link
           className="brand eazy-customer-brand washloka-lockup"
-          href={DFABLE_HOME}
+          href="/"
           aria-label="Washloka beranda"
         >
           <img className="washloka-mark" src="/washloka/app-icon-burgundy.svg" alt="" />
@@ -399,28 +395,7 @@ export default function CustomerProfile() {
         </Link>
         <span>© {new Date().getFullYear()} Washloka. All rights reserved.</span>
       </footer>
-      <nav className="mobile-nav" aria-label="Navigasi utama">
-        <Link href={`${DFABLE_HOME}?view=home`}>
-          <LayoutDashboard size={20} />
-          Beranda
-        </Link>
-        <Link href={`${DFABLE_HOME}?view=services`}>
-          <Shirt size={20} />
-          Layanan
-        </Link>
-        <Link href={`${DFABLE_HOME}?view=tracking`}>
-          <Package size={20} />
-          Tracking
-        </Link>
-        <Link href={DFABLE_ABOUT}>
-          <Store size={20} />
-          Tentang
-        </Link>
-        <Link className="active" aria-current="page" href={DFABLE_PROFILE}>
-          <User size={20} />
-          Akun
-        </Link>
-      </nav>
+      <CustomerSecondaryNav branch={tenant} active="profile" />
     </main>
   );
 }

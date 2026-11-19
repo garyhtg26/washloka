@@ -188,6 +188,12 @@
 .tracking-price-summary {
   margin: 0 0 20px;
 }
+.tracking-confirmation-note {
+  margin: -4px 0 18px;
+  color: #75656c;
+  font-size: 13px;
+  line-height: 1.5;
+}
 .tracking-price-details {
   display: grid;
   gap: 9px;

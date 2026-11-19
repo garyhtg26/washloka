@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { Order } from "../types";
 import { calculateOrderPrice } from "../pricing";
+import { isOrderReadyForBilling } from "../order-billing";
 import type {
   PaymentAttempt,
   PaymentStatus,
@@ -17,16 +18,7 @@ export function paymentLocked(payment?: PaymentSummary) {
 }
 
 export function finalAmount(order: Order): number | null {
-  if (
-    order.pricePending ||
-    order.actualKg === null ||
-    order.shippingFee === null ||
-    !Number.isFinite(order.actualKg) ||
-    order.actualKg <= 0 ||
-    !Number.isSafeInteger(order.shippingFee) ||
-    order.shippingFee < 0
-  )
-    return null;
+  if (!isOrderReadyForBilling(order) || order.actualKg === null || order.shippingFee === null) return null;
   const service = calculateOrderPrice(order, order.actualKg);
   const discount = order.pointsUsed || 0;
   const membership = order.membershipUsed || 0;

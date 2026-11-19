@@ -5,5 +5,5 @@ export default async function Page({
 }: {
   searchParams: Promise<CustomerQuery>;
 }) {
-  redirect(customerPath("/", await searchParams));
+  redirect(customerPath("/dfabel", await searchParams));
 }

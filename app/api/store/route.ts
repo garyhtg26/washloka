@@ -23,6 +23,7 @@ import { calculateOrderPrice } from "@/lib/pricing";
 import { defaultSpeed, normalizeServices, serviceAllowsSpeed, serviceAvailableSpeeds, serviceUnitRate } from "@/lib/catalog";
 import {
   orderSchema,
+  customerOrderSchema,
   updateSchema,
   pricesSchema,
   promoSchema,
@@ -40,6 +41,8 @@ import {
 import { prepareEarn, commitEarn } from "@/lib/loyalty";
 import { eligibleMemberDiscount } from "@/lib/membership-eligibility";
 import { prepareRewardIntent, commitRewardIntent, prepareRewardReservation, commitRewardReservation } from "@/lib/reward-intent";
+import { publicTracking } from "@/lib/tracking-data";
+import { isOrderReadyForBilling } from "@/lib/order-billing";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -75,22 +78,38 @@ export async function POST(req: NextRequest) {
         503,
         "Firebase belum dikonfigurasi. Pesanan belum bisa diterima.",
       );
-    const user = (await identity(req, true))!;
+    const user = await identity(req);
     const raw = await req.text();
-    if (Buffer.byteLength(raw) > 1700000)
-      throw new ApiError(413, "Foto terlalu besar.");
+    if (Buffer.byteLength(raw) > (user ? 1700000 : 8192))
+      throw new ApiError(413, "Data terlalu besar.");
     let body;
     try {
       body = JSON.parse(raw);
     } catch {
       throw new ApiError(400, "Data tidak valid.");
     }
+    const simpleCustomer = body.action === "order" && body.data?.source === "web" && body.data?.fulfillment !== undefined;
+    if (!user && !simpleCustomer) throw new ApiError(401, "Silakan masuk terlebih dahulu.");
     const database = db();
     let id = "";
     if (body.action === "order") {
-      const input = orderSchema.parse(body.data);
-      if ((input.usePoints && input.pointsLimit === undefined) ||
+      const customerInput = simpleCustomer ? customerOrderSchema.parse(body.data) : null;
+      const input = customerInput ? {
+        ...customerInput,
+        kg: 1,
+        express: customerInput.speed !== "regular",
+        address: customerInput.fulfillment === "delivery" ? customerInput.address! : "Antar dan ambil sendiri",
+        lat: customerInput.fulfillment === "delivery" ? customerInput.lat! : 0,
+        lng: customerInput.fulfillment === "delivery" ? customerInput.lng! : 0,
+        date: "", slot: "", photo: "", insurance: false,
+        membershipCode: undefined,
+        posPayment: undefined, expectedTotal: undefined,
+      } : orderSchema.parse(body.data);
+      if (!user && (input.usePoints || input.useMembershipBalance))
+        throw new ApiError(401, "Masuk untuk menggunakan poin atau saldo membership.");
+      if (!simpleCustomer && ((input.usePoints && input.pointsLimit === undefined) ||
           (input.useMembershipBalance && input.membershipLimit === undefined))
+      )
         throw new ApiError(409, "Muat ulang halaman dan periksa kembali pilihan poin dan saldo.");
       if (input.source === "pos") requireAdmin(user, branch);
       if (branch === "buzzwash" && input.insurance)
@@ -109,13 +128,14 @@ export async function POST(req: NextRequest) {
       const today = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Jakarta",
       }).format(new Date());
-      if (input.date < today)
+      if (!simpleCustomer && input.date < today)
         throw new ApiError(400, "Jadwal tidak boleh di masa lalu.");
+      const requester = user?.uid || `guest:${input.requestId}`;
       const requestIds = branchAliases(branch).map(
         (alias) =>
           "DF-" +
           createHash("sha256")
-            .update(`${alias}:${user.uid}:${input.requestId}`)
+            .update(`${alias}:${requester}:${input.requestId}`)
             .digest("hex")
             .slice(0, 12)
             .toUpperCase(),
@@ -127,18 +147,26 @@ export async function POST(req: NextRequest) {
       if (priorIndex >= 0) {
         const existing = priorRequests[priorIndex];
         if (
-          existing.get("createdBy") !== user.uid ||
+          existing.get("createdBy") !== requester ||
           !sameBranch(existing.get("branchId"), branch)
         )
           throw new ApiError(409, "Konflik nomor pesanan.");
         id = requestIds[priorIndex];
-        return NextResponse.json({ store: await readStore(user, branch), id });
+        const existingOrder = existing.data() as Order;
+        return NextResponse.json({ store: await readStore(user, branch), id, ...(simpleCustomer ? { trackingToken: existingOrder.token, trackingOrder: publicTracking(existingOrder) } : {}) }, { headers: { "Cache-Control": "private, no-store" } });
       }
       id = requestIds[0];
       const ref = database.doc(`orders/${id}`);
+      // Guest requests are limited by both phone and client network. Never trust
+      // a caller-supplied forwarding header outside the Vercel edge.
+      const ip = process.env.VERCEL === "1" ? req.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() : null;
+      const guestRateRefs = user ? [] : [
+        database.doc(`guestOrderRates/${createHash("sha256").update(`phone:${input.phone}`).digest("hex")}`),
+        database.doc(`guestOrderRates/${createHash("sha256").update(`network:${ip || "unavailable"}`).digest("hex")}`),
+      ];
       if (input.membershipCode) {
         await database.runTransaction(async (tx) => {
-          const attemptRef = database.doc(`membershipCodeAttempts/${user.uid}`);
+          const attemptRef = database.doc(`membershipCodeAttempts/${user!.uid}`);
           const attemptSnap = await tx.get(attemptRef);
           const now = Date.now();
           const attempts = (attemptSnap.get("attempts") || []).filter(
@@ -162,7 +190,7 @@ export async function POST(req: NextRequest) {
         const bytes = Buffer.from(input.photo.split(",")[1], "base64");
         if (bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes.length > 1100000)
           throw new ApiError(400, "Foto JPEG tidak valid.");
-        photoPath = `orders/${user.uid}/${id}.jpg`;
+        photoPath = `orders/${user!.uid}/${id}.jpg`;
         await uploadPhoto(photoPath, bytes);
       }
       await database.runTransaction(async (tx) => {
@@ -172,18 +200,23 @@ export async function POST(req: NextRequest) {
         const codeRef = codeHash
           ? database.doc(`membershipCodes/${codeHash}`)
           : null;
-        const [settings, prior, rate, codeSnap, bankSettings] = await Promise.all([
+        const [settings, prior, rate, codeSnap, bankSettings, ...guestRates] = await Promise.all([
           readBranchSettings(database, branch, tx),
           tx.get(ref),
-          tx.get(database.doc(`rateLimits/${user.uid}`)),
+          user ? tx.get(database.doc(`rateLimits/${user.uid}`)) : Promise.resolve(null),
           codeRef ? tx.get(codeRef) : Promise.resolve(null),
           branch === "buzzwash" ? readStoreBankSettings(database, branch, tx) : Promise.resolve(null),
+          ...guestRateRefs.map((rateRef) => tx.get(rateRef)),
         ]);
-        if (prior.exists) return;
+        if (prior.exists) {
+          if (prior.get("createdBy") !== requester || !sameBranch(prior.get("branchId"), branch))
+            throw new ApiError(409, "Konflik nomor pesanan.");
+          return;
+        }
         if (branch === "buzzwash" && !bankDetails(bankSettings, branch).configured)
           throw new ApiError(409, "Rekening BuzzWash belum tersedia. Coba lagi nanti.");
         let customerUid: string | null =
-          input.source === "web" ? user.uid : null;
+          input.source === "web" ? user?.uid || null : null;
         if (codeRef) {
           const codeData = codeSnap?.data();
           if (!validMemberCode(codeData, branch, Date.now()))
@@ -202,29 +235,35 @@ export async function POST(req: NextRequest) {
             "Kode member tidak berlaku atau saldo sudah habis. Minta pelanggan memeriksa saldo dan membuat kode baru.",
           );
         const cutoff = Date.now() - 3600000;
-        const attempts = (rate.get("orders") || []).filter(
+        const attempts = (rate?.get("orders") || []).filter(
           (t: number) => t > cutoff,
         );
-        if (attempts.length >= (user.admin ? 120 : 10))
+        if (user && attempts.length >= (user.admin ? 120 : 10))
+          throw new ApiError(429, "Terlalu banyak pesanan. Coba lagi nanti.");
+        const guestAttempts = guestRates.map((snapshot) => (snapshot!.get("orders") || []).filter((t: number) => Number.isFinite(t) && t > cutoff));
+        if (guestAttempts.some((entries, index) => entries.length >= (index === 0 ? 10 : 40)))
           throw new ApiError(429, "Terlalu banyak pesanan. Coba lagi nanti.");
         const services = normalizeServices(settings.get("services"), branch);
         const service = services.find((item) => item.id === input.service);
         if (!service)
           throw new ApiError(400, "Layanan yang dipilih tidak tersedia.");
+        if (simpleCustomer && service.category === "member")
+          throw new ApiError(400, "Pilih layanan laundry untuk membuat pesanan.");
         const speed = input.speed || "regular";
         if (!serviceAllowsSpeed(service, speed))
           throw new ApiError(
             400,
             "Kecepatan ini tidak tersedia untuk layanan.",
           );
-        if (input.kg < (service.minimumQuantity || 1))
+        const quantity = simpleCustomer ? (service.minimumQuantity || 1) : input.kg;
+        if (quantity < (service.minimumQuantity || 1))
           throw new ApiError(
             400,
             `Jumlah minimum layanan ini ${service.minimumQuantity || 1} ${service.unit}.`,
           );
-        if (service.maximumQuantity && input.kg > service.maximumQuantity)
+        if (service.maximumQuantity && quantity > service.maximumQuantity)
           throw new ApiError(400, `Maksimum layanan ini ${service.maximumQuantity} ${service.unit} per paket.`);
-        if (service.unit !== "kg" && !Number.isInteger(input.kg))
+        if (service.unit !== "kg" && !Number.isInteger(quantity))
           throw new ApiError(400, "Jumlah item harus berupa bilangan bulat.");
         if (service.startingAt && input.source === "pos" && input.posPayment === "cash")
           throw new ApiError(409, "Harga akhir perlu dikonfirmasi sebelum menerima pembayaran.");
@@ -237,6 +276,7 @@ export async function POST(req: NextRequest) {
           photo,
           expectedTotal,
           membershipCode,
+          posPayment,
           ...cleanInput
         } = input;
         void requestId;
@@ -244,6 +284,15 @@ export async function POST(req: NextRequest) {
         void membershipCode;
         const clean = {
           ...cleanInput,
+          ...(posPayment ? { posPayment } : {}),
+          kg: quantity,
+          ...(simpleCustomer ? {
+            fulfillment: customerInput!.fulfillment,
+            quantityPending: true,
+            // Points are chosen only after the store confirms the final bill.
+            usePoints: false,
+            pointsLimit: 0,
+          } : {}),
           membershipDiscount: eligibleMemberDiscount(membership?.data()),
           express: speed !== "regular",
           unit: service.unit,
@@ -255,7 +304,7 @@ export async function POST(req: NextRequest) {
           ...(service.startingAt ? { startingAt: true, pricePending: true } : {}),
         };
         const calculatedTotal =
-          calculateOrderPrice({ ...clean, unitPrice, washPrice }, input.kg) +
+          (simpleCustomer ? 0 : calculateOrderPrice({ ...clean, unitPrice, washPrice }, quantity)) +
           (input.insurance ? 1000 : 0);
         if (
           input.source === "pos" &&
@@ -280,7 +329,7 @@ export async function POST(req: NextRequest) {
           ...(input.source === "pos" && input.posPayment === "cash"
             ? { paymentMethod: "cash" as const, paidAt: now }
             : {}),
-          shippingFee: input.source === "pos" ? 0 : null,
+          shippingFee: input.source === "pos" || customerInput?.fulfillment === "dropoff" ? 0 : null,
           total: calculatedTotal,
           unitPrice,
           washPrice,
@@ -289,20 +338,22 @@ export async function POST(req: NextRequest) {
           createdAt: now,
           history: [{ status, at: now }],
         };
-        const reservation = input.source === "web"
+        const reservation = input.source === "web" && !simpleCustomer
           ? await prepareRewardReservation(tx, database, order, calculatedTotal - (input.insurance ? 1000 : 0), null, false)
           : null;
         const earn = order.paid ? await prepareEarn(tx, database, order) : null;
         const earnedFields = commitEarn(tx, database, order, earn, now);
         const reservedFields = reservation ? commitRewardReservation(tx, database, order, reservation, now) : {};
-        tx.create(ref, { ...order, ...earnedFields, ...reservedFields, createdBy: user.uid });
+        tx.create(ref, { ...order, ...earnedFields, ...reservedFields, createdBy: requester });
+        // Wake the active store dashboard as soon as a customer order is committed.
+        if (input.source === "web") signalPaymentChange(tx, database, branch);
         if (codeRef) tx.delete(codeRef);
         tx.create(database.doc(`tracking/${token}`), { orderId: id });
-        tx.set(database.doc(`rateLimits/${user.uid}`), {
-          orders: [...attempts, Date.now()],
-          updatedAt: now,
+        if (user) tx.set(database.doc(`rateLimits/${user.uid}`), {
+          orders: [...attempts, Date.now()], updatedAt: now,
         });
-        if (input.source === "web")
+        else guestRateRefs.forEach((rateRef, index) => tx.set(rateRef, { orders: [...guestAttempts[index], Date.now()], updatedAt: now }));
+        if (input.source === "web" && user)
           tx.set(
             database.doc(`users/${user.uid}`),
             {
@@ -313,7 +364,7 @@ export async function POST(req: NextRequest) {
             },
             { merge: true },
           );
-        else
+        else if (input.source === "pos")
           tx.set(
             database.doc(
               `walkInCustomers/${createHash("sha256").update(input.phone).digest("hex")}`,
@@ -322,6 +373,12 @@ export async function POST(req: NextRequest) {
             { merge: true },
           );
       });
+      if (simpleCustomer) {
+        const stored = await ref.get();
+        if (stored.get("createdBy") !== requester) throw new ApiError(409, "Konflik nomor pesanan.");
+        const storedOrder = stored.data() as Order;
+        return NextResponse.json({ store: await readStore(user, branch), id, trackingToken: storedOrder.token, trackingOrder: publicTracking(storedOrder) }, { headers: { "Cache-Control": "private, no-store" } });
+      }
     } else if (body.action === "update") {
       requireAdmin(user, branch);
       const v = updateSchema.parse(body.data);
@@ -337,8 +394,28 @@ export async function POST(req: NextRequest) {
           );
         if (v.status < o.status)
           throw new ApiError(400, "Status tidak boleh mundur.");
+        if (o.fulfillment === "dropoff" && [1, 2, 6].includes(v.status))
+          throw new ApiError(400, "Status penjemputan dan pengantaran tidak berlaku untuk antar dan ambil sendiri.");
         if (v.paid && v.shippingFee === null)
           throw new ApiError(400, "Konfirmasi ongkir sebelum menandai lunas.");
+        if (v.actualKg === null) {
+          if (!o.quantityPending || o.actualKg !== null)
+            throw new ApiError(400, "Jumlah aktual tidak boleh dikosongkan setelah ditimbang.");
+          if (v.status >= 3)
+            throw new ApiError(400, "Isi jumlah cucian terlebih dahulu untuk melanjutkan ke tahap ditimbang.");
+          if (v.confirmedUnitPrice !== undefined)
+            throw new ApiError(400, "Tentukan jumlah cucian sebelum menyimpan harga akhir.");
+          if (v.paid !== o.paid || ((o.paid || o.paymentReconciliationRequired || paymentLocked(o.payment) || manualLocked(o.manualPayment)) && v.shippingFee !== o.shippingFee))
+            throw new ApiError(409, "Tagihan terkunci selama pembayaran sedang diperiksa atau sudah lunas.");
+          const now = new Date().toISOString();
+          const history = [...o.history];
+          if (v.status !== o.status) history.push({ status: v.status, at: now });
+          tx.update(ref, { status: v.status, shippingFee: v.shippingFee, history,
+            paymentRevision: (o.paymentRevision || 0) + 1, updatedBy: user!.uid, updatedAt: now });
+          if (v.shippingFee !== o.shippingFee || v.status !== o.status)
+            signalPaymentChange(tx, database, o.branchId);
+          return;
+        }
         if (o.unit && o.unit !== "kg" && !Number.isInteger(v.actualKg))
           throw new ApiError(400, "Jumlah aktual item harus bilangan bulat.");
         if (o.maximumQuantity && v.actualKg > o.maximumQuantity)
@@ -388,13 +465,21 @@ export async function POST(req: NextRequest) {
             400,
             "Batalkan tanda lunas sebelum mengubah tagihan.",
           );
+        const confirmedOrder = {
+          ...o,
+          status: v.status,
+          actualKg: v.actualKg,
+          shippingFee: v.shippingFee,
+          quantityPending: false,
+          pricePending: o.pricePending && v.confirmedUnitPrice === undefined,
+        };
+        const billingReady = isOrderReadyForBilling(confirmedOrder);
         const needsRewards = !!o.uid && !o.rewardsReservedAt && !o.rewardsAppliedAt &&
-          !!(o.usePoints || o.useMembershipBalance) && v.shippingFee !== null &&
-          (!o.pricePending || v.confirmedUnitPrice !== undefined);
+          !!(o.usePoints || o.useMembershipBalance) && billingReady;
         if (needsRewards && (o.paid || o.paymentReconciliationRequired || paymentLocked(o.payment) || manualLocked(o.manualPayment)))
           throw new ApiError(409, "Poin dan saldo tidak dapat diterapkan selama pembayaran sedang diproses.");
         const rewards = needsRewards
-          ? await prepareRewardIntent(tx, database, o, serviceTotal, v.shippingFee!)
+          ? await prepareRewardIntent(tx, database, confirmedOrder, serviceTotal, v.shippingFee!)
           : null;
         const reservation = o.rewardsReservedAt && !o.paid &&
           !o.paymentReconciliationRequired && !paymentLocked(o.payment) && !manualLocked(o.manualPayment)
@@ -414,6 +499,7 @@ export async function POST(req: NextRequest) {
         tx.update(ref, {
           status: v.status,
           actualKg: v.actualKg,
+          ...(o.quantityPending ? { quantityPending: false } : {}),
           shippingFee: v.shippingFee,
           ...(v.confirmedUnitPrice !== undefined ? { unitPrice: updatedUnitPrice, pricePending: false } : {}),
           paid: v.paid,
@@ -428,7 +514,7 @@ export async function POST(req: NextRequest) {
             : {}),
           history,
           paymentRevision: (o.paymentRevision || 0) + 1,
-          updatedBy: user.uid,
+          updatedBy: user!.uid,
           updatedAt: now,
         });
         if (
@@ -436,7 +522,8 @@ export async function POST(req: NextRequest) {
           updatedUnitPrice !== o.unitPrice ||
           v.actualKg !== o.actualKg ||
           v.shippingFee !== o.shippingFee ||
-          v.paid !== o.paid || rewards !== null || reservation !== null
+          v.paid !== o.paid || v.status !== o.status || rewards !== null || reservation !== null ||
+          billingReady !== isOrderReadyForBilling(o)
         )
           signalPaymentChange(tx, database, o.branchId);
       });
@@ -481,7 +568,7 @@ export async function POST(req: NextRequest) {
         });
         tx.set(
           ref,
-          { services, promo: settings.promo, updatedBy: user.uid },
+          { services, promo: settings.promo, updatedBy: user!.uid },
           { merge: true },
         );
       });
@@ -496,7 +583,7 @@ export async function POST(req: NextRequest) {
           {
             services: normalizeServices(snap.get("services"), branch),
             promo,
-            updatedBy: user.uid,
+            updatedBy: user!.uid,
           },
           { merge: true },
         );

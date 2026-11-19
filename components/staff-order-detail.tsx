@@ -12,6 +12,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { branchLabel } from "@/lib/branches";
+import { canSelectOrderStatus } from "@/lib/order-fulfillment";
 import { speedLabel, unitLabel } from "@/lib/catalog";
 import { money, statuses, type Order, type Service } from "@/lib/types";
 import { calculateOrderPrice, normalizePhone } from "@/lib/pricing";
@@ -83,14 +84,20 @@ export default function StaffOrderDetail({
       ["awaiting_review", "paid"].includes(o.manualPayment.status)),
   );
   const branch = branchLabel(o.branchId);
+  const dropoff = o.fulfillment === "dropoff";
+  const deferredWebOrder = o.source === "web" && !!o.fulfillment;
+  const awaitingFinalBill = deferredWebOrder && !o.paid && (
+    o.status < (dropoff ? 3 : 1) ||
+    o.quantityPending || o.actualKg === null || o.shippingFee === null || o.pricePending
+  );
   const tracking =
     typeof window !== "undefined"
-      ? `${window.location.origin}${dfableTrackingPath(o.token)}`
+      ? `${window.location.origin}${dfableTrackingPath(o.token, o.branchId)}`
       : "";
   const phone = normalizePhone(o.phone).replace(/\D/g, "");
   const messageStatus = waStatus ?? o.status;
   const statusMessage =
-    o.source === "pos" && messageStatus < 4
+    (o.source === "pos" || dropoff) && ([1, 2, 6].includes(messageStatus) || (o.source === "pos" && messageStatus < 4))
       ? `Status pesananmu: ${statuses[messageStatus]}.`
       : statusMessages[messageStatus] ||
         `Status pesananmu: ${statuses[messageStatus]}.`;
@@ -111,11 +118,11 @@ export default function StaffOrderDetail({
       await save({
         id: o.id,
         status: nextStatus,
-        actualKg: Number(form.get("weight")),
+        actualKg: form.get("weight") === "" ? null : Number(form.get("weight")),
         paid: o.paid,
         shippingFee:
           form.get("shipping") === "" ? null : Number(form.get("shipping")),
-        ...(o.pricePending && form.get("confirmedUnitPrice") !== ""
+        ...(o.startingAt && o.pricePending && form.get("confirmedUnitPrice") !== ""
           ? { confirmedUnitPrice: Number(form.get("confirmedUnitPrice")) }
           : {}),
       });
@@ -163,20 +170,18 @@ export default function StaffOrderDetail({
               <div>
                 <b>{service?.name || o.service}</b>
                 <span>
-                  {o.actualKg ?? o.kg} {unit}
-                  {o.actualKg === null ? " · perkiraan" : ""} ·{" "}
+                  {o.quantityPending && o.actualKg === null ? "Menunggu ditimbang/dihitung" : <>{o.actualKg ?? o.kg} {unit}{o.actualKg === null ? " · perkiraan" : ""}</>} ·{" "}
                   {speedLabel(o.speed, o.express)}
                 </span>
               </div>
             </div>
-            {o.source === "web" && (
+            {o.source === "web" && !dropoff && (
               <div className="staff-detail-address">
                 <MapPin size={17} />
                 <div>
+                  {o.fulfillment === "delivery" && <b>Antar-jemput<br /></b>}
                   {o.address}
-                  <small>
-                    {o.date} · {o.slot}
-                  </small>
+                  {(o.date || o.slot) && <small>{[o.date, o.slot].filter(Boolean).join(" · ")}</small>}
                   <a
                     href={`https://www.google.com/maps?q=${o.lat},${o.lng}`}
                     target="_blank"
@@ -186,6 +191,9 @@ export default function StaffOrderDetail({
                   </a>
                 </div>
               </div>
+            )}
+            {o.source === "web" && dropoff && (
+              <p className="staff-detail-note">Pelanggan antar dan ambil sendiri di toko.</p>
             )}
             {o.source === "pos" && (
               <p className="staff-detail-note">
@@ -214,6 +222,14 @@ export default function StaffOrderDetail({
               <ReceiptText size={19} />
               <h3>Perbarui pesanan</h3>
             </div>
+            {awaitingFinalBill && (
+              <p className="staff-detail-note" role="status">
+                <Info size={16} />
+                {dropoff
+                  ? "Setelah cucian diterima, pilih status Ditimbang, isi jumlah aktual dan ongkir, lalu simpan. Pelanggan baru dapat membayar setelah tagihan siap."
+                  : "Konfirmasi penjemputan, lalu isi jumlah aktual setelah cucian ditimbang dan tentukan ongkir. Simpan perubahan agar pelanggan dapat membayar."}
+              </p>
+            )}
             <label>
               Status cucian
               <select
@@ -222,7 +238,7 @@ export default function StaffOrderDetail({
                 onChange={(event) => setStatus(Number(event.target.value))}
               >
                 {statuses.map((label, i) => (
-                  <option disabled={i < o.status} value={i} key={label}>
+                  <option disabled={!canSelectOrderStatus(o, i)} value={i} key={label}>
                     {label}
                   </option>
                 ))}
@@ -234,18 +250,19 @@ export default function StaffOrderDetail({
                   ? "Berat aktual (kg)"
                   : `Jumlah aktual (${unit})`}
                 <input
-                  required
+                  required={!o.quantityPending || status >= 3}
                   name="weight"
                   type="number"
                   step={unit === "kg" ? "0.1" : "1"}
                   min={unit === "kg" ? "0.1" : "1"}
                   max="100"
-                  defaultValue={o.actualKg ?? o.kg}
+                  defaultValue={o.actualKg ?? (o.quantityPending ? "" : o.kg)}
+                  placeholder={o.quantityPending ? "Belum ditimbang" : undefined}
                   readOnly={locked}
                   aria-readonly={locked}
                 />
                 {o.actualKg === null && (
-                  <small>Pastikan jumlah sebelum menyimpan tagihan.</small>
+                  <small>Isi setelah cucian diterima; diperlukan mulai tahap ditimbang.</small>
                 )}
               </label>
               <label>
@@ -261,10 +278,10 @@ export default function StaffOrderDetail({
                   readOnly={locked}
                   aria-readonly={locked}
                 />
-                <small>Isi 0 jika gratis atau ambil di toko.</small>
+                <small>{o.fulfillment === "delivery" ? "Gratis hingga 5 km; toko mengonfirmasi ongkir." : "Isi 0 jika gratis atau ambil di toko."}</small>
               </label>
             </div>
-            {o.pricePending && (
+            {o.startingAt && o.pricePending && (
               <label>
                 Harga akhir per {unit} (Rp)
                 <input
@@ -321,17 +338,21 @@ export default function StaffOrderDetail({
               </div>
             )}
             <div className="staff-detail-total">
-              <span>{o.pricePending || o.actualKg === null || o.shippingFee === null ? "Estimasi tersisa" : "Total saat ini"}</span>
-              <strong>{money(o.total)}</strong>
+              <span>{awaitingFinalBill || o.quantityPending ? "Tagihan" : o.pricePending || o.actualKg === null || o.shippingFee === null ? "Estimasi tersisa" : "Total saat ini"}</span>
+              <strong>{awaitingFinalBill || o.quantityPending ? "Menunggu konfirmasi" : money(o.total)}</strong>
             </div>
             <p className="staff-detail-hint">
-              {o.pricePending
+              {awaitingFinalBill
+                ? "Tagihan tersedia setelah konfirmasi toko, jumlah aktual, dan ongkir disimpan."
+                : o.pricePending
                 ? "Harga akhir perlu dikonfirmasi toko sebelum pembayaran."
                 : "Jumlah akhir dihitung setelah berat dan ongkir disimpan."}
             </p>
           </section>
           <PaymentPanel
             orderId={o.id}
+            quantityPending={o.quantityPending}
+            deferUntilReady={deferredWebOrder}
             trackingToken={o.token}
             enabled={paymentEnabled}
             initialPaid={o.paid}
@@ -460,7 +481,7 @@ export function StaffReceipt({
   const branch = branchLabel(o.branchId);
   const tracking =
     typeof window !== "undefined"
-      ? `${window.location.origin}${dfableTrackingPath(o.token)}`
+      ? `${window.location.origin}${dfableTrackingPath(o.token, o.branchId)}`
       : "";
   const payment = o.paymentReconciliationRequired
     ? "Perlu pemeriksaan"
@@ -503,8 +524,7 @@ export function StaffReceipt({
       <div className="staff-receipt-row">
         <span>Jumlah</span>
         <span>
-          {o.actualKg ?? o.kg} {unit}
-          {o.actualKg === null ? " (perkiraan)" : ""}
+          {o.quantityPending && o.actualKg === null ? "Menunggu konfirmasi toko" : <>{o.actualKg ?? o.kg} {unit}{o.actualKg === null ? " (perkiraan)" : ""}</>}
         </span>
       </div>
       <div className="staff-receipt-row">
@@ -513,7 +533,7 @@ export function StaffReceipt({
       </div>
       <div className="staff-receipt-row">
         <span>{o.pricePending ? "Biaya layanan mulai" : "Biaya layanan"}</span>
-        <span>{money(calculateOrderPrice(o, o.actualKg ?? o.kg))}</span>
+        <span>{o.quantityPending ? "Menunggu konfirmasi toko" : money(calculateOrderPrice(o, o.actualKg ?? o.kg))}</span>
       </div>
       {o.membershipDiscount && (
         <div className="staff-receipt-row">
@@ -550,7 +570,7 @@ export function StaffReceipt({
         <span>
           {o.pricePending || o.actualKg === null || o.shippingFee === null ? "Estimasi" : "Total"}
         </span>
-        <b>{money(o.total)}</b>
+        <b>{o.quantityPending ? "Menunggu konfirmasi toko" : money(o.total)}</b>
       </div>
       <div className="staff-receipt-row">
         <span>Pembayaran</span>

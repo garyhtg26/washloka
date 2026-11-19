@@ -5,7 +5,15 @@ import { useState, useEffect, useRef, type FormEvent } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import CustomerHome from "./customer-home";
+import CustomerNavigation from "./customer-navigation";
+import WashlokaPortal from "./washloka-portal";
+import TenantBrand from "./tenant-brand";
+import "./tenant-brand.css";
+import CustomerOrderForm from "./customer-order-form";
+import LoadingProgress, { useLoadingProgress } from "./loading-progress";
 import OverviewCharts from "./overview-charts";
+import IncomingOrders from "./incoming-orders";
+import IncomingOrderNotifications from "./incoming-order-notifications";
 import StaffOrderDetail, { StaffReceipt } from "./staff-order-detail";
 import CustomerAccount from "./customer-account";
 import ShopSelector from "./shop-selector";
@@ -15,12 +23,15 @@ import AccountPanel from "./account-panel";
 import UserManagement from "./user-management";
 import DashboardAccount from "./dashboard-account";
 import "./dashboard-brand.css";
+import "./customer-order-dialog.css";
 import "./customer-brand.css";
 import "./order-rewards.css";
 import {
   branches,
   branchLocations,
   resolveCustomerBranch,
+  trackingBranch,
+  normalizeBranchId,
   type BranchId,
 } from "@/lib/branches";
 import ContentEditor from "./content-editor";
@@ -35,8 +46,8 @@ import PaymentStatus from "./payment-status";
 import {
   DFABLE_HOME,
   DFABLE_PROFILE,
-  DFABLE_ABOUT,
   dfableTrackingPath,
+  tenantStorePath,
 } from "@/lib/dfable-path";
 import { consumePaymentEvents } from "@/lib/payment-stream";
 import { requestBranchStore } from "@/lib/branch-loading";
@@ -173,14 +184,12 @@ function Icon({ service, size = 25 }: { service: Service; size?: number }) {
   const C = icons[service.icon as keyof typeof icons] || Shirt;
   return <C size={size} strokeWidth={1.55} />;
 }
-export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
+export default function Studio({ dashboard = false, tenantBranch }: { dashboard?: boolean; tenantBranch?: BranchId }) {
   const auth = useAuth();
-  const [branch, setBranch] = useState<BranchId>("dfablelaundry");
-  const [visitorLocation, setVisitorLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-  const geolocationStarted = useRef(false);
+  const profileHref = tenantBranch ? `${DFABLE_PROFILE}?branch=${tenantBranch}` : DFABLE_PROFILE;
+  const [branch, setBranch] = useState<BranchId>(tenantBranch ?? "dfablelaundry");
+  const currentBranch = useRef(branch);
+  currentBranch.current = branch;
   const branchName = branches[branch];
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("branch");
@@ -192,7 +201,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
     } catch {
       // Storage can be unavailable in strict privacy modes.
     }
-    const selectedStore = resolveCustomerBranch({ requested, saved: dashboard ? null : saved });
+    const selectedStore = !dashboard && tenantBranch ? tenantBranch : resolveCustomerBranch({ requested, saved: dashboard ? null : saved });
     setBranch(selectedStore);
     if (requested && requested !== selectedStore) {
       const url = new URL(window.location.href);
@@ -205,29 +214,14 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
         window.localStorage.removeItem("dfable-customer-branch");
       } catch {}
     }
-    // A location pin belongs to the pickup address, never to the selected store.
-    if (dashboard) return;
-    if (geolocationStarted.current || !navigator.geolocation) return;
-    geolocationStarted.current = true;
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        const point = {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-        };
-        setVisitorLocation(point);
-      },
-      () => {
-        // Customers can enter a pickup address without sharing device location.
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 0,
-      },
-    );
-  }, [dashboard]);
+  }, [dashboard, tenantBranch]);
   function switchBranch(next: BranchId, remember = !dashboard) {
+    if (!dashboard && next !== tenantBranch) {
+      const query = new URLSearchParams();
+      if (!remember && activeTrack.current.trim()) query.set("track", activeTrack.current.trim());
+      window.location.assign(`${tenantStorePath(next)}${query.size ? `?${query}` : ""}`);
+      return;
+    }
     const url = new URL(window.location.href);
     url.searchParams.set("branch", next);
     window.history.replaceState(window.history.state, "", url);
@@ -258,13 +252,17 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
   const activeTrack = useRef(track);
   activeTrack.current = track;
   const [selected, setSelected] = useState<Order | null>(null);
+  const [customerOrder, setCustomerOrder] = useState<{ id: string; token: string } | null>(null);
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
   const sessionKey = `${auth.scope}:${auth.user?.uid || "guest"}:${auth.verified}:${auth.provider}:${branch}`;
+  const pageLoading = auth.loading || !store || loadedSession !== sessionKey;
+  const loadingProgress = useLoadingProgress(pageLoading);
   const dialogAvailable = Boolean(
     store &&
     loadedSession === sessionKey &&
+    !loadingProgress.visible &&
     (!dashboard ||
       (!auth.loading &&
         store.isAdmin &&
@@ -381,13 +379,16 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
         ? { ...previous, orders: [], isAdmin: false, canManageUsers: false }
         : previous,
     );
+    // The customer's restored Firebase session is part of the initial load.
+    // Fetching as a guest first can briefly finish before the real account loads.
+    if (auth.loading) return () => storeLoadController.current?.abort();
     load();
     const interval = setInterval(load, 15000);
     return () => {
       clearInterval(interval);
       storeLoadController.current?.abort();
     };
-  }, [auth.user?.uid, auth.verified, auth.provider, branch]);
+  }, [auth.loading, auth.user?.uid, auth.verified, auth.provider, branch]);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("account") === "1" && !dashboard) setModal("login");
@@ -407,16 +408,22 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
   useEffect(() => {
     setPublicOrder(null);
     setTrackingError("");
-    if (!/^[0-9a-f-]{36}$/i.test(track.trim())) return;
+    const requestedTrack = track.trim();
+    if (!/^[0-9a-f-]{36}$/i.test(requestedTrack)) return;
     const controller = new AbortController();
     const fetchTracking = async () => {
       try {
         const r = await fetch(
-          `/api/tracking?token=${encodeURIComponent(track.trim())}`,
+          `/api/tracking?token=${encodeURIComponent(requestedTrack)}`,
           { signal: controller.signal, cache: "no-store" },
         );
         const data = await r.json();
         if (!r.ok) throw Error(data.error);
+        if (controller.signal.aborted || activeTrack.current.trim() !== requestedTrack) return;
+        const orderBranch = !dashboard && !tenantBranch
+          ? normalizeBranchId(data.branchId)
+          : trackingBranch(currentBranch.current, data.branchId, dashboard);
+        if (orderBranch) switchBranch(orderBranch, false);
         setPublicOrder(data);
         setTrackingError("");
       } catch (e) {
@@ -429,7 +436,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
       controller.abort();
       clearInterval(timer);
     };
-  }, [track]);
+  }, [track, dashboard, tenantBranch]);
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [view, adminView]);
@@ -473,7 +480,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
       return;
     }
     setService(id);
-    if (!auth.user || !auth.verified) {
+    if (dashboard && (!auth.user || !auth.verified)) {
       pendingOrder.current = true;
       setModal("login");
       return;
@@ -493,6 +500,8 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
       (filter === "all" ||
         (filter === "active"
           ? o.status < 7
+          : filter === "incoming"
+            ? o.status === 0
           : filter === "review"
             ? o.manualPayment?.status === "awaiting_review" ||
               o.paymentReconciliationRequired
@@ -506,25 +515,19 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
     orders.find(
       (o) => o.token === track.trim() || o.id === track.trim().toUpperCase(),
     );
-  if (!store || loadedSession !== sessionKey || (dashboard && auth.loading))
+  if (pageLoading || loadingProgress.visible)
     return (
-      <main className="loading">
-        {dashboard ? <DashboardBrand /> : <Brand />}
+      <main className={`loading${!dashboard && tenantBranch ? ` tenant-${tenantBranch === "dfablelaundry" ? "dfable" : "buzzwash"}` : ""}`}>
+        {dashboard ? <DashboardBrand /> : tenantBranch ? <TenantBrand branch={tenantBranch} /> : <Brand />}
         <p role="status" aria-live="polite">
-          {error || "Menyiapkan Washloka…"}
+          {error || `Menyiapkan ${!dashboard && tenantBranch ? branches[tenantBranch] : "Washloka"}…`}
         </p>
         {error ? (
           <button className="primary" onClick={load}>
             Coba lagi
           </button>
         ) : (
-          <div
-            className="loading-progress"
-            role="progressbar"
-            aria-label="Memuat data"
-          >
-            <span />
-          </div>
+          <LoadingProgress progress={loadingProgress.progress} label="Memuat data" />
         )}
       </main>
     );
@@ -559,6 +562,12 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
       <ScrollReveal />
       {dashboard ? (
         <div className="admin-shell">
+          <IncomingOrderNotifications
+            key={sessionKey}
+            orders={orders}
+            session={sessionKey}
+            onOpen={(order) => { setSelected(order); setModal("detail"); }}
+          />
           <aside className="sidebar">
             <DashboardBrand />
             <div className="dashboard-shop-select">
@@ -666,6 +675,13 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
               )}
               {adminView === "overview" && (
                 <>
+                  <IncomingOrders
+                    orders={orders}
+                    services={store.services}
+                    hasMore={store.hasMore}
+                    onOpen={(order) => { setSelected(order); setModal("detail"); }}
+                    onViewAll={() => { setQuery(""); setFilter("incoming"); setAdminView("orders"); }}
+                  />
                   {pendingPayments > 0 && (
                     <button
                       type="button"
@@ -798,6 +814,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                     <div className="tabs">
                       {[
                         ["all", "Semua"],
+                        ["incoming", "Menunggu konfirmasi"],
                         ["active", "Aktif"],
                         ["unpaid", "Belum dibayar"],
                         [
@@ -861,18 +878,12 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                                     ?.name
                                 }
                                 <small>
-                                  {o.actualKg ?? o.kg}{" "}
-                                  {unitLabel(
-                                    o.unit ??
-                                      store.services.find(
-                                        (s) => s.id === o.service,
-                                      )?.unit,
-                                  )}{" "}
+                                  {o.quantityPending ? "Menunggu jumlah" : `${o.actualKg ?? o.kg} ${unitLabel(o.unit ?? store.services.find((s) => s.id === o.service)?.unit)}`}{" "}
                                   · {speedLabel(o.speed, o.express)}
                                 </small>
                               </td>
                               <td>
-                                <b>{money(o.total)}</b>
+                                <b>{o.quantityPending ? "Menunggu harga" : money(o.total)}</b>
                               </td>
                               <td>
                                 <span className="status">
@@ -1027,39 +1038,25 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
           </div>
         </div>
       ) : (
-        <>
+        <div className={tenantBranch === "dfablelaundry" ? "tenant-dfable" : tenantBranch === "buzzwash" ? "tenant-buzzwash" : undefined}>
           <header className="customer-header">
-            <Brand />
-            <nav>
-              {[
-                ["home", "Beranda"],
-                ["services", "Layanan & harga"],
-                ["tracking", "Lacak pesanan"],
-              ].map(([v, t]) => (
-                <button
-                  className={view === v ? "active" : ""}
-                  key={v}
-                  onClick={() => setView(v)}
-                >
-                  {t}
-                </button>
-              ))}
-              <Link href={DFABLE_ABOUT}>Tentang</Link>
-            </nav>
+            {tenantBranch ? <TenantBrand branch={tenantBranch} /> : <Brand />}
+            <CustomerNavigation tenant={!!tenantBranch} view={view} onView={setView} />
             <div className="header-right">
-              <ShopSelector
+              {tenantBranch ? <ShopSelector
                 branch={branch}
                 onBranchChange={(next) => switchBranch(next)}
                 disabled={busy}
-              />
-              <CustomerAccount onLogin={() => setModal("login")} />
+              /> : null}
+              <CustomerAccount onLogin={() => setModal("login")} profileHref={profileHref} />
             </div>
           </header>
           <main
             className={`customer-main${view === "home" ? " customer-main-home" : ""}`}
           >
             {view === "home" && (
-              <CustomerHome
+              tenantBranch ? <CustomerHome
+                tenantBranch={tenantBranch}
                 store={store}
                 name={auth.user ? auth.name : ""}
                 onOrder={order}
@@ -1070,11 +1067,11 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                 }}
                 onAccount={() =>
                   auth.user && auth.verified
-                    ? window.location.assign(DFABLE_PROFILE)
+                    ? window.location.assign(profileHref)
                     : setModal("login")
                 }
                 onServices={() => setView("services")}
-              />
+              /> : <WashlokaPortal onSelectShop={(id) => switchBranch(id)} onTrack={(code) => { if (code) setTrack(code); setView("tracking"); }} />
             )}
             {view === "services" && branch === "buzzwash" && (
               <BuzzWashCatalogView services={store.services} orderingEnabled={store.orderingEnabled === true} onOrder={order} onMember={() => setModal("member")} />
@@ -1316,12 +1313,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                               store.services.find((s) => s.id === o.service)
                                 ?.name
                             }{" "}
-                            · {o.kg}{" "}
-                            {unitLabel(
-                              o.unit ??
-                                store.services.find((s) => s.id === o.service)
-                                  ?.unit,
-                            )}
+                            · {o.quantityPending ? "Menunggu jumlah" : `${o.actualKg ?? o.kg} ${unitLabel(o.unit ?? store.services.find((s) => s.id === o.service)?.unit)}`}
                           </small>
                         </span>
                         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1342,55 +1334,25 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
             )}
           </main>
           <footer>
-            <Brand />
+            {tenantBranch ? <TenantBrand branch={tenantBranch} /> : <Brand />}
+            {tenantBranch && <Link href={DFABLE_HOME} className="tenant-platform-link">Semua laundry di Washloka <span aria-hidden="true">→</span></Link>}
             <span>© {new Date().getFullYear()} Washloka. All rights reserved.</span>
           </footer>
-          <nav className="mobile-nav">
-            {[
-              ["home", "Beranda", LayoutDashboard],
-              ["services", "Layanan", Shirt],
-              ["tracking", "Tracking", Package],
-            ].map(([v, t, C]) => {
-              const Component = C as typeof Shirt;
-              return (
-                <button
-                  key={v as string}
-                  className={view === v ? "active" : ""}
-                  onClick={() => setView(v as string)}
-                >
-                  <Component size={20} />
-                  {t as string}
-                </button>
-              );
-            })}
-            <Link href={DFABLE_ABOUT}>
-              <StoreIcon size={20} />
-              Tentang
-            </Link>
-            {auth.user && auth.verified ? (
-              <Link href={DFABLE_PROFILE}>
-                <User size={20} /> Akun
-              </Link>
-            ) : (
-              <button onClick={() => setModal("login")}>
-                <User size={20} /> Akun
-              </button>
-            )}
-          </nav>
-        </>
+          <CustomerNavigation tenant={!!tenantBranch} view={view} mobile onView={setView} />
+        </div>
       )}
       <dialog
-        aria-label="Form Washloka"
+        aria-label={modal === "order" && !dashboard ? "Form pemesanan" : "Form Washloka"}
         ref={dialog}
         onCancel={() => setModal("")}
         onClick={(e) => {
           if (e.target === dialog.current) setModal("");
         }}
-        className={
+        className={`${!dashboard && modal !== "login" && tenantBranch === "dfablelaundry" ? "tenant-dfable " : !dashboard && modal !== "login" && tenantBranch === "buzzwash" ? "tenant-buzzwash " : ""}${
           modal === "order"
             ? dashboard
               ? "order-dialog dashboard-dialog"
-              : "order-dialog"
+              : "order-dialog customer-order-dialog"
             : modal === "login"
               ? "auth-dialog"
               : modal === "detail"
@@ -1398,7 +1360,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
                 : dashboard
                   ? "dashboard-dialog"
                   : ""
-        }
+        }`}
       >
         <button
           className="close-button"
@@ -1407,15 +1369,11 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
         >
           <X size={21} />
         </button>
-        {modal === "order" && (
+        {modal === "order" && dashboard && (
           <OrderForm
             branchId={branch}
             branchName={branchName}
-            initialLocation={visitorLocation || branchLocations[branch]}
-            onPickupLocationChange={(latitude, longitude) => {
-              const point = { latitude, longitude };
-              setVisitorLocation(point);
-            }}
+            initialLocation={branchLocations[branch]}
             services={store.services}
             initialService={service}
             profile={profile}
@@ -1432,7 +1390,45 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
             }}
           />
         )}
-        {modal === "success" && selected && currentSelected && (
+        {modal === "order" && !dashboard && (
+          <CustomerOrderForm
+            branchId={branch}
+            branchName={branchName}
+            initialLocation={branchLocations[branch]}
+            services={store.services}
+            initialService={service}
+            profile={profile}
+            busy={busy}
+            submit={async (data) => {
+              const result = await action("order", data);
+              if (typeof result.trackingToken !== "string" || !/^[0-9a-f-]{36}$/i.test(result.trackingToken))
+                throw Error("Pesanan tersimpan, tetapi tautan tracking belum tersedia. Hubungi toko untuk bantuan.");
+              setCustomerOrder({ id: result.id, token: result.trackingToken });
+              setTrack(result.trackingToken);
+              const next = new URL(window.location.href);
+              next.searchParams.set("track", result.trackingToken);
+              next.searchParams.set("branch", branch);
+              window.history.replaceState(window.history.state, "", next);
+              setView("tracking");
+              setModal("success");
+            }}
+          />
+        )}
+        {modal === "success" && !dashboard && customerOrder && (
+          <div className="success">
+            <span className="success-icon"><Check size={30} /></span>
+            <p className="eyebrow">PESANAN TERSIMPAN</p>
+            <h2>Pesanan berhasil dibuat</h2>
+            <p>Pesanan <b>{customerOrder.id}</b> sudah diterima {branchName}. Toko akan menghubungi kamu melalui WhatsApp dan mengonfirmasi harga sebelum pembayaran.</p>
+            <div className="customer-order-notice">Simpan tautan tracking ini untuk memantau pesanan dan melakukan pembayaran setelah tagihan dikonfirmasi.</div>
+            <button type="button" className="primary" onClick={async () => {
+              try { await navigator.clipboard.writeText(`${location.origin}${dfableTrackingPath(customerOrder.token, branch)}`); notify("Link tracking disalin"); }
+              catch { notify("Salin alamat halaman ini untuk menyimpan tautan tracking."); }
+            }}><Copy size={17} /> Salin link tracking</button>
+            <button type="button" className="secondary" onClick={() => { setModal(""); setView("tracking"); }}>Lacak pesanan</button>
+          </div>
+        )}
+        {modal === "success" && dashboard && selected && currentSelected && (
           <div className="success">
             <span className="success-icon">
               <Check size={30} />
@@ -1514,7 +1510,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(
-                    `${location.origin}${dfableTrackingPath(selected.token)}`,
+                    `${location.origin}${dfableTrackingPath(selected.token, selected.branchId)}`,
                   );
                   notify("Link tracking disalin");
                 } catch {
@@ -1566,7 +1562,7 @@ export default function Studio({ dashboard = false }: { dashboard?: boolean }) {
               className="primary"
               onClick={() => {
                 if (auth.user && auth.verified)
-                  window.location.assign(DFABLE_PROFILE);
+                  window.location.assign(profileHref);
                 else setModal("login");
               }}
             >
@@ -1614,7 +1610,6 @@ function OrderForm({
   branchId,
   branchName,
   initialLocation,
-  onPickupLocationChange,
   services,
   initialService,
   profile,
@@ -1625,7 +1620,6 @@ function OrderForm({
   branchId: BranchId;
   branchName: string;
   initialLocation: { latitude: number; longitude: number };
-  onPickupLocationChange: (latitude: number, longitude: number) => void;
   services: Service[];
   initialService: string;
   profile: { name: string; phone: string };
@@ -2219,7 +2213,6 @@ function OrderForm({
                   pickupLocationEdited.current = true;
                   setLat(a);
                   setLng(b);
-                  onPickupLocationChange(a, b);
                 }}
               />
               <label>
@@ -2511,9 +2504,9 @@ function PromoEditor({
         }
       }}
     >
-      <h3>Banner beranda</h3>
+      <h3>Banner utama toko</h3>
       <p className="muted">
-        Banner menampilkan tagline Washloka. Gambar dapat diganti di bawah.
+        Promosi berlaku untuk toko yang dipilih. Gambar banner dapat diganti di bawah.
       </p>
       <label className="checkbox">
         <input
@@ -2521,7 +2514,7 @@ function PromoEditor({
           type="checkbox"
           defaultChecked={store.promo.active}
         />{" "}
-        Tampilkan banner di web pelanggan
+        Tampilkan promosi utama di web toko
       </label>
       <button disabled={busy} className="primary">
         Simpan banner

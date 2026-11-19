@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { money, statuses, type TrackingOrder, type Service } from "@/lib/types";
 import { branchLabel } from "@/lib/branches";
+import { orderStatusSteps } from "@/lib/order-fulfillment";
+import { isOrderReadyForBilling } from "@/lib/order-billing";
 import { speedLabel, unitLabel } from "@/lib/catalog";
 import PaymentPanel from "./payment-panel";
 import LoyaltyRedemption from "./loyalty-redemption";
@@ -76,7 +78,10 @@ export default function Tracking({
 }) {
   const auth = useAuth();
   const currentStatus = Math.max(0, Math.min(statuses.length - 1, o.status));
-  const startStep = o.source === "pos" ? 3 : 0;
+  const dropoff = o.fulfillment === "dropoff";
+  const pendingStoreConfirmation = !o.paid && o.source !== "pos" && !!o.fulfillment && !isOrderReadyForBilling(o);
+  const visibleSteps = orderStatusSteps({ ...o, status: currentStatus }, statuses.length);
+  const stepNumber = Math.max(1, visibleSteps.indexOf(currentStatus) + 1);
   const StatusIcon = stepIcons[currentStatus] || ClipboardList;
   const membershipUsed = o.membershipUsed || 0;
   const pointsUsed = o.pointsUsed || 0;
@@ -113,13 +118,12 @@ export default function Tracking({
             <div className="tracking-progress-heading">
               <h3>Proses cucian</h3>
               <span>
-                Tahap {Math.max(1, currentStatus - startStep + 1)} dari{" "}
-                {statuses.length - startStep}
+                Tahap {stepNumber} dari {visibleSteps.length}
               </span>
             </div>
             <ol className="tracking-steps">
-              {statuses.map((status, index) => {
-                if (index < startStep) return null;
+              {visibleSteps.map((index) => {
+                const status = statuses[index];
                 const Icon = stepIcons[index];
                 const isCurrent = index === currentStatus;
                 return (
@@ -150,8 +154,7 @@ export default function Tracking({
               })}
             </ol>
             <p className="tracking-progress-note">
-              <Clock size={15} /> Status diperbarui oleh toko; lokasi kurir
-              tidak ditampilkan secara langsung.
+              <Clock size={15} /> {dropoff ? "Status diperbarui oleh toko." : "Status diperbarui oleh toko; lokasi kurir tidak ditampilkan secara langsung."}
             </p>
           </div>
         </section>
@@ -173,11 +176,7 @@ export default function Tracking({
           </div>
           <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-500">
             <span className="rounded-lg bg-slate-50 px-3 py-2">
-              {o.actualKg ?? o.kg}{" "}
-              {unitLabel(
-                o.unit ?? services.find((s) => s.id === o.service)?.unit,
-              )}
-              {o.actualKg === null ? " estimasi" : ""}
+              {o.quantityPending && o.actualKg === null ? "Jumlah dikonfirmasi toko" : <>{o.actualKg ?? o.kg}{" "}{unitLabel(o.unit ?? services.find((s) => s.id === o.service)?.unit)}{o.actualKg === null ? " estimasi" : ""}</>}
             </span>
             <span className="rounded-lg bg-slate-50 px-3 py-2">
               {speedLabel(o.speed, o.express)}
@@ -188,13 +187,7 @@ export default function Tracking({
               <span className="text-slate-400">Toko</span>
               <b className="font-medium">{branchLabel(o.branchId)}</b>
             </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-slate-400">Jadwal masuk / jemput</span>
-              <b className="text-right font-medium">
-                {o.date}
-                <small className="block text-slate-400">{o.slot}</small>
-              </b>
-            </div>
+            {o.fulfillment ? <div className="flex justify-between gap-3"><span className="text-slate-400">Pengantaran</span><b className="text-right font-medium">{dropoff ? "Antar & ambil sendiri" : "Antar-jemput"}</b></div> : <div className="flex justify-between gap-3"><span className="text-slate-400">Jadwal masuk / jemput</span><b className="text-right font-medium">{o.date}<small className="block text-slate-400">{o.slot}</small></b></div>}
             <div className="flex justify-between gap-3">
               <span className="text-slate-400">Ongkir</span>
               <span>
@@ -212,13 +205,13 @@ export default function Tracking({
               </div>
             )}
           </div>
-          {isOwner && !preview && (
+          {isOwner && !preview && !pendingStoreConfirmation && (
             <>
               <MembershipRedemption order={o} onChanged={onOrderChanged} />
               <LoyaltyRedemption order={o} onChanged={onOrderChanged} />
             </>
           )}
-          {!preview && !isOwner && !auth.user && !o.paid && (
+          {!preview && !isOwner && !auth.user && !o.guest && !o.paid && (
             <section className="loyalty-login-hint" aria-label="Poin loyalty">
               <b>Punya poin loyalty?</b>
               <p>
@@ -233,7 +226,7 @@ export default function Tracking({
             </section>
           )}
           <div className="tracking-price-summary" aria-label="Ringkasan tagihan">
-            {rewardsUsed > 0 && (
+            {!pendingStoreConfirmation && rewardsUsed > 0 && (
               <div className="tracking-price-details">
                 <div><span>Sebelum saldo & poin</span><s>{money(o.total + rewardsUsed)}</s></div>
                 {membershipUsed > 0 && <div><span>Saldo membership</span><strong>−{money(membershipUsed)}</strong></div>}
@@ -242,14 +235,14 @@ export default function Tracking({
             )}
             <div className="tracking-price-total">
               <span>
-                {o.pricePending || o.actualKg === null || o.shippingFee === null
-                  ? "Estimasi pembayaran"
+                {pendingStoreConfirmation ? "Tagihan" : o.pricePending || o.actualKg === null || o.shippingFee === null
+                  ? (o.quantityPending ? "Tagihan" : "Estimasi pembayaran")
                   : "Total pembayaran"}
               </span>
-              <strong>{money(o.total)}</strong>
+              <strong>{pendingStoreConfirmation || o.quantityPending ? "Menunggu konfirmasi" : money(o.total)}</strong>
             </div>
           </div>
-          {o.pricePending && <p className="mb-4 text-sm text-amber-800">Harga akhir dikonfirmasi toko sebelum pembayaran.</p>}
+          {pendingStoreConfirmation ? <p className="tracking-confirmation-note">{dropoff ? "Pembayaran dan penggunaan poin tersedia setelah cucian diterima, ditimbang, dan harganya dikonfirmasi toko." : "Pembayaran dan penggunaan poin tersedia setelah toko mengonfirmasi penjemputan, menimbang cucian, dan menentukan ongkir."}</p> : (o.pricePending || o.quantityPending) && <p className="mb-4 text-sm text-amber-800">Toko akan mengonfirmasi jumlah cucian dan biaya sebelum pembayaran.</p>}
           {preview ? (
             <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">
               <ShieldCheck size={18} /> Pembayaran dikonfirmasi
@@ -258,6 +251,8 @@ export default function Tracking({
             <PaymentPanel
               key={`${o.id}-${o.pointsUsed || 0}-${o.membershipUsed || 0}-${o.paid}`}
               orderId={o.id}
+              quantityPending={o.quantityPending}
+              deferUntilReady={o.source !== "pos" && !!o.fulfillment}
               trackingToken={trackingToken}
               enabled={paymentEnabled}
               initialPaid={o.paid}

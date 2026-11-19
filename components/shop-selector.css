@@ -194,6 +194,42 @@
   width: auto;
   flex: none;
 }
+
+/* Storefront pickers inherit the selected store's palette, not the
+   platform palette used by the dashboard and Washloka account pages. */
+:is(.tenant-dfable, .tenant-buzzwash) .shop-picker .shop-picker-trigger {
+  border-color: var(--tenant-border);
+}
+:is(.tenant-dfable, .tenant-buzzwash) .shop-picker .shop-picker-trigger:is(:hover, .is-open) {
+  border-color: var(--tenant-accent);
+  box-shadow: 0 4px 16px rgb(20 49 96 / 9%);
+}
+:is(.tenant-dfable, .tenant-buzzwash) .shop-picker .shop-picker-trigger:focus-visible,
+:is(.tenant-dfable, .tenant-buzzwash) .shop-picker .shop-picker-option:focus-visible {
+  outline: 2px solid var(--tenant-accent);
+  outline-offset: 3px;
+}
+:is(.tenant-dfable, .tenant-buzzwash) .shop-picker .shop-picker-monogram:not(.shop-picker-monogram--dfable) {
+  background: var(--tenant-soft);
+}
+:is(.tenant-dfable, .tenant-buzzwash) .shop-picker .shop-picker-panel {
+  border-color: var(--tenant-border);
+  box-shadow: 0 16px 50px rgb(20 49 96 / 14%);
+}
+:is(.tenant-dfable, .tenant-buzzwash) .shop-picker .shop-picker-option:not(.is-selected):hover {
+  background: color-mix(in srgb, var(--tenant-soft) 55%, white);
+}
+:is(.tenant-dfable, .tenant-buzzwash) .shop-picker .shop-picker-option.is-selected {
+  border-color: var(--tenant-border);
+  background: var(--tenant-soft);
+  color: var(--tenant-deep);
+}
+:is(.tenant-dfable, .tenant-buzzwash) .shop-picker :is(.shop-picker-logo, .shop-picker-coming) {
+  border-color: var(--tenant-border);
+}
+:is(.tenant-dfable, .tenant-buzzwash) .shop-picker :is(.shop-picker-current small, .shop-picker-trigger > svg, .shop-picker-panel-heading > span:last-child, .shop-picker-option small, .shop-picker-coming, .shop-picker-coming b, .shop-picker-coming small) {
+  color: #68758a;
+}
 @media (max-width: 800px) {
   .sidebar .dashboard-shop-select {
     display: none;

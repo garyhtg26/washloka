@@ -1,3 +1,20 @@
+.customer-header nav .customer-nav-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--tenant-border, #e7dde1);
+  border-radius: 10px;
+  color: var(--tenant-deep, #650a28);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.customer-header nav .customer-nav-back:hover {
+  background: var(--tenant-soft, #faf3f5);
+}
+
 @media (max-width: 800px) {
   body .mobile-nav {
     display: flex;

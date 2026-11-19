@@ -34,6 +34,9 @@ export type Order = {
   pricingModel?: "flat-package";
   startingAt?: boolean;
   pricePending?: boolean;
+  /** Customer has not supplied a quantity; the store will weigh/count it. */
+  quantityPending?: boolean;
+  fulfillment?: "delivery" | "dropoff";
   kg: number;
   actualKg: number | null;
   express: boolean;
@@ -109,6 +112,8 @@ export type TrackingOrder = Pick<
   | "pricingModel"
   | "startingAt"
   | "pricePending"
+  | "quantityPending"
+  | "fulfillment"
   | "kg"
   | "actualKg"
   | "express"
@@ -130,7 +135,7 @@ export type TrackingOrder = Pick<
   | "slot"
   | "history"
   | "createdAt"
-> & { source?: Order["source"] };
+> & { source?: Order["source"]; guest?: boolean };
 export const statuses = [
   "Menunggu konfirmasi",
   "Dijadwalkan jemput",

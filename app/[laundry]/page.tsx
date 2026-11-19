@@ -1,5 +1,17 @@
 import { notFound, redirect } from "next/navigation";
-import { customerPath, type CustomerQuery } from "@/lib/dfable-path";
+import { AuthProvider } from "@/components/auth-provider";
+import Studio from "@/components/studio";
+import { customerPath, tenantFromSlug, type CustomerQuery } from "@/lib/dfable-path";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ laundry: string }> }): Promise<Metadata> {
+  const branch = tenantFromSlug((await params).laundry);
+  return {
+    title: branch === "buzzwash" ? "BuzzWash" : branch === "dfablelaundry" ? "D’Fable Laundry" : "Washloka",
+    ...(branch === "buzzwash" ? { icons: { icon: "/buzzwash-icon.png" } } : {}),
+    referrer: "no-referrer",
+  };
+}
 export default async function Page({
   params,
   searchParams,
@@ -8,6 +20,9 @@ export default async function Page({
   searchParams: Promise<CustomerQuery>;
 }) {
   const laundry = (await params).laundry.toLowerCase();
-  if (laundry !== "dfablelaundry" && laundry !== "buzzwash") notFound();
-  redirect(customerPath("/", { ...(await searchParams), branch: laundry }));
+  const branch = tenantFromSlug(laundry);
+  if (!branch) notFound();
+  if (laundry !== "dfabel" && laundry !== "buzzwash")
+    redirect(customerPath(branch === "buzzwash" ? "/buzzwash" : "/dfabel", await searchParams));
+  return <AuthProvider scope="customer"><Studio tenantBranch={branch} /></AuthProvider>;
 }

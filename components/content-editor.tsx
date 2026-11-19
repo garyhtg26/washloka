@@ -12,8 +12,8 @@ import {
 } from "@/lib/site-content";
 import type { Store } from "@/lib/types";
 const labels: Record<MediaSlot, string> = {
-  promo: "Promo utama",
-  people: "Bersih rumah (segera hadir)",
+  promo: "Banner utama toko",
+  people: "Banner kedua toko",
   member: "Membership",
   wash: "Cuci Kering Lipat",
   complete: "Cuci Kering Setrika",
@@ -62,8 +62,8 @@ export default function ContentEditor({
   return (
     <section className="content-editor">
       <div className="content-editor-heading">
-        <h2>Gambar di web pelanggan</h2>
-        <p>Pilih gambar yang ingin ditampilkan untuk setiap bagian.</p>
+        <h2>Gambar web toko</h2>
+        <p>Gambar hanya berlaku untuk toko yang sedang dipilih. Banner kedua muncul setelah gambarnya diunggah dan pengaturannya diaktifkan di bawah.</p>
       </div>
       <div className="media-editor-grid">
         {mediaSlots.map((slot) => (
@@ -117,12 +117,12 @@ export default function ContentEditor({
           }
         }}
       >
-        <h2>Banner lainnya</h2>
+        <h2>Pengaturan bagian toko</h2>
         {(["people", "member", "tracking"] as const).map((key) => (
           <fieldset key={key} className="content-fields">
             <legend>
               {key === "people"
-                ? "Bersih rumah (segera hadir)"
+                ? "Banner kedua toko"
                 : key === "member"
                   ? "Membership"
                   : "Lacak pesanan"}

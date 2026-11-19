@@ -1,0 +1,38 @@
+.incoming-notices {
+  position: fixed;
+  z-index: 90;
+  top: 96px;
+  right: 24px;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.incoming-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #eadce0;
+  border-left: 4px solid #820c30;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgb(49 20 29 / 16%);
+  pointer-events: auto;
+}
+.incoming-notice-icon {
+  display: grid;
+  flex: 0 0 40px;
+  height: 40px;
+  place-items: center;
+  color: #820c30;
+  background: #f8edf1;
+  border-radius: 11px;
+}
+.incoming-notice-copy { display: grid; min-width: 0; gap: 4px; }
+.incoming-notice-copy strong { color: #262024; font-size: 14px; }
+.incoming-notice-copy > span { color: #71666b; font-size: 12px; overflow-wrap: anywhere; }
+.incoming-notice-copy button { width: fit-content; padding: 3px 0 0; color: #820c30; font-size: 12px; font-weight: 700; text-align: left; }
+.incoming-notice-dismiss { display: grid; flex: 0 0 28px; width: 28px; height: 28px; margin-left: auto; place-items: center; color: #81747a; border-radius: 7px; }
+.incoming-notice-dismiss:hover, .incoming-notice-dismiss:focus-visible { color: #820c30; background: #f8edf1; }
+@media (max-width: 600px) { .incoming-notices { top: 72px; right: 16px; } }

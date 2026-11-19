@@ -30,6 +30,8 @@ type Props = {
   orderId: string;
   trackingToken?: string;
   enabled?: boolean;
+  quantityPending?: boolean;
+  deferUntilReady?: boolean;
   initialPaid?: boolean;
   initialPayment?: PaymentSummary;
   initialManualPayment?: ManualPaymentSummary;
@@ -60,6 +62,8 @@ function isPaymentView(value: unknown, orderId: string): value is PaymentView {
 export default function PaymentPanel({
   orderId,
   trackingToken,
+  quantityPending = false,
+  deferUntilReady = false,
   initialPaid = false,
   initialPayment,
   initialManualPayment,
@@ -115,6 +119,9 @@ export default function PaymentPanel({
   const rejected = manual?.status === "rejected";
   const gatewayActive =
     !!payment && ["creating", "pending"].includes(payment.status);
+  const paymentDeferred = Boolean(
+    deferUntilReady && !view?.ready && !paid && !pending && !review && !gatewayActive,
+  );
   const bankSelected = selection === "bank" || !!manual;
   const bank = view?.bank || manual?.bank;
   const bankConfigured =
@@ -502,12 +509,12 @@ export default function PaymentPanel({
         {!!view && (
           <div className="text-right">
             <span className="block text-[9px] text-slate-400">
-              {view.ready || paid || pending
+              {(quantityPending && !view.ready) || paymentDeferred ? "Tagihan" : view.ready || paid || pending
                 ? "Total tagihan"
                 : "Estimasi tagihan"}
             </span>
             <b className="text-lg font-semibold tracking-tight text-slate-900">
-              {money(view.amount)}
+              {(quantityPending && !view.ready) || paymentDeferred ? "Menunggu toko" : money(view.amount)}
             </b>
           </div>
         )}
@@ -536,7 +543,14 @@ export default function PaymentPanel({
             {error}
           </p>
         )}
-        {!admin && !paid && !pending && !review && (
+        {paymentDeferred && (
+          <div role="status" className="payment-order-message rounded-xl border border-[#ead8de] bg-[#f9f1f4] px-3.5 py-3 text-xs leading-relaxed text-[#5e1931]">
+            {admin
+              ? "Konfirmasi penjemputan atau penerimaan cucian, lalu simpan jumlah aktual, ongkir, dan harga akhir jika diperlukan. Setelah itu pembayaran dapat diproses."
+              : "Pembayaran tersedia setelah toko mengonfirmasi pesanan, menimbang atau menghitung cucian, dan menentukan ongkir."}
+          </div>
+        )}
+        {!admin && !paid && !pending && !review && !paymentDeferred && (
           <div
             className="grid grid-cols-2 gap-2"
             role="group"
@@ -601,7 +615,7 @@ export default function PaymentPanel({
           </div>
         ) : null}
 
-        {mode === "qris" && !paid && !review ? (
+        {mode === "qris" && !paid && !review && !paymentDeferred ? (
           <MidtransPayment
             orderId={orderId}
             trackingToken={trackingToken}
@@ -621,15 +635,16 @@ export default function PaymentPanel({
           pending ||
           (paid && !!manual) ||
           (admin && !paid && !pending && !gatewayActive)) &&
-          mode !== "qris" && (
+          mode !== "qris" && (!paymentDeferred || admin) && (
             <>
-              {!pending && !paid && !view?.ready && (
+              {!pending && !paid && !view?.ready && !paymentDeferred && (
                 <div
                   role="status"
                   className="payment-order-message rounded-xl border border-[#ead8de] bg-[#f9f1f4] px-3.5 py-3 text-xs leading-relaxed text-[#5e1931]"
                 >
-                  Metode pembayaran sudah dipilih. Toko akan mengonfirmasi berat
-                  aktual dan ongkir sebelum kamu membayar.
+                  {admin
+                    ? "Selesaikan konfirmasi pesanan dan simpan jumlah aktual serta ongkir sebelum menerima pembayaran."
+                    : "Toko akan mengonfirmasi pesanan, jumlah aktual, dan ongkir sebelum kamu membayar."}
                 </div>
               )}
               {bank && (
@@ -807,8 +822,7 @@ export default function PaymentPanel({
                     </button>
                     {!view?.ready && (
                       <p className="!mb-0 !mt-2 text-[10px] leading-relaxed text-emerald-800">
-                        Isi berat aktual dan ongkir pada form pesanan di atas,
-                        lalu klik Simpan perubahan. Isi 0 jika ongkir gratis.
+                        Konfirmasi penjemputan atau penerimaan cucian, isi jumlah aktual dan ongkir, lalu simpan perubahan. Isi 0 jika ongkir gratis; konfirmasi juga harga akhir bila diperlukan.
                       </p>
                     )}
                   </div>

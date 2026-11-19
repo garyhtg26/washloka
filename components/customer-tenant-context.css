@@ -1,0 +1,8 @@
+/* The profile and About page retain their store context without splitting
+   the customer's platform account or wallet. */
+.customer-header:is(.tenant-dfable, .tenant-buzzwash) nav :is(a, button):is(:hover, .active) { color: var(--tenant-accent); }
+.customer-header:is(.tenant-dfable, .tenant-buzzwash) nav :is(a, button).active::after { background: var(--tenant-accent); }
+.about-eazywash:is(.tenant-dfable, .tenant-buzzwash) .about-ew-hero { background: var(--tenant-deep); }
+.about-eazywash:is(.tenant-dfable, .tenant-buzzwash) .about-ew-hero-copy { background: linear-gradient(135deg, var(--tenant-deep), var(--tenant-accent)); }
+.about-eazywash:is(.tenant-dfable, .tenant-buzzwash) :is(.about-ew-section-label, .about-ew-partner-link, .about-ew-primary) { color: var(--tenant-accent); }
+.about-eazywash:is(.tenant-dfable, .tenant-buzzwash) .about-ew-points > div > span { color: var(--tenant-accent); background: var(--tenant-soft); }

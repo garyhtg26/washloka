@@ -5,5 +5,5 @@ export default async function Page({
 }: {
   searchParams: Promise<CustomerQuery>;
 }) {
-  redirect(customerPath("/tentang", await searchParams));
+  redirect(customerPath("/tentang", { ...(await searchParams), branch: "dfablelaundry" }));
 }

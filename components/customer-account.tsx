@@ -8,7 +8,7 @@ import { phoneFromLoginEmail } from "@/lib/phone-auth";
 import "./customer-account.css";
 import { DFABLE_PROFILE } from "@/lib/dfable-path";
 
-export default function CustomerAccount({ onLogin }: { onLogin: () => void }) {
+export default function CustomerAccount({ onLogin, profileHref = DFABLE_PROFILE }: { onLogin: () => void; profileHref?: string }) {
   const auth = useAuth();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -62,7 +62,7 @@ export default function CustomerAccount({ onLogin }: { onLogin: () => void }) {
               {phoneFromLoginEmail(auth.user?.email) || auth.user?.email}
             </small>
           </div>
-          <Link href={DFABLE_PROFILE} onClick={() => setOpen(false)}>
+          <Link href={profileHref} onClick={() => setOpen(false)}>
             <User size={17} /> Profil saya
           </Link>
           <button

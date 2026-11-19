@@ -23,6 +23,8 @@ import type {
 } from "./manual-types";
 
 function available(order: Order) {
+  if (order.source === "web" && order.fulfillment && finalAmount(order) === null)
+    throw new ApiError(409, "Tunggu toko mengonfirmasi cucian dan ongkir sebelum membayar.");
   if (order.paid || manualLocked(order.manualPayment))
     throw new ApiError(
       409,
@@ -51,7 +53,8 @@ export async function selectManualPayment(
     const snap = await tx.get(ref);
     if (!snap.exists) throw new ApiError(404, "Pesanan tidak ditemukan.");
     const order = snap.data() as Order;
-    if (order.manualPayment?.bank && !manualGatewayConflict(order)) return;
+    if (order.manualPayment?.bank && !manualGatewayConflict(order) &&
+        !(order.source === "web" && order.fulfillment && finalAmount(order) === null)) return;
     available(order);
     const stored = await readStoreBankSettings(database, order.branchId, tx);
     const bank = bankDetails(stored, order.branchId);

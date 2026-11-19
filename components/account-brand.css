@@ -28,6 +28,12 @@
   border-color: #b2677d;
   outline-color: #e9cbd5;
 }
+/* Keep browser-saved credentials legible without the default blue autofill fill. */
+.auth-panel .auth-form input:-webkit-autofill {
+  -webkit-text-fill-color: #1f1f1f;
+  caret-color: #1f1f1f;
+  box-shadow: 0 0 0 1000px #fff inset;
+}
 .auth-panel .primary,
 .email-page .primary {
   background: #7a0e2f;
@@ -94,6 +100,10 @@
 }
 dialog.auth-dialog {
   background: linear-gradient(160deg, #faf2f5 0%, #fff 33%);
+}
+dialog.auth-dialog:focus-visible {
+  outline: 2px solid #a84d6b;
+  outline-offset: 3px;
 }
 .auth-panel .auth-google:hover {
   border-color: #d7b6c1;

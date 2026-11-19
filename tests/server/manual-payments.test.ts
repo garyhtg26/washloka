@@ -223,6 +223,51 @@ test("scheduled rewards spend membership first and do not cover shipping or insu
   assert.equal(database.values.get("memberships/customer")?.balance, 4000);
 });
 
+test("new customer orders apply membership exactly once after status and weight arrive in either order", async () => {
+  for (const fulfillment of ["delivery", "dropoff"] as const) {
+    for (const weightFirst of [true, false]) {
+      const value: Order = { ...order(), fulfillment, status: 0, actualKg: null,
+        quantityPending: true, membershipDiscount: true, useMembershipBalance: true };
+      const database = new MemoryDatabase(value);
+      database.values.set("memberships/customer", { active: true, balance: 16000 });
+      database.values.set("loyalty/customer", { balance: 0 });
+      const path = `orders/${value.id}`;
+      const readyStatus = fulfillment === "delivery" ? 1 : 3;
+      const intermediate = weightFirst
+        ? { ...value, actualKg: 10, quantityPending: false }
+        : { ...value, status: readyStatus };
+      database.values.set(path, intermediate);
+      assert.equal(await applyRewardIntent(database, value.id, 16000, 0), null);
+      assert.equal(database.values.get("memberships/customer")?.balance, 16000);
+      database.values.set(path, { ...intermediate, status: readyStatus, actualKg: 10, quantityPending: false });
+      const result = await applyRewardIntent(database, value.id, 16000, 0);
+      assert.equal(result?.membershipUsed, 16000);
+      assert.equal(result?.paid, true);
+      assert.equal(database.values.get("memberships/customer")?.balance, 0);
+      assert.equal(database.values.get("loyalty/customer")?.balance, 1600);
+      assert.equal(await applyRewardIntent(database, value.id, 16000, 0), null);
+      assert.equal(database.values.get("loyalty/customer")?.balance, 1600);
+    }
+  }
+});
+
+test("manual payment and points stay unavailable until the new customer order is confirmed", async () => {
+  const value: Order = { ...order(), fulfillment: "delivery", status: 0 };
+  const database = new MemoryDatabase(value);
+  database.values.set("loyalty/customer", { balance: 5000 });
+  await assert.rejects(() => selectManualPayment(value.id, database.firestore()));
+  await assert.rejects(() => redeemPoints(database.firestore(), "customer", value.id, 1000));
+  // Even an existing draft bank selection cannot bypass the upload/submission gate.
+  database.values.set(`orders/${value.id}`, { ...value, manualPayment: {
+    method: "bank_transfer", status: "unpaid", amount: null, hasProof: false, bank: account,
+  } });
+  await assert.rejects(() => storeManualProof(value.id, new Uint8Array([1]), database.firestore(), upload));
+  await assert.rejects(() => submitManualPayment(value.id, "proof-version", database.firestore()));
+  database.values.set(`orders/${value.id}`, { ...value, status: 1 });
+  await redeemPoints(database.firestore(), "customer", value.id, 1000);
+  assert.equal(database.current().pointsUsed, 1000);
+});
+
 test("scheduled rewards use available balances when funds changed since ordering", async () => {
   const value = { ...order(), membershipDiscount: true, usePoints: true, useMembershipBalance: true };
   const database = new MemoryDatabase(value);
@@ -233,6 +278,18 @@ test("scheduled rewards use available balances when funds changed since ordering
   assert.equal(result?.membershipUsed, 3000);
   assert.equal(result?.total, 11000);
   assert.equal(result?.paid, false);
+});
+
+test("deferred rewards never exceed the balances shown at checkout", async () => {
+  const value = { ...order(), membershipDiscount: true, usePoints: true,
+    useMembershipBalance: true, membershipLimit: 3000, pointsLimit: 2000 };
+  const database = new MemoryDatabase(value);
+  database.values.set("loyalty/customer", { balance: 9000 });
+  database.values.set("memberships/customer", { active: true, balance: 15000 });
+  const result = await applyRewardIntent(database, value.id, 16000, 0);
+  assert.equal(result?.membershipUsed, 3000);
+  assert.equal(result?.pointsUsed, 2000);
+  assert.equal(result?.total, 11000);
 });
 
 test("full settlement awards loyalty once, including on a repeated finalization", async () => {

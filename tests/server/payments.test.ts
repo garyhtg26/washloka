@@ -246,6 +246,23 @@ test("only confirmed server totals can produce a QR and expiry alone never unloc
   assert.equal(nextStatus("expired", "paid"), "paid");
 });
 
+test("new delivery and dropoff orders require both store status and a final bill", () => {
+  const delivery: Order = { ...baseOrder(), fulfillment: "delivery", status: 0 };
+  assert.equal(finalAmount(delivery), null);
+  assert.equal(finalAmount({ ...delivery, status: 1 }), 20000);
+  assert.equal(finalAmount({ ...delivery, status: 1, actualKg: null, quantityPending: true }), null);
+  assert.equal(finalAmount({ ...delivery, status: 1, shippingFee: null }), null);
+  assert.equal(finalAmount({ ...delivery, status: 1, pricePending: true }), null);
+
+  const dropoff: Order = { ...delivery, fulfillment: "dropoff" };
+  assert.equal(finalAmount({ ...dropoff, status: 2 }), null);
+  assert.equal(finalAmount({ ...dropoff, status: 3 }), 20000);
+  assert.equal(finalAmount({ ...dropoff, status: 3, actualKg: null }), null);
+  // Existing web and POS orders have no new customer confirmation requirement.
+  assert.equal(finalAmount({ ...delivery, fulfillment: undefined }), 20000);
+  assert.equal(finalAmount({ ...delivery, source: "pos" }), 20000);
+});
+
 test("QR proxy URLs reject foreign hosts, embedded credentials, redirects and mixed environments", () => {
   assert.equal(
     safeQrUrl(

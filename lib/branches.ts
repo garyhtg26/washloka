@@ -32,6 +32,15 @@ export function sameBranch(first: unknown, second: unknown) {
   return normalized !== null && normalized === normalizeBranchId(second);
 }
 
+/** A tracking token identifies the shop that owns the order, even for older
+ * links without a branch parameter. Unknown shops and the current shop do not
+ * trigger navigation. Dashboard workspaces are always selected separately. */
+export function trackingBranch(current: BranchId, orderBranch: unknown, dashboard: boolean): BranchId | null {
+  if (dashboard) return null;
+  const branch = normalizeBranchId(orderBranch);
+  return branch && branch !== current ? branch : null;
+}
+
 export function branchAliases(branch: unknown): readonly PersistedBranchId[] {
   const store = branchSchema.parse(branch);
   return store === "buzzwash"

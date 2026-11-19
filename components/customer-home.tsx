@@ -20,7 +20,9 @@ import {
 } from "lucide-react";
 import { money, type Store } from "@/lib/types";
 import { branches, DEFAULT_BRANCH } from "@/lib/branches";
+import type { BranchId } from "@/lib/branches";
 import { defaultImages, siteContent, siteImage } from "@/lib/site-content";
+import TenantHero from "./tenant-hero";
 import "./customer-home.css";
 
 type Props = {
@@ -31,6 +33,7 @@ type Props = {
   onTrack: (code?: string) => void;
   onAccount: () => void;
   onServices: () => void;
+  tenantBranch?: BranchId;
 };
 
 const categories = [
@@ -52,6 +55,7 @@ export default function CustomerHome({
   onMember,
   onTrack,
   onServices,
+  tenantBranch,
 }: Props) {
   const content = siteContent(store.content);
   const isBuzzWash = store.branchId === "buzzwash";
@@ -132,9 +136,10 @@ export default function CustomerHome({
 
   return (
     <div className="customer-experience">
-      <h1 className="home-heading">{name ? `Halo, ${name}` : "Washloka"}</h1>
+      <h1 className="home-heading">{tenantBranch ? (tenantBranch === "buzzwash" ? "BuzzWash" : "D’Fable Laundry") : name ? `Halo, ${name}` : "Washloka"}</h1>
 
-      {slides.length > 0 && (
+      {tenantBranch && <TenantHero branch={tenantBranch} store={store} onOrder={onOrder} onServices={onServices} />}
+      {!tenantBranch && slides.length > 0 && (
         <section
           className="campaign-slider"
           aria-label="Banner Washloka"

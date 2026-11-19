@@ -1,5 +1,34 @@
 import { z } from "zod";
 import { normalizePhone } from "./pricing";
+/** Simplified customer checkout. Quantity and final cost are set by the shop. */
+export const customerOrderSchema = z.object({
+  requestId: z.string().uuid(),
+  source: z.literal("web"),
+  name: z.string().trim().min(2).max(80),
+  phone: z.string().transform(normalizePhone).pipe(z.string().regex(/^\+628\d{7,12}$/, "Nomor WhatsApp tidak valid")),
+  service: z.string().min(2).max(50),
+  speed: z.enum(["regular", "oneDay", "express", "quick"]).default("regular"),
+  notes: z.string().trim().max(1000).default(""),
+  fulfillment: z.enum(["delivery", "dropoff"]),
+  address: z.string().trim().max(500).optional(),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+  usePoints: z.boolean().default(false),
+  useMembershipBalance: z.boolean().default(false),
+  pointsLimit: z.number().int().min(0).max(1000000000).optional(),
+  membershipLimit: z.number().int().min(0).max(1000000000).optional(),
+}).strict().superRefine((value, context) => {
+  if (value.fulfillment === "delivery") {
+    if (!value.address || value.address.length < 8)
+      context.addIssue({ code: "custom", path: ["address"], message: "Isi alamat dan patokan penjemputan." });
+    if (value.lat === undefined || value.lng === undefined)
+      context.addIssue({ code: "custom", path: ["lat"], message: "Pilih titik penjemputan pada peta." });
+  }
+  if (value.usePoints && value.pointsLimit === undefined)
+    context.addIssue({ code: "custom", path: ["pointsLimit"], message: "Periksa kembali jumlah poin." });
+  if (value.useMembershipBalance && value.membershipLimit === undefined)
+    context.addIssue({ code: "custom", path: ["membershipLimit"], message: "Periksa kembali saldo membership." });
+});
 export const orderSchema = z.object({
   requestId: z.string().uuid(),
   name: z.string().trim().min(2).max(80),
@@ -40,7 +69,7 @@ export const orderSchema = z.object({
 export const updateSchema = z.object({
   id: z.string().regex(/^DF-[A-F0-9]{12}$/),
   status: z.number().int().min(0).max(7),
-  actualKg: z.number().min(0.1).max(100),
+  actualKg: z.number().min(0.1).max(100).nullable(),
   paid: z.boolean(),
   shippingFee: z.number().int().min(0).max(10000000).nullable(),
   confirmedUnitPrice: z.number().int().min(1000).max(10000000).optional(),

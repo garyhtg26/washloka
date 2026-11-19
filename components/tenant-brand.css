@@ -1,0 +1,143 @@
+/* Each partner keeps its own visual identity inside the Washloka network. */
+.tenant-dfable { --tenant-accent: #1613cf; --tenant-deep: #10118c; --tenant-soft: #eff1ff; --tenant-border: #cfd6fb; }
+.tenant-buzzwash { --tenant-accent: #0759b8; --tenant-deep: #073871; --tenant-soft: #eef7ff; --tenant-border: #c8e1f6; }
+.tenant-brand { display: inline-flex; align-items: center; width: 185px; min-width: 0; text-decoration: none; }
+.tenant-brand img { display: block; width: 100%; height: 52px; object-fit: contain; object-position: left center; }
+.tenant-platform-link { display: inline-flex; align-items: center; gap: 7px; color: var(--tenant-accent); font-size: 13px; font-weight: 650; text-decoration: none; }
+.tenant-platform-link:hover { color: var(--tenant-deep); text-decoration: underline; }
+.tenant-platform-link:focus-visible { outline: 2px solid var(--tenant-accent); outline-offset: 4px; }
+.tenant-hero { display: grid; grid-template-columns: 0.9fr 1.1fr; overflow: hidden; border-radius: 24px; min-height: 385px; background: var(--tenant-deep); }
+.tenant-hero-copy { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: clamp(30px, 4.5vw, 68px); color: white; }
+.tenant-hero-eyebrow { margin-bottom: 18px; color: #d6e7ff; font-size: 11px; font-weight: 750; letter-spacing: .13em; }
+.customer-main .tenant-hero h2 { max-width: 480px; margin: 0; color: white; font-size: clamp(32px, 3.8vw, 54px); letter-spacing: -.045em; line-height: 1.08; }
+.tenant-hero-copy p { max-width: 390px; margin: 17px 0 0; color: #e6edff; font-size: 15px; line-height: 1.6; }
+.tenant-hero-copy > button { display: inline-flex; align-items: center; gap: 13px; min-height: 46px; margin-top: 25px; padding: 0 20px; border: 0; border-radius: 99px; background: #fff; color: var(--tenant-deep); font-weight: 700; }
+.tenant-buzzwash .tenant-hero-copy > button { background: #ffca2c; color: #07315c; }
+.tenant-hero-copy > button:hover { transform: translateY(-2px); }
+.tenant-hero-image { position: relative; min-height: 385px; overflow: hidden; background: #e7edf4; }
+.tenant-hero-image img { object-fit: cover; }
+.tenant-hero-controls { display: flex; align-items: center; gap: 12px; margin-top: 22px; color: white; font-size: 12px; }
+.tenant-hero-controls button { display: grid; width: 31px; height: 31px; place-items: center; border: 1px solid #ffffff80; border-radius: 50%; color: white; background: transparent; }
+:is(.tenant-dfable,.tenant-buzzwash) .customer-main { --blue: var(--tenant-accent); --deep: var(--tenant-deep); }
+:is(.tenant-dfable,.tenant-buzzwash) .customer-experience { --wash-accent: var(--tenant-accent); }
+/* The storefront uses its own palette for supporting copy and surfaces too. */
+:is(.tenant-dfable,.tenant-buzzwash) .customer-experience {
+  --wash-muted: #64748b;
+}
+:is(.tenant-dfable,.tenant-buzzwash) .customer-experience :is(.home-discovery,.category-row > button,.photo-service,.home-search-empty,.tracking-ribbon,.monthly-strip,.tracking-ribbon form) {
+  border-color: color-mix(in srgb, var(--tenant-border) 55%, white);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .customer-experience .home-discovery-search {
+  border-color: color-mix(in srgb, var(--tenant-border) 55%, white);
+  color: #64748b;
+}
+:is(.tenant-dfable,.tenant-buzzwash) .customer-experience :is(.home-discovery-search input,.tracking-ribbon input)::placeholder {
+  color: #8997a8;
+}
+:is(.tenant-dfable,.tenant-buzzwash) .customer-experience :is(.tracking-ribbon-heading > span,.monthly-kicker) {
+  color: color-mix(in srgb, var(--tenant-accent) 68%, #64748b);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .customer-experience :is(.compact-terms,.monthly-caption,.tracking-ribbon form label,.home-search-empty p) {
+  color: #64748b;
+}
+:is(.tenant-dfable,.tenant-buzzwash) .customer-experience .home-discovery-search button {
+  color: var(--tenant-accent);
+  background: var(--tenant-soft);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .customer-experience :is(.category-row > button,.photo-service,.monthly-strip):hover {
+  border-color: var(--tenant-border);
+  box-shadow: 0 10px 25px color-mix(in srgb, var(--tenant-deep) 8%, transparent);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .customer-experience .tracking-ribbon form button:hover {
+  background: var(--tenant-deep);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .home-discovery { margin-top: 20px; }
+:is(.tenant-dfable,.tenant-buzzwash) .customer-header nav :is(button,a):is(:hover,.active),
+:is(.tenant-dfable,.tenant-buzzwash) .customer-header ~ .mobile-nav :is(button,a).active { color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) .customer-header nav :is(button,a).active::after,
+:is(.tenant-dfable,.tenant-buzzwash) .customer-header ~ .mobile-nav :is(button,a).active::before,
+:is(.tenant-dfable,.tenant-buzzwash) .customer-main .primary,
+:is(.tenant-dfable,.tenant-buzzwash) .primary { background: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) .customer-main .primary:hover,
+:is(.tenant-dfable,.tenant-buzzwash) .primary:hover { background: var(--tenant-deep); }
+dialog:is(.tenant-dfable,.tenant-buzzwash).order-dialog:not(.dashboard-dialog) .primary { background: var(--tenant-accent); }
+dialog:is(.tenant-dfable,.tenant-buzzwash).order-dialog:not(.dashboard-dialog) .primary:hover { background: var(--tenant-deep); }
+:is(.tenant-dfable,.tenant-buzzwash) .customer-header ~ .mobile-nav :is(button,a).active,
+:is(.tenant-dfable,.tenant-buzzwash) .category-row > button > span,
+:is(.tenant-dfable,.tenant-buzzwash) .category-row > button.selected { background: var(--tenant-soft); color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) .category-row > button:is(:hover,.selected),
+:is(.tenant-dfable,.tenant-buzzwash) .customer-header .shop-picker-trigger:is(:hover,.is-open) { border-color: var(--tenant-border); }
+:is(.tenant-dfable,.tenant-buzzwash) :is(.browse-heading p,.browse-heading > button,.home-search-empty > button,.customer-order-estimate-heading strong,.customer-order-rewards > div,.customer-fulfillment label > svg) { color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) :is(.customer-order-speeds input,.customer-fulfillment input,.customer-order-rewards input) { accent-color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) :is(.customer-order-speeds label.selected,.customer-fulfillment label.selected,.customer-order-estimate,.customer-order-rewards,.customer-order-notice) { border-color: var(--tenant-border); background: var(--tenant-soft); }
+:is(.tenant-dfable,.tenant-buzzwash) :is(.category-row > button:focus-visible,.photo-service:focus-visible,.home-discovery-search:focus-within,.tenant-hero button:focus-visible) { outline: 2px solid var(--tenant-accent); outline-offset: 3px; }
+:is(.tenant-dfable,.tenant-buzzwash) :is(button,a):focus-visible { outline-color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) :is(.ribbon-icon,.monthly-action,.service-icon,.card-plus,.status,.order-rewards-icon,.order-rewards-choice-icon,.tracking-order-icon,.tracking-steps li.done .tracking-step-icon,.account-avatar,.profile-avatar) { color: var(--tenant-accent); background: var(--tenant-soft); }
+:is(.tenant-dfable,.tenant-buzzwash) :is(.daily-rate-table tbody th > button,.service-item-card > svg:last-child,.buzz-menu-add,.order-rewards-note button,.order-summary-breakdown > div > span:last-child,.tracking-price-details strong,.auth-link,.auth-tabs button.active) { color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) :is(.tracking-status-hero,.tracking-steps li.current .tracking-step-icon,.auth-emblem,.loading-progress > span) { background: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) .tracking-steps li.current .tracking-step-icon { box-shadow: 0 0 0 4px var(--tenant-soft); }
+:is(.tenant-dfable,.tenant-buzzwash) .tracking-steps li.done::after { background: var(--tenant-border); }
+:is(.tenant-dfable,.tenant-buzzwash) .tracking-history-card li > span[class*="bg-[#7a0e2f]"] { background: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) .services-section .daily-rate-table thead th { color: var(--tenant-deep); background: var(--tenant-soft); }
+/* Catalog prices and controls follow the selected shop, including mobile cards. */
+:is(.tenant-dfable,.tenant-buzzwash) .services-section :is(.daily-rate-section,.service-catalog-group) {
+  border-color: color-mix(in srgb, var(--tenant-border) 65%, white);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--tenant-deep) 5%, transparent);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .services-section .service-store-brand {
+  border-color: color-mix(in srgb, var(--tenant-border) 65%, white);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .services-section :is(.service-catalog-heading,.daily-rate-table th,.daily-rate-table td,.service-item-card) {
+  border-color: color-mix(in srgb, var(--tenant-border) 55%, white);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .services-section .daily-rate-table tbody th {
+  background: color-mix(in srgb, var(--tenant-soft) 48%, white);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .services-section :is(.daily-rate-table tbody td,.service-item-card > strong) {
+  color: var(--tenant-deep);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .services-section :is(.daily-rate-table thead small,.daily-rate-table tbody small,.service-catalog-heading p,.service-catalog-heading > span,.service-item-copy small,.service-item-card > strong small,.daily-rate-table tbody td::before) {
+  color: #627386;
+}
+:is(.tenant-dfable,.tenant-buzzwash) .services-section .service-item-card:hover {
+  background: var(--tenant-soft);
+}
+:is(.tenant-dfable,.tenant-buzzwash) .services-section .service-item-card:focus-visible {
+  outline: 2px solid var(--tenant-accent);
+  outline-offset: -3px;
+}
+.tenant-buzzwash .services-section.buzz-menu .daily-rate-table tbody th > .buzz-menu-add {
+  color: var(--tenant-accent);
+  background: var(--tenant-soft);
+}
+.tenant-buzzwash .services-section.buzz-menu .daily-rate-table tbody th > .buzz-menu-add:hover {
+  color: white;
+  background: var(--tenant-accent);
+}
+.tenant-buzzwash .services-section.buzz-menu .daily-rate-table tbody th > .buzz-menu-add:focus-visible {
+  outline-color: var(--tenant-accent);
+}
+:is(.tenant-dfable,.tenant-buzzwash) :is(.choice-services > button.selected,.speed-choice .selected,.selected-service-note) { background: var(--tenant-soft); border-color: var(--tenant-border); color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) form .order-rewards-choice input[type="checkbox"] { accent-color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) [class~="text-[#7a0e2f]"] { color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) [class~="bg-[#7a0e2f]"] { background-color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) [class~="bg-[#f9edf1]"] { background-color: var(--tenant-soft); }
+:is(.tenant-dfable,.tenant-buzzwash) [class~="border-[#7a0e2f]"] { border-color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) [class~="ring-[#7a0e2f]"] { --tw-ring-color: var(--tenant-accent); }
+:is(.tenant-dfable,.tenant-buzzwash) [class~="hover:bg-[#f9edf1]"]:hover { background-color: var(--tenant-soft); }
+body :is(.tenant-dfable,.tenant-buzzwash) :is(input,textarea,select):focus { border-color: var(--tenant-accent); box-shadow: 0 0 0 3px color-mix(in srgb,var(--tenant-accent) 12%,transparent); }
+body :is(.tenant-dfable,.tenant-buzzwash) :is(.customer-experience .tracking-ribbon form,.tracking-page .track-search .search-box):focus-within { border-color: var(--tenant-accent); box-shadow: 0 0 0 3px color-mix(in srgb,var(--tenant-accent) 12%,transparent); }
+@media (max-width: 700px) {
+  .tenant-brand { width: 146px; }
+  .tenant-brand img { height: 42px; }
+  .tenant-hero { grid-template-columns: 1fr; border-radius: 18px; }
+  .tenant-hero-copy { padding: 30px 24px 26px; }
+  .tenant-hero-copy p { margin-top: 12px; font-size: 14px; }
+  .tenant-hero-copy > button { margin-top: 18px; }
+  .tenant-hero-image { min-height: 200px; }
+  :is(.tenant-dfable,.tenant-buzzwash) .home-discovery { margin-top: 14px; }
+  :is(.tenant-dfable,.tenant-buzzwash) .services-section .daily-rate-table tbody tr {
+    border-color: color-mix(in srgb, var(--tenant-border) 55%, white);
+  }
+}
+@media (prefers-reduced-motion: reduce) { .tenant-hero-copy > button:hover { transform: none; } }

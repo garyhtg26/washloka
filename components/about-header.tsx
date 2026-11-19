@@ -2,25 +2,34 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import AccountPanel from "./account-panel";
 import { AuthProvider } from "./auth-provider";
 import CustomerAccount from "./customer-account";
 import ShopSelector from "./shop-selector";
-import { DFABLE_HOME, DFABLE_ABOUT } from "@/lib/dfable-path";
+import { tenantStorePath } from "@/lib/dfable-path";
 import { resolveCustomerBranch, type BranchId } from "@/lib/branches";
+import { customerContextPaths, customerTenantContext } from "@/lib/customer-context";
+import TenantBrand from "./tenant-brand";
+import "./tenant-brand.css";
+import "./customer-tenant-context.css";
 
 export function CustomerHeader({
   active = "about",
+  initialTenant = null,
 }: {
   active?: "about" | "profile";
+  initialTenant?: BranchId | null;
 }) {
-  const [branch, setBranch] = useState<BranchId>("dfablelaundry");
+  const [branch, setBranch] = useState<BranchId>(initialTenant ?? "dfablelaundry");
+  const [tenant, setTenant] = useState<BranchId | null>(initialTenant);
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("branch");
+    const explicitTenant = customerTenantContext(window.location.search);
+    setTenant(explicitTenant);
     let saved: string | null = null;
     try {
       saved =
@@ -33,9 +42,10 @@ export function CustomerHeader({
       localStorage.setItem("eazywash-selected-store", selectedStore);
       localStorage.removeItem("dfable-customer-branch");
     } catch {}
-    if (requested && requested !== selectedStore) {
+    if (requested && requested !== explicitTenant) {
       const url = new URL(window.location.href);
-      url.searchParams.set("branch", selectedStore);
+      if (explicitTenant) url.searchParams.set("branch", explicitTenant);
+      else url.searchParams.delete("branch");
       window.history.replaceState(window.history.state, "", url);
     }
   }, []);
@@ -52,13 +62,15 @@ export function CustomerHeader({
     };
   }, [open]);
 
-  const page = (view: string) => `${DFABLE_HOME}?view=${view}&branch=${branch}`;
+  const paths = customerContextPaths(tenant);
+  const useStoreBrand = !!tenant && active !== "profile";
   return (
     <>
-      <header className="customer-header">
+      <header className={`customer-header${useStoreBrand ? ` tenant-${tenant === "dfablelaundry" ? "dfable" : "buzzwash"}` : ""}`}>
+        {useStoreBrand && tenant ? <TenantBrand branch={tenant} /> : (
         <Link
           className="brand eazy-customer-brand washloka-lockup"
-          href={page("home")}
+          href={active === "profile" ? "/" : paths.home}
           aria-label="Washloka beranda"
         >
           <img
@@ -72,31 +84,30 @@ export function CustomerHeader({
             alt="Washloka"
           />
         </Link>
-        <nav>
-          <Link href={page("home")}>Beranda</Link>
-          <Link href={page("services")}>Layanan & harga</Link>
-          <Link href={page("tracking")}>Lacak pesanan</Link>
-          <Link
-            className={active === "about" ? "active" : ""}
-            href={DFABLE_ABOUT}
-          >
-            Tentang
-          </Link>
+        )}
+        <nav aria-label="Navigasi utama">
+          {tenant ? <>
+            <Link className="customer-nav-back" href="/"><ArrowLeft size={16} /> Kembali ke Washloka</Link>
+            <Link href={paths.home}>Beranda</Link>
+            <Link href={paths.view("services")}>Layanan &amp; harga</Link>
+            <Link href={paths.view("tracking")}>Lacak pesanan</Link>
+          </> : <>
+            <Link href="/">Beranda</Link>
+            <Link className={active === "about" ? "active" : ""} aria-current={active === "about" ? "page" : undefined} href={paths.about}>Tentang</Link>
+          </>}
         </nav>
         <div className="header-right">
-          <ShopSelector
+          {tenant ? <ShopSelector
             branch={branch}
             onBranchChange={(next) => {
               setBranch(next);
               try {
                 localStorage.setItem("eazywash-selected-store", next);
               } catch {}
-              const url = new URL(window.location.href);
-              url.searchParams.set("branch", next);
-              window.history.replaceState(window.history.state, "", url);
+              window.location.assign(tenantStorePath(next));
             }}
-          />
-          <CustomerAccount onLogin={() => setOpen(true)} />
+          /> : null}
+          <CustomerAccount onLogin={() => setOpen(true)} profileHref={paths.profile} />
         </div>
       </header>
       <dialog
@@ -121,10 +132,10 @@ export function CustomerHeader({
   );
 }
 
-export default function AboutHeader() {
+export default function AboutHeader({ initialTenant = null }: { initialTenant?: BranchId | null }) {
   return (
     <AuthProvider scope="customer">
-      <CustomerHeader />
+      <CustomerHeader initialTenant={initialTenant} />
     </AuthProvider>
   );
 }

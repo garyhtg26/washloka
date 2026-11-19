@@ -1,0 +1,86 @@
+.customer-order {
+  --order-accent: var(--tenant-accent, #7a0e2f);
+  --order-deep: var(--tenant-deep, #650a28);
+  --order-soft: var(--tenant-soft, #faf2f5);
+  --order-border: var(--tenant-border, #e9dce1);
+  min-width: 0;
+  color: #29252b;
+}
+.customer-order-header { padding-right: 42px; }
+.customer-order .customer-order-eyebrow { margin: 0 0 8px; color: var(--order-accent); font-size: 10px; font-weight: 750; letter-spacing: .12em; }
+.customer-order-eyebrow span { padding-inline: 3px; opacity: .5; }
+dialog .customer-order-header h2 { margin: 0; font-size: clamp(23px, 4vw, 28px); font-weight: 750; line-height: 1.2; letter-spacing: -.035em; }
+.customer-order-header > p:last-child { margin: 6px 0 0; color: #7e7680; font-size: 13px; line-height: 1.5; }
+.customer-order-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 23px 0 26px; }
+.customer-order-steps > span { display: flex; align-items: center; gap: 8px; min-width: 0; padding-bottom: 10px; border-bottom: 2px solid #ebe9ec; color: #908990; font-size: 12px; font-weight: 650; line-height: 1.3; }
+.customer-order-steps > span b { display: grid; width: 24px; height: 24px; flex: 0 0 24px; place-items: center; border-radius: 50%; background: #f2f1f3; color: #8c848a; font-size: 11px; }
+.customer-order-steps > span.active, .customer-order-steps > span.done { border-color: var(--order-accent); color: var(--order-deep); }
+.customer-order-steps > span.active b, .customer-order-steps > span.done b { background: var(--order-accent); color: #fff; }
+.customer-order-section-heading { margin-bottom: 12px; }
+.customer-order-section-heading h3, .customer-order-speeds legend, .customer-fulfillment legend, .customer-pickup h3 { margin: 0; padding: 0; color: #29252b; font-size: 14px; font-weight: 750; }
+.customer-order-section-heading p { margin: 4px 0 0; color: #8a8288; font-size: 12px; line-height: 1.45; }
+.customer-order .choice-services { display: grid; gap: 8px; margin: 0; }
+.customer-order .choice-services > button { display: flex; min-width: 0; min-height: 65px; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 15px; border: 1px solid #e8e4e7; border-radius: 12px; background: #fff; color: #29252b; text-align: left; transition: border-color .18s, background-color .18s; }
+.customer-order .choice-services > button:hover { border-color: var(--order-accent); }
+.customer-order .choice-services > button.selected { border-color: var(--order-accent); background: var(--order-soft); }
+.customer-order .choice-services > button > span:first-child { display: grid; min-width: 0; gap: 4px; }
+.customer-order .choice-services b { color: #302a30; font-size: 13px; line-height: 1.3; }
+.customer-order .choice-services small { margin: 0; color: #807982; font-size: 12px; line-height: 1.3; }
+.customer-order .radio-dot { display: grid; width: 19px; height: 19px; flex: 0 0 19px; place-items: center; margin: 0; border: 1px solid #d6cfd3; border-radius: 50%; }
+.customer-order .selected .radio-dot { border-color: var(--order-accent); background: var(--order-accent); color: #fff; }
+.customer-order label.customer-order-other { display: block; margin: 5px 0 0; color: #4b4248; font-size: 12px; font-weight: 650; }
+.customer-order :is(select, input:not([type="radio"]):not([type="checkbox"]), textarea) { box-sizing: border-box; width: 100%; min-width: 0; margin: 7px 0 0; padding: 12px 13px; border: 1px solid #e3dfe4; border-radius: 10px; background-color: #fff; color: #302b30; font-size: 14px; line-height: 1.4; }
+.customer-order select { min-height: 46px; }
+.customer-order :is(select, input:not([type="radio"]):not([type="checkbox"]), textarea):focus { border-color: var(--order-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--order-accent) 12%, transparent); outline: none; }
+.customer-order-speeds, .customer-fulfillment { min-width: 0; margin: 25px 0 0; padding: 0; border: 0; }
+.customer-order-speeds legend, .customer-fulfillment legend { margin: 0 0 11px; }
+.customer-order-speeds > div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.customer-order-speeds label, .customer-fulfillment label { box-sizing: border-box; display: flex; min-width: 0; align-items: center; gap: 9px; margin: 0; padding: 12px 10px; border: 1px solid #e8e4e7; border-radius: 11px; background: #fff; cursor: pointer; }
+.customer-order-speeds label.selected, .customer-fulfillment label.selected { border-color: var(--order-accent); background: var(--order-soft); }
+.customer-order-speeds label span, .customer-fulfillment label span { display: grid; min-width: 0; gap: 3px; }
+.customer-order-speeds label b, .customer-fulfillment label b { color: #393037; font-size: 12px; line-height: 1.3; }
+.customer-order-speeds label small, .customer-fulfillment label small { color: #888088; font-size: 11px; line-height: 1.4; }
+/* Global input styling must never stretch the choice controls. */
+.customer-order :is(input[type="radio"], input[type="checkbox"]) { box-sizing: border-box; display: inline-block; width: 16px; height: 16px; min-width: 16px; flex: 0 0 16px; margin: 0; padding: 0; border: 0; box-shadow: none; accent-color: var(--order-accent); }
+.customer-order-estimate, .customer-order-rewards { display: grid; gap: 7px; margin: 22px 0 0; padding: 16px; border: 1px solid var(--order-border); border-radius: 13px; background: var(--order-soft); }
+.customer-order-estimate-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px 12px; color: #5c5056; font-size: 12px; font-weight: 650; }
+.customer-order-estimate-heading strong { color: var(--order-deep); font-size: 18px; letter-spacing: -.02em; }
+.customer-order-estimate-heading small { font-size: 12px; font-weight: 500; }
+.customer-order-estimate p, .customer-order-rewards p { margin: 0; color: #746a71; font-size: 12px; line-height: 1.5; }
+.customer-order-contact-heading { margin: 27px 0 13px; }
+.customer-order-contact { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin: 0; }
+.customer-order-contact label, .customer-order-notes, .customer-pickup label { display: block; min-width: 0; margin: 0; color: #4b4248; font-size: 12px; font-weight: 650; }
+.customer-order label.customer-order-notes { margin: 16px 0 0; }
+.customer-order-notes > span { color: #989096; font-weight: 400; }
+.customer-order-notes textarea, .customer-pickup textarea { min-height: 80px; resize: vertical; }
+.customer-order-rewards { gap: 10px; }
+.customer-order-rewards > div { display: flex; align-items: center; gap: 8px; color: var(--order-deep); font-size: 13px; }
+.customer-order-rewards label { display: flex; align-items: flex-start; gap: 8px; margin: 0; font-size: 12px; line-height: 1.5; }
+.customer-order-rewards small { color: #786e75; font-size: 11px; line-height: 1.5; }
+.customer-fulfillment { display: grid; gap: 9px; margin-top: 0; }
+.customer-fulfillment label { min-height: 74px; padding: 14px; }
+.customer-fulfillment label > svg { flex: 0 0 21px; color: var(--order-accent); }
+.customer-fulfillment label b { font-size: 13px; }
+.customer-fulfillment label small { font-size: 12px; }
+.customer-pickup { margin-top: 25px; }
+.customer-pickup h3 { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.customer-pickup h3 svg { color: var(--order-accent); }
+.customer-pickup .map-wrap { overflow: hidden; border: 1px solid #e8e4e7; border-radius: 12px; }
+.customer-pickup p { margin: 9px 0 16px; color: #817880; font-size: 12px; line-height: 1.5; }
+.customer-order-notice { margin: 20px 0 0; padding: 14px 16px; border: 1px solid var(--order-border); border-radius: 12px; background: var(--order-soft); color: #65515a; font-size: 12px; line-height: 1.55; }
+.customer-order .form-error { margin: 16px 0 0; font-size: 13px; }
+.customer-order-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.customer-order-actions > button { min-height: 46px; padding: 11px 21px; border-radius: 10px; font-size: 13px; }
+.customer-order-actions > button.primary { background: var(--order-accent); color: #fff; }
+.customer-order-actions > button.primary:hover { background: var(--order-deep); }
+.customer-order-actions > button.secondary { border: 1px solid #e6dfe2; background: #fff; color: #50474c; }
+@media (max-width: 520px) {
+  .customer-order-steps { gap: 10px; margin: 19px 0 22px; }
+  .customer-order-steps > span { font-size: 11px; }
+  .customer-order-speeds > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .customer-order-contact { grid-template-columns: 1fr; gap: 13px; }
+  .customer-order-contact label { margin: 0; }
+  .customer-order :is(select, input:not([type="radio"]):not([type="checkbox"]), textarea) { font-size: 16px; }
+  .customer-order-actions > button { flex: 1 1 0; }
+}
+@media (prefers-reduced-motion: reduce) { .customer-order .choice-services > button { transition: none; } }

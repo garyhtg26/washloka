@@ -4,6 +4,7 @@ import type { Firestore, Transaction } from "firebase-admin/firestore";
 import { ApiError } from "./firebase/access";
 import { isRewardsStore } from "./rewards-store";
 import type { Order } from "./types";
+import { isOrderReadyForBilling } from "./order-billing";
 
 function balance(value: unknown): number {
   const amount = value ?? 0;
@@ -18,6 +19,7 @@ export async function prepareRewardIntent(
 ) {
   if (!order.uid || !isRewardsStore(order.branchId) || order.rewardsAppliedAt ||
       (!order.usePoints && !order.useMembershipBalance)) return null;
+  if (order.source === "web" && order.fulfillment && !isOrderReadyForBilling(order)) return null;
   const pointsRef = database.doc(`loyalty/${order.uid}`);
   const memberRef = database.doc(`memberships/${order.uid}`);
   const [pointsSnapshot, memberSnapshot] = await Promise.all([tx.get(pointsRef), tx.get(memberRef)]);
@@ -27,9 +29,9 @@ export async function prepareRewardIntent(
   const memberBalance = balance(memberWallet?.balance);
   const membershipUsed = order.useMembershipBalance && order.membershipDiscount &&
     memberWallet?.active === true && !memberWallet?.reconciliationRequired
-    ? Math.min(memberBalance, serviceTotal) : 0;
+    ? Math.min(memberBalance, serviceTotal, order.membershipLimit ?? Infinity) : 0;
   const pointsUsed = order.usePoints && !pointsWallet?.reconciliationRequired
-    ? Math.min(pointsBalance, serviceTotal - membershipUsed) : 0;
+    ? Math.min(pointsBalance, serviceTotal - membershipUsed, order.pointsLimit ?? Infinity) : 0;
   const total = serviceTotal - pointsUsed - membershipUsed + shippingFee + (order.insurance ? 1000 : 0);
   const paid = total === 0;
   const earned = paid ? Math.floor((serviceTotal - pointsUsed) / 10) : 0;

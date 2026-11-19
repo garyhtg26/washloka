@@ -5,5 +5,5 @@ export default async function Page({
 }: {
   searchParams: Promise<CustomerQuery>;
 }) {
-  redirect(customerPath("/profil", await searchParams));
+  redirect(customerPath("/profil", { ...(await searchParams), branch: "dfablelaundry" }));
 }
