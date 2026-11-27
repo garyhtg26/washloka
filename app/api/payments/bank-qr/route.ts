@@ -11,9 +11,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    const branch = requestBranch(req.url);
+    if (branch !== "buzzwash")
+      throw new ApiError(404, "QR pembayaran tidak ditemukan.");
     if (!firebaseReady())
       throw new ApiError(503, "QR pembayaran belum tersedia.");
-    const branch = requestBranch(req.url);
     const version = proofVersionSchema.parse(req.nextUrl.searchParams.get("v"));
     const bytes = await downloadPhoto(await bankQrPath(branch, version));
     return new NextResponse(new Uint8Array(bytes), {

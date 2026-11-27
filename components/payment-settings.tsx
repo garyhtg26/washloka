@@ -16,7 +16,10 @@ import {
 import { useAuth } from "./auth-provider";
 import { branches, type BranchId } from "@/lib/branches";
 import type { BankAccount, BankDetails } from "@/lib/payments/manual-types";
-import { isStaticQrisAccount, STATIC_QRIS_URL } from "@/lib/payments/manual-policy";
+import {
+  isStaticQrisAvailable,
+  STATIC_QRIS_URL,
+} from "@/lib/payments/manual-policy";
 
 const initialAccount: BankAccount = {
   bankName: "BCA",
@@ -59,7 +62,8 @@ export default function PaymentSettings({
   const onSavedRef = useRef(onSaved);
   onSavedRef.current = onSaved;
   const endpoint = `/api/admin/payments?branch=${branchId}`;
-  const qrAvailable = !!saved && isStaticQrisAccount(saved);
+  const isBuzzWash = branchId === "buzzwash";
+  const qrAvailable = isStaticQrisAvailable(branchId, saved ?? undefined);
   const changed =
     account.bankName !== saved?.bankName ||
     account.accountNumber !== saved?.accountNumber ||
@@ -303,24 +307,51 @@ export default function PaymentSettings({
               </fieldset>
             </form>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5 sm:px-6">
-                <QrCode size={21} strokeWidth={1.7} className="text-[#7a0e2f]" aria-hidden="true" />
-                <div>
-                  <h2 className="!mb-0 !text-base font-semibold text-slate-900">QRIS manual</h2>
-                  <p className="!mb-0 !mt-1 !text-xs text-slate-500">Berlaku untuk D’Fable dan BuzzWash.</p>
+            {isBuzzWash && (
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-5 sm:px-6">
+                  <QrCode
+                    size={21}
+                    strokeWidth={1.7}
+                    className="text-[#7a0e2f]"
+                    aria-hidden="true"
+                  />
+                  <h2 className="!mb-0 !text-base font-semibold text-slate-900">
+                    QRIS manual
+                  </h2>
+                </div>
+                <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
+                  <img
+                    src={STATIC_QRIS_URL}
+                    alt="QRIS BUZZWASH CIBUBUR"
+                    className="h-32 w-24 rounded-lg border border-slate-100 bg-white object-contain"
+                  />
+                  <div className="min-w-0">
+                    <p className="!mb-1 !text-sm font-semibold text-slate-800">
+                      BUZZWASH CIBUBUR
+                    </p>
+                    <p className="!mb-0 !text-xs leading-relaxed text-slate-500">
+                      Pelanggan memasukkan nominal sendiri dan mengunggah bukti
+                      untuk diperiksa toko.
+                    </p>
+                    {!qrAvailable && (
+                      <p role="status" className="!mb-0 !mt-2 !text-xs text-amber-700">
+                        QRIS belum tersedia. Pastikan rekening tersimpan adalah
+                        BCA 6560655132 a.n. Novel Ruspandi.
+                      </p>
+                    )}
+                    <a
+                      href={STATIC_QRIS_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-block text-xs font-semibold text-[#7a0e2f]"
+                    >
+                      Lihat QRIS
+                    </a>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-4 px-5 py-5 sm:px-6">
-                <img src={STATIC_QRIS_URL} alt="QRIS BUZZWASH CIBUBUR" className="h-32 w-24 rounded-lg border border-slate-100 bg-white object-contain" />
-                <div className="min-w-0">
-                  <p className="!mb-1 !text-sm font-semibold text-slate-800">BUZZWASH CIBUBUR</p>
-                  <p className="!mb-0 !text-xs leading-relaxed text-slate-500">Pelanggan memasukkan nominal sendiri dan mengunggah bukti untuk diperiksa toko.</p>
-                  {!qrAvailable && <p role="status" className="!mb-0 !mt-2 !text-xs text-amber-700">QRIS belum tersedia. Pastikan rekening tersimpan adalah BCA 6560655132 a.n. Novel Ruspandi.</p>}
-                  <a href={STATIC_QRIS_URL} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-semibold text-[#7a0e2f]">Lihat QRIS</a>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
           <aside className="min-w-0 space-y-4">
@@ -390,10 +421,18 @@ export default function PaymentSettings({
                     </span>
                   )}
                 </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                  <strong className="block text-slate-900">QRIS manual · BUZZWASH CIBUBUR</strong>
-                  <span className="mt-1 block">{qrAvailable ? "Tersedia untuk pembayaran manual." : "Tersedia setelah rekening yang disetujui disimpan."}</span>
-                </div>
+                {isBuzzWash && (
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                    <strong className="block text-slate-900">
+                      QRIS manual · BUZZWASH CIBUBUR
+                    </strong>
+                    <span className="mt-1 block">
+                      {qrAvailable
+                        ? "Tersedia untuk pembayaran manual."
+                        : "Tersedia setelah rekening yang disetujui disimpan."}
+                    </span>
+                  </div>
+                )}
                 <div className="mt-5 flex items-start gap-2 rounded-xl bg-slate-50 p-3">
                   <ShieldCheck
                     size={16}

@@ -20,6 +20,14 @@ export function isStaticQrisAccount(value: Partial<BankAccount> | undefined) {
     typeof value.accountHolder === "string" &&
     value.accountHolder.trim().replace(/\s+/g, " ").toUpperCase() === "NOVEL RUSPANDI";
 }
+
+export function isStaticQrisAvailable(
+  branch: unknown,
+  account: Partial<BankAccount> | undefined,
+) {
+  return normalizeBranchId(branch) === "buzzwash" && isStaticQrisAccount(account);
+}
+
 export const proofVersionSchema = z.string().uuid();
 export const bankSettingsSchema = z
   .object({
@@ -87,9 +95,9 @@ export function bankDetails(
     ...bank,
     configured: bankSettingsSchema.safeParse(bank).success,
     ...(value?.version ? { version: value.version } : {}),
-    ...(value?.staticQrId === STATIC_QRIS_ID && store && isStaticQrisAccount(bank)
+    ...(value?.staticQrId === STATIC_QRIS_ID && isStaticQrisAvailable(store, bank)
       ? { qrUrl: STATIC_QRIS_URL }
-      : qrVersion.success && store
+      : qrVersion.success && store === "buzzwash"
       ? {
           qrUrl: `/api/payments/bank-qr?branch=${encodeURIComponent(store)}&v=${qrVersion.data}`,
         }

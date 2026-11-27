@@ -512,19 +512,25 @@ test("default bank has no fabricated usable account and account input is validat
   );
 });
 
-test("new manual QRIS selections snapshot the approved recipient for both shops", async () => {
+test("only BuzzWash offers manual QRIS while both shops offer the approved bank transfer", async () => {
   const approved = { bankName: "BCA", accountNumber: "6560655132", accountHolder: "Novel Ruspandi" };
   assert.equal(isStaticQrisAccount(approved), true);
-  for (const branch of ["dfablelaundry", "buzzwash"] as const) {
+  for (const branch of ["dfablelaundry", "cinere", "bogor", "buzzwash"] as const) {
     const value = { ...order(), branchId: branch };
     const database = new MemoryDatabase(value);
-    const settingsId = branch === "dfablelaundry" ? "cinere" : branch;
+    const settingsId = branch === "buzzwash" ? "buzzwash" : "cinere";
     database.values.set(`settings/${settingsId}`, { manualPayment: approved });
     const before = await paymentView(value, database.firestore());
-    assert.equal(before.staticQrisAvailable, true);
+    assert.equal(before.staticQrisAvailable, branch === "buzzwash");
     assert.equal(before.bank.qrUrl, undefined);
     const bank = await selectManualPayment(value.id, database.firestore(), "bank");
     assert.equal(bank.manual?.bank?.staticQrId, undefined);
+    assert.equal(bank.bank.accountNumber, approved.accountNumber);
+    if (branch !== "buzzwash") {
+      await assert.rejects(selectManualPayment(value.id, database.firestore(), "manual-qris"), /hanya tersedia untuk BuzzWash/);
+      assert.deepEqual(database.current().manualPayment, bank.manual);
+      continue;
+    }
     const selected = await selectManualPayment(value.id, database.firestore(), "manual-qris");
     assert.equal(selected.manual?.bank?.staticQrId, STATIC_QRIS_ID);
     assert.equal(selected.bank.qrUrl, STATIC_QRIS_URL);
@@ -538,10 +544,34 @@ test("new manual QRIS selections snapshot the approved recipient for both shops"
   }
 });
 
+test("D’Fable QRIS orders can still submit existing payments or switch to bank before uploading proof", async () => {
+  const value: Order = { ...order(), manualPayment: {
+    method: "bank_transfer", status: "unpaid", amount: null, hasProof: false,
+    bank: { ...account, staticQrId: STATIC_QRIS_ID },
+  } };
+  const database = new MemoryDatabase(value);
+  const view = await paymentView(value, database.firestore());
+  assert.equal(view.staticQrisAvailable, false);
+  assert.equal(view.bank.qrUrl, undefined);
+  await assert.rejects(selectManualPayment(value.id, database.firestore(), "manual-qris"), /hanya tersedia untuk BuzzWash/);
+
+  const draft = await storeManualProof(value.id, new Uint8Array([1]), database.firestore(), upload);
+  const submitted = await submitManualPayment(value.id, draft.manual!.proofVersion!, database.firestore());
+  assert.equal(submitted.manual?.status, "awaiting_review");
+  assert.equal(submitted.manual?.bank?.staticQrId, STATIC_QRIS_ID);
+  assert.equal(submitted.bank.qrUrl, undefined);
+
+  const other = new MemoryDatabase(value);
+  const switched = await selectManualPayment(value.id, other.firestore(), "bank");
+  assert.equal(switched.manual?.bank?.staticQrId, undefined);
+  assert.equal(switched.bank.accountNumber, account.accountNumber);
+});
+
 test("new selections never inherit a QR previously uploaded to store settings", async () => {
   for (const method of [undefined, "bank", "manual-qris"] as const) {
-    const database = new MemoryDatabase();
-    await setBankQr("cinere", new Uint8Array([1]), owner, database.firestore(), upload);
+    const database = new MemoryDatabase({ ...order(), branchId: "buzzwash" });
+    database.values.set("settings/buzzwash", { manualPayment: account });
+    await setBankQr("buzzwash", new Uint8Array([1]), owner, database.firestore(), upload);
     const before = await paymentView(database.current(), database.firestore());
     assert.equal(before.bank.qrUrl, undefined);
     const selected = await selectManualPayment(order().id, database.firestore(), method);
@@ -551,8 +581,9 @@ test("new selections never inherit a QR previously uploaded to store settings", 
 });
 
 test("static QRIS is unavailable for another account and existing QR snapshots remain unchanged", async () => {
-  const database = new MemoryDatabase();
-  database.values.set("settings/cinere", { manualPayment: { ...account, accountNumber: "1234567890" } });
+  const buzzwashOrder = { ...order(), branchId: "buzzwash" };
+  const database = new MemoryDatabase(buzzwashOrder);
+  database.values.set("settings/buzzwash", { manualPayment: { ...account, accountNumber: "1234567890" } });
   const before = await paymentView(database.current(), database.firestore());
   assert.equal(before.staticQrisAvailable, false);
   assert.equal(before.bank.configured, false);
@@ -564,9 +595,9 @@ test("static QRIS is unavailable for another account and existing QR snapshots r
 
   const oldVersion = "bca7889e-3955-4ba3-8d4b-21d14b2b5171";
   const approved = { bankName: "BCA", accountNumber: "6560655132", accountHolder: "NOVEL RUSPANDI" };
-  const value = { ...order(), manualPayment: { method: "bank_transfer" as const, status: "unpaid" as const, amount: null, hasProof: false, bank: { ...approved, qrVersion: oldVersion } } };
+  const value = { ...buzzwashOrder, manualPayment: { method: "bank_transfer" as const, status: "unpaid" as const, amount: null, hasProof: false, bank: { ...approved, qrVersion: oldVersion } } };
   const oldDatabase = new MemoryDatabase(value);
-  oldDatabase.values.set("settings/cinere", { manualPayment: approved });
+  oldDatabase.values.set("settings/buzzwash", { manualPayment: approved });
   const oldView = await selectManualPayment(value.id, oldDatabase.firestore());
   assert.equal(oldView.manual?.bank?.staticQrId, undefined);
   assert.match(oldView.bank.qrUrl!, new RegExp(oldVersion));
@@ -579,7 +610,7 @@ test("static QRIS is unavailable for another account and existing QR snapshots r
   assert.equal(switchedBack.manual?.bank?.staticQrId, undefined);
 
   const historicalBank = { ...approved, accountNumber: "1234567890", qrVersion: oldVersion };
-  const historical = { ...order(), manualPayment: { method: "bank_transfer" as const, status: "unpaid" as const, amount: null, hasProof: true, bank: historicalBank } };
+  const historical = { ...buzzwashOrder, manualPayment: { method: "bank_transfer" as const, status: "unpaid" as const, amount: null, hasProof: true, bank: historicalBank } };
   const historicalDb = new MemoryDatabase(historical);
   const historicalView = await paymentView(historical, historicalDb.firestore());
   assert.equal(historicalView.bank.accountNumber, "1234567890");
@@ -649,9 +680,9 @@ test("only owner/admin may edit bank and QR; legacy areas share the same store s
   });
 });
 
-test("existing bank snapshots retain their immutable QR across later settings changes", async () => {
+test("existing D’Fable snapshots retain archived QR references across later settings changes", async () => {
   const database = new MemoryDatabase();
-  const first = await setBankQr(
+  await setBankQr(
     "cinere",
     new Uint8Array([1]),
     owner,
@@ -680,7 +711,9 @@ test("existing bank snapshots retain their immutable QR across later settings ch
     database.firestore(),
   );
   assert.equal(view.bank.accountNumber, selected.bank.accountNumber);
-  assert.equal(view.bank.qrUrl, first.qrUrl);
+  assert.equal(view.bank.qrUrl, undefined);
+  assert.ok(selected.manual?.bank?.qrVersion);
+  assert.equal(view.manual?.bank?.qrVersion, selected.manual.bank.qrVersion);
   assert.equal(view.manual?.bank?.accountNumber, "6560655132");
   assert.equal(
     [...database.values.keys()].filter((key) =>
@@ -706,7 +739,7 @@ test("proof upload is a draft; explicit submission alone requests review and nev
 
 test("changing bank clears its current QR while existing payment snapshots retain the original", async () => {
   const database = new MemoryDatabase();
-  const first = await setBankQr(
+  await setBankQr(
     "cinere",
     new Uint8Array([1]),
     owner,
@@ -730,7 +763,9 @@ test("changing bank clears its current QR while existing payment snapshots retai
     ).qrVersion,
     "",
   );
-  assert.equal(selected.bank.qrUrl, first.qrUrl);
+  assert.equal(selected.bank.qrUrl, undefined);
+  assert.equal(database.current().manualPayment?.bank?.qrVersion, selected.manual?.bank?.qrVersion);
+  assert.ok(selected.manual?.bank?.qrVersion);
 });
 
 test("stale account versions cannot upload QR and account changes during upload reject publication", async () => {
@@ -1243,6 +1278,20 @@ test("membership QRIS deposits retain the recipient and reject unapproved accoun
   const saved = database.values.get("membershipDeposits/customer");
   assert.equal(saved?.paymentMethod, "qris_static");
   assert.deepEqual(saved?.qris, { id: "buzzwash-cibubur-v1", recipient: "BUZZWASH CIBUBUR" });
+});
+
+test("D’Fable membership deposits reject QRIS with the shared account and still accept bank transfers", async () => {
+  const database = new MemoryDatabase();
+  const uploaded = await storeMembershipProof(database.firestore(), "customer", new Uint8Array([1]), upload, "dfablelaundry");
+  const request = {
+    uid: "customer", requestId: "73476a0d-2bdf-44ae-b4d8-f12af667cc2d",
+    proofVersion: uploaded.proofVersion, amount: 100000,
+    branch: "dfablelaundry", name: "Test", senderName: "Test", bank: account,
+  };
+  await assert.rejects(submitMembershipDeposit(database.firestore(), { ...request, paymentMethod: "qris_static" }), /QRIS belum tersedia/);
+  assert.equal(database.values.has("membershipDeposits/customer"), false);
+  await submitMembershipDeposit(database.firestore(), { ...request, paymentMethod: "bank_transfer" });
+  assert.equal(database.values.get("membershipDeposits/customer")?.paymentMethod, "bank_transfer");
 });
 
 test("pending estimates can release reserved rewards once without double refund", async () => {

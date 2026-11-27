@@ -73,6 +73,7 @@ export default function MembershipCard() {
   const [codeBusy, setCodeBusy] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const loadRevision = useRef(0);
+  const canPayWithQris = loadedBranch === branch && data?.staticQrisAvailable === true;
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("branch");
     let saved: string | null = null;
@@ -120,7 +121,14 @@ export default function MembershipCard() {
     setCopied(false);
     setCode(null);
     try {
-      setBranch(resolveCustomerBranch({ saved: localStorage.getItem("eazywash-selected-store") }));
+      const requested = new URLSearchParams(window.location.search).get("branch");
+      const saved = localStorage.getItem("eazywash-selected-store");
+      const nextBranch = resolveCustomerBranch({ requested, saved });
+      if (nextBranch !== branch) {
+        setPaymentMethod("bank_transfer");
+        setShowQr(false);
+        setBranch(nextBranch);
+      }
     } catch {}
     setView(nextView);
   }
@@ -130,8 +138,8 @@ export default function MembershipCard() {
       setMessage("Tunggu informasi rekening toko selesai dimuat.");
       return;
     }
-    if (paymentMethod === "qris_static" && !data.staticQrisAvailable) {
-      setMessage("QRIS belum tersedia untuk rekening ini. Pilih transfer bank.");
+    if (paymentMethod === "qris_static" && !canPayWithQris) {
+      setMessage("QRIS belum tersedia untuk toko atau rekening ini. Pilih transfer bank.");
       return;
     }
     if (!proof) {
@@ -476,7 +484,7 @@ export default function MembershipCard() {
                     <Building2 size={18} aria-hidden="true" />
                     <span>Transfer bank</span>
                   </label>
-                  {loadedBranch === branch && data?.staticQrisAvailable && <label className={paymentMethod === "qris_static" ? "selected" : ""}>
+                  {canPayWithQris && <label className={paymentMethod === "qris_static" ? "selected" : ""}>
                     <input type="radio" name="member-payment" value="qris_static" checked={paymentMethod === "qris_static"} disabled={busy} onChange={() => setPaymentMethod("qris_static")} />
                     <QrCode size={18} aria-hidden="true" />
                     <span>QRIS manual</span>
@@ -487,7 +495,7 @@ export default function MembershipCard() {
                 <p className="member-form-message" role="status">
                   Memuat rekening toko…
                 </p>
-              ) : paymentMethod === "qris_static" && data?.staticQrisAvailable ? (
+              ) : paymentMethod === "qris_static" && canPayWithQris ? (
                 <div className="member-qris">
                   <strong>QRIS BUZZWASH CIBUBUR</strong>
                   <p>Masukkan nominal deposit saat membayar, lalu unggah bukti pembayaran.</p>
@@ -551,7 +559,7 @@ export default function MembershipCard() {
                   busy ||
                   loadedBranch !== branch ||
                   !data?.bank.configured ||
-                  (paymentMethod === "qris_static" && !data?.staticQrisAvailable) ||
+                  (paymentMethod === "qris_static" && !canPayWithQris) ||
                   !proof
                 }
               >

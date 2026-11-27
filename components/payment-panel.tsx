@@ -140,6 +140,9 @@ export default function PaymentPanel({
     (view ? view.bank.configured : true);
   const hasStaticQris = !!view?.staticQrisAvailable;
   const usesStaticQris = manual?.bank?.staticQrId === STATIC_QRIS_ID;
+  const retiredStaticQris = !!view && usesStaticQris && !hasStaticQris;
+  const canChooseManualMethod = !admin && !paid && !pending && !review &&
+    !paymentDeferred && !gatewayActive && !(retiredStaticQris && manual?.hasProof);
   const historicQrUrl = manual?.bank?.qrVersion && view?.bank?.qrUrl && /^\/api\/payments\/bank-qr\?/.test(view.bank.qrUrl)
     ? view.bank.qrUrl : "";
   const canSubmit =
@@ -561,9 +564,9 @@ export default function PaymentPanel({
               : "Pembayaran tersedia setelah toko mengonfirmasi pesanan, menimbang atau menghitung cucian, dan menentukan ongkir."}
           </div>
         )}
-        {!admin && !paid && !pending && !review && !paymentDeferred && !gatewayActive && (
+        {canChooseManualMethod && (
           <div
-            className="grid grid-cols-2 gap-2"
+            className={`grid gap-2 ${hasStaticQris ? "grid-cols-2" : "grid-cols-1"}`}
             role="group"
             aria-label="Pilih metode pembayaran"
           >
@@ -593,29 +596,31 @@ export default function PaymentPanel({
                 Transfer & unggah bukti
               </span>
             </button>
-            <button
-              type="button"
-              aria-pressed={mode === "manual-qris"}
-              disabled={!hasStaticQris || !!busy || (!!manual?.hasProof && mode !== "manual-qris")}
-              onClick={() => void mutate("select", "manual-qris")}
-              className={`relative flex min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left transition sm:p-4 ${mode === "manual-qris" ? "border-[#7a0e2f] bg-[#f9edf1] ring-1 ring-[#7a0e2f]" : "border-slate-200 bg-white hover:border-[#c992a3]"} disabled:opacity-50`}
-            >
-              <span className="flex w-full items-center justify-between gap-1">
-                <QrCode size={22} strokeWidth={1.6} />
-                {mode === "manual-qris" && (
-                  <span className="flex size-4 items-center justify-center rounded-full bg-[#7a0e2f] text-white"><Check size={10} /></span>
-                )}
-              </span>
-              <span className="text-sm font-semibold">QRIS manual</span>
-              <span className="text-[10px] leading-relaxed">
-                Scan & unggah bukti
-              </span>
-            </button>
+            {hasStaticQris && (
+              <button
+                type="button"
+                aria-pressed={mode === "manual-qris"}
+                disabled={!!busy || (!!manual?.hasProof && mode !== "manual-qris")}
+                onClick={() => void mutate("select", "manual-qris")}
+                className={`relative flex min-w-0 flex-col items-start gap-2 rounded-xl border p-3 text-left transition sm:p-4 ${mode === "manual-qris" ? "border-[#7a0e2f] bg-[#f9edf1] ring-1 ring-[#7a0e2f]" : "border-slate-200 bg-white hover:border-[#c992a3]"} disabled:opacity-50`}
+              >
+                <span className="flex w-full items-center justify-between gap-1">
+                  <QrCode size={22} strokeWidth={1.6} />
+                  {mode === "manual-qris" && (
+                    <span className="flex size-4 items-center justify-center rounded-full bg-[#7a0e2f] text-white"><Check size={10} /></span>
+                  )}
+                </span>
+                <span className="text-sm font-semibold">QRIS manual</span>
+                <span className="text-[10px] leading-relaxed">
+                  Scan & unggah bukti
+                </span>
+              </button>
+            )}
           </div>
         )}
 
-        {!admin && !paid && !pending && !review && !paymentDeferred && !gatewayActive && (
-          <p className="!mb-0 text-xs leading-relaxed text-slate-500">{view && !hasStaticQris ? "QRIS manual belum tersedia. Hubungi toko untuk bantuan. " : ""}Pembayaran otomatis masih dalam pengembangan. Pembayaran manual diperiksa oleh toko.</p>
+        {canChooseManualMethod && (
+          <p className="!mb-0 text-xs leading-relaxed text-slate-500">Pembayaran otomatis masih dalam pengembangan. Pembayaran manual diperiksa oleh toko.</p>
         )}
 
         {loading && !view ? (
@@ -745,10 +750,19 @@ export default function PaymentPanel({
                   Pilih transfer bank
                 </button>
               )}
-              {!paid && !pending && usesStaticQris && mode === "manual-qris" && (
+              {!paid && !pending && hasStaticQris && mode === "manual-qris" && (
                 <ManualQris key={`${orderId}-static`} id={`manual-payment-qr-${orderId}`} initiallyHidden={hideQrByDefault} />
               )}
-              {manual?.hasProof && !pending && !paid && (
+              {!paid && !pending && retiredStaticQris && (
+                <p className="payment-order-message !mb-0 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
+                  {admin
+                    ? "Pesanan ini sebelumnya memilih QRIS. Periksa pembayaran yang sudah masuk sebelum mengganti metode."
+                    : manual?.hasProof
+                      ? "Bukti QRIS yang sudah diunggah masih bisa diajukan atau diperbarui."
+                      : "Jika sudah membayar lewat QRIS, unggah buktinya di bawah. Jika belum bayar, pilih transfer bank."}
+                </p>
+              )}
+              {manual?.hasProof && !pending && !paid && !retiredStaticQris && (
                 <p className="!mb-0 text-xs leading-relaxed text-slate-500">Bukti sudah diunggah. Gunakan metode yang sama atau ganti bukti jika diperlukan.</p>
               )}
               {!admin && !paid && !pending && !review && bankConfigured && (

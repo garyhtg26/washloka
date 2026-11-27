@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
   try {
     sameOrigin(req);
     const user = await identity(req, true);
-    requireManager(user, requestBranch(req.url));
+    const branch = requestBranch(req.url);
+    requireManager(user, branch);
+    if (branch !== "buzzwash")
+      throw new ApiError(409, "QR pembayaran hanya tersedia untuk BuzzWash.");
     const expectedVersion = req.headers.get("if-match");
     if (!expectedVersion)
       throw new ApiError(
@@ -30,7 +33,7 @@ export async function POST(req: NextRequest) {
     const bytes = await readJpeg(req);
     return NextResponse.json(
       await setBankQr(
-        requestBranch(req.url),
+        branch,
         bytes,
         user,
         undefined,

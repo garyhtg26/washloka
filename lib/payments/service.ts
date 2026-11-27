@@ -26,10 +26,10 @@ import {
   validateTransaction,
 } from "./policy";
 import type { PaymentAttempt, PaymentView, ProviderTransaction } from "./types";
-import { bankDetails, isStaticQrisAccount, manualLocked, safeManualSummary } from "./manual-policy";
+import { bankDetails, isStaticQrisAccount, isStaticQrisAvailable, manualLocked, safeManualSummary } from "./manual-policy";
 import { prepareEarn, commitEarn } from "../loyalty";
 import { signalPaymentChange } from "./signals";
-import { DEFAULT_BRANCH, normalizeBranchId, sameBranch } from "../branches";
+import { DEFAULT_BRANCH, sameBranch } from "../branches";
 import { isRewardsStore } from "../rewards-store";
 export { signalPaymentChange } from "./signals";
 
@@ -81,7 +81,7 @@ export async function paymentView(
     ...(qrUrl ? { qrUrl } : {}),
     ...(order.paymentReconciliationRequired ? { reviewRequired: true } : {}),
     branchId: order.branchId,
-    staticQrisAvailable: !!normalizeBranchId(order.branchId) && isStaticQrisAccount(visibleBank),
+    staticQrisAvailable: isStaticQrisAvailable(order.branchId, visibleBank),
     bank: bankDetails(selectedBank || (visibleBank ? { ...visibleBank, qrVersion: undefined } : undefined), order.branchId),
     ...(order.manualPayment
       ? { manual: safeManualSummary(order.manualPayment) }

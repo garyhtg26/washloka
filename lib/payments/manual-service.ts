@@ -4,12 +4,14 @@ import type { Firestore } from "firebase-admin/firestore";
 import { ApiError, requireAdmin, type Identity } from "../firebase/access";
 import { db } from "../firebase/admin";
 import { readStoreBankSettings } from "../branch-settings";
+import { normalizeBranchId } from "../branches";
 import { uploadPhoto } from "../storage/photos";
 import type { Order } from "../types";
 import { finalAmount } from "./policy";
 import {
   bankDetails,
   isStaticQrisAccount,
+  isStaticQrisAvailable,
   manualGatewayConflict,
   manualLocked,
   safeManualSummary,
@@ -56,9 +58,12 @@ export async function selectManualPayment(
     const snap = await tx.get(ref);
     if (!snap.exists) throw new ApiError(404, "Pesanan tidak ditemukan.");
     const order = snap.data() as Order;
+    if (manualMethod === "manual-qris" && normalizeBranchId(order.branchId) !== "buzzwash")
+      throw new ApiError(409, "QRIS manual hanya tersedia untuk BuzzWash.");
     const previousBank = order.manualPayment?.bank;
     const currentMethod = previousBank?.staticQrId === STATIC_QRIS_ID ? "manual-qris" : "bank";
     if (previousBank && (!manualMethod || manualMethod === currentMethod) && !manualGatewayConflict(order) &&
+        (manualMethod !== "manual-qris" || isStaticQrisAvailable(order.branchId, previousBank)) &&
         !(order.source === "web" && order.fulfillment && finalAmount(order) === null)) return;
     available(order);
     if (previousBank && order.manualPayment?.hasProof)
@@ -67,7 +72,7 @@ export async function selectManualPayment(
     if (!previousBank && !isStaticQrisAccount(stored))
       throw new ApiError(409, "Pengaturan rekening perlu diperiksa toko sebelum pembayaran.");
     const bank = bankDetails(stored, order.branchId);
-    if (manualMethod === "manual-qris" && (!bank.configured || !isStaticQrisAccount(bank)))
+    if (manualMethod === "manual-qris" && (!bank.configured || !isStaticQrisAvailable(order.branchId, bank)))
       throw new ApiError(409, "QRIS manual belum tersedia untuk rekening ini. Hubungi toko.");
     tx.update(ref, {
       paymentRevision: (order.paymentRevision || 0) + 1,

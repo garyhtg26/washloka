@@ -9,7 +9,7 @@ import { eligibleMemberDiscount } from "@/lib/membership-eligibility";
 import { submitMembershipDeposit } from "@/lib/membership-proof";
 import { branchSchema, requestBranch } from "@/lib/branches";
 import { requireRewardsStore } from "@/lib/rewards-store";
-import { isStaticQrisAccount } from "@/lib/payments/manual-policy";
+import { isStaticQrisAccount, isStaticQrisAvailable } from "@/lib/payments/manual-policy";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const schema = z
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
             : null,
         history: history.docs.map((x) => ({ id: x.id, ...x.data() })),
         bank: approvedBank ? bank : { bankName: "BCA", accountNumber: "", accountHolder: "", configured: false },
-        staticQrisAvailable: approvedBank,
+        staticQrisAvailable: isStaticQrisAvailable(branch, bank),
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
