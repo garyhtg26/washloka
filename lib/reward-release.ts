@@ -30,7 +30,7 @@ export function releaseReservedReward(
   const balance = walletBalance + current;
   tx.set(walletRef, { balance, updatedAt: now }, { merge: true });
   tx.create(database.doc(`${kind === "points" ? "loyalty" : "memberships"}/${order.uid}/events/${randomUUID()}`), {
-    type: "returned", ...(kind === "points" ? { points: current } : { amount: current }),
+    type: "returned", ...(kind === "points" ? { points: current } : { amount: current, balanceAfter: balance }),
     orderId: order.id, branchId: order.branchId, createdAt: now,
   });
   tx.update(database.doc(`orders/${order.id}`), {

@@ -66,6 +66,7 @@ export async function reviewDeposit(
         {
           type: "deposit",
           amount,
+          balanceAfter: balance + amount,
           createdAt: now,
           confirmedBy: actor!.uid,
           branchId: deposit.get("branchId"),
@@ -164,7 +165,9 @@ export async function redeemMembership(
     tx.set(database.doc(`memberships/${uid}/events/${randomUUID()}`), {
       type: amount > current ? "redeemed" : "returned",
       amount: Math.abs(amount - current),
+      balanceAfter: nextBalance,
       orderId,
+      branchId: order.branchId,
       createdAt: now,
     });
     if (earned > 0) {

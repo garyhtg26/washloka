@@ -76,16 +76,18 @@ export async function GET(req: NextRequest) {
     if (cursor && cursor.length > 2048)
       throw new ApiError(400, "Cursor tidak valid.");
     const result = await adminAuth().listUsers(100, cursor);
-    const access = result.users.length
-      ? await db().getAll(
-          ...result.users.map((u) => db().doc(`access/${u.uid}`)),
-        )
-      : [];
-    const profiles = result.users.length
-      ? await db().getAll(
-          ...result.users.map((u) => db().doc(`users/${u.uid}`)),
-        )
-      : [];
+    const database = db();
+    // Membership wallets are shared across stores and shown only to owners.
+    const owner = actor!.role === "owner";
+    const [access, profiles, wallets] = result.users.length
+      ? await Promise.all([
+          database.getAll(...result.users.map((u) => database.doc(`access/${u.uid}`))),
+          database.getAll(...result.users.map((u) => database.doc(`users/${u.uid}`))),
+          owner
+            ? database.getAll(...result.users.map((u) => database.doc(`memberships/${u.uid}`))).catch(() => null)
+            : null,
+        ])
+      : [[], [], null];
     const users = result.users.map((u, i) => ({
       uid: u.uid,
       email: phoneFromLoginEmail(u.email) ? "" : u.email || "",
@@ -117,8 +119,21 @@ export async function GET(req: NextRequest) {
       user.branches.includes(branch) &&
       user.branches.every((value) => actor!.allowedBranches?.includes(value))
     ));
+    const rows = owner ? users.map((user, i) => {
+      const wallet = wallets?.[i];
+      const amount: unknown = wallet?.get("balance") ?? 0;
+      return {
+        ...user,
+        membership: wallet ? {
+          registered: wallet.exists,
+          active: wallet.get("active") === true,
+          balance: typeof amount === "number" && Number.isSafeInteger(amount) && amount >= 0 ? amount : null,
+          reconciliationRequired: wallet.get("reconciliationRequired") === true,
+        } : null,
+      };
+    }) : users;
     return NextResponse.json(
-      { users, cursor: result.pageToken || null, canDeleteAccounts: actor!.role === "owner" },
+      { users: rows, cursor: result.pageToken || null, canDeleteAccounts: owner },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (e) {

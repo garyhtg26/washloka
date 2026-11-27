@@ -129,17 +129,27 @@
   cursor: not-allowed;
   opacity: 0.5;
 }
-.member-code-link {
+.member-history-button {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #ede6e9;
+  border-radius: 10px;
   color: #7a0e2f;
-  padding: 10px 4px;
-  border: 0;
-  background: transparent;
+  background: #fff;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+}
+.member-history-button:not(:disabled):hover {
+  background: #faf3f5;
+}
+.member-history-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 .member-summary-error {
   margin: 14px 0 0;
@@ -507,66 +517,83 @@ dialog.member-dialog {
   max-width: none;
   color: #966214;
 }
-.member-code-panel .member-wide {
-  margin-top: 18px;
-}
-.member-code-value {
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: 13px;
-  background: #faf3f5;
-  text-align: center;
-}
-.member-code-value span,
-.member-code-value strong,
-.member-code-value small {
-  display: block;
-}
-.member-code-value span {
-  color: #8f7a82;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-.member-code-value strong {
-  margin: 8px 0;
-  color: #7a0e2f;
-  font-size: 23px;
-  letter-spacing: 0.16em;
-  user-select: all;
-}
-.member-code-value small {
-  color: #81777c;
-  font-size: 11px;
-  line-height: 1.5;
-}
 .member-history {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid #f0ebed;
+  min-width: 0;
   color: #51464c;
   font-size: 12px;
 }
-.member-history summary {
-  cursor: pointer;
-  font-weight: 700;
+.member-history-balance {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  color: #68112d;
+  background: #faf3f5;
+}
+.member-history-balance strong {
+  font-size: 18px;
+  line-height: 1.25;
+}
+.member-history .member-history-empty {
+  margin: 20px 0 0;
+  color: #756c71;
 }
 .member-history ul {
-  display: grid;
-  gap: 11px;
-  margin: 14px 0 0;
+  margin: 8px 0 0;
   padding: 0;
   list-style: none;
 }
 .member-history li {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
   gap: 10px;
+  margin: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0ebed;
 }
-.member-history small {
+.member-history li:last-child {
+  border-bottom: 0;
+}
+.member-history-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: #51464c;
+  background: #f8f6f7;
+}
+.member-history-icon.is-credit {
+  color: #13734e;
+  background: #e9f8ef;
+}
+.member-history-icon.is-debit {
+  color: #7a0e2f;
+  background: #f9edf1;
+}
+.member-history-description {
+  overflow-wrap: anywhere;
+}
+.member-history-description small,
+.member-history-value small {
   display: block;
   margin-top: 3px;
-  color: #92888d;
+  color: #756c71;
+}
+.member-history-value {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.member-history-value .is-credit {
+  color: #13734e;
+}
+.member-history-value .is-debit {
+  color: #7a0e2f;
 }
 @media (min-width: 521px) and (max-height: 740px) {
   .member-dialog-head {

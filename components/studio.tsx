@@ -41,6 +41,7 @@ import Tracking, { previewTracking } from "./tracking";
 import PaymentPanel from "./payment-panel";
 import LoyaltyRedemption from "./loyalty-redemption";
 import MembershipRedemption from "./membership-redemption";
+import PosMembershipForm, { PosMembershipDetails, usePosMembership } from "./pos-membership";
 import PaymentSettings from "./payment-settings";
 import PaymentStatus from "./payment-status";
 import {
@@ -67,6 +68,7 @@ import {
   speedLabel,
   unitLabel,
 } from "@/lib/catalog";
+import { normalizePhone } from "@/lib/pricing";
 import {
   Shirt,
   WashingMachine,
@@ -90,6 +92,7 @@ import {
   LogOut,
   Menu,
   User,
+  UserRoundPlus,
   ReceiptText,
   Wallet,
   CheckCircle2,
@@ -1035,6 +1038,9 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
                       WhatsApp. Tidak perlu membuat akun untuk melihat tracking
                       pesanan.
                     </p>
+                    <button type="button" className="primary pos-membership-open" onClick={() => setModal("pos-membership")}>
+                      <UserRoundPlus size={18} aria-hidden="true" /> Buka membership
+                    </button>
                   </div>
                 </div>
               )}
@@ -1363,7 +1369,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
         </div>
       )}
       <dialog
-        aria-label={modal === "order" && !dashboard ? "Form pemesanan" : "Form Washloka"}
+        aria-label={modal === "pos-membership" ? "Membership Washloka" : modal === "order" && !dashboard ? "Form pemesanan" : "Form Washloka"}
         ref={dialog}
         onCancel={() => setModal("")}
         onClick={(e) => {
@@ -1392,6 +1398,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
         </button>
         {modal === "order" && dashboard && (
           <OrderForm
+            key={branch}
             branchId={branch}
             branchName={branchName}
             initialLocation={branchLocations[branch]}
@@ -1411,6 +1418,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
             }}
           />
         )}
+        {modal === "pos-membership" && dashboard && <PosMembershipForm key={branch} branch={branch} />}
         {modal === "order" && !dashboard && (
           <CustomerOrderForm
             branchId={branch}
@@ -1660,7 +1668,7 @@ function OrderForm({
   );
   const [speed, setSpeed] = useState<ServiceSpeed>(() => defaultSpeed(services.find((item) => item.id === initialService) || services[0]));
   const [insurance, setInsurance] = useState(false);
-  const [posMemberCode, setPosMemberCode] = useState("");
+  const [posUseMembershipBalance, setPosUseMembershipBalance] = useState(false);
   const [memberActive, setMemberActive] = useState(false);
   const [rewardBalances, setRewardBalances] = useState<{ points: number; membership: number; pointsBlocked: boolean } | null>(null);
   const [rewardsLoading, setRewardsLoading] = useState(!pos);
@@ -1687,6 +1695,9 @@ function OrderForm({
   });
   const set = (key: string, value: string) =>
     setForm((p) => ({ ...p, [key]: value }));
+  const posLookup = usePosMembership(branchId, form.phone, pos && step === 2);
+  const posMember = posLookup.data?.member;
+  const waitingForPosMember = pos && step === 2 && (!posLookup.data || posLookup.activationPending);
   const selectedService =
     services.find((item) => item.id === service) || services[0];
   useEffect(() => {
@@ -1724,19 +1735,22 @@ function OrderForm({
     };
   }, [pos, branchId, auth.user?.uid, auth.request, rewardsRevision]);
   const estimatedBaseService = pos && kg === 0 ? 0 : estimate(services, service, kg, speed);
-  const estimatedService = Math.round(
-    estimatedBaseService * (memberActive || (pos && posMemberCode.length === 10) ? 0.8 : 1),
-  );
+  const membershipEligible = pos ? posMember?.discountEligible : memberActive;
+  const estimatedService = membershipEligible ? Math.round(estimatedBaseService * 0.8) : estimatedBaseService;
   const estimatedMemberDiscount = estimatedBaseService - estimatedService;
   const estimatedMembership = !pos && useMembershipBalance && memberActive && rewardBalances
     ? Math.min(rewardBalances.membership, estimatedService) : 0;
+  const availablePosBalance = posMember?.discountEligible && !selectedService.startingAt
+    ? Math.min(posMember.balance, estimatedService) : 0;
+  const posMembershipCharge = posUseMembershipBalance ? availablePosBalance : 0;
   const estimatedPoints = !pos && usePoints && rewardBalances && !rewardBalances.pointsBlocked
     ? Math.min(rewardBalances.points, estimatedService - estimatedMembership) : 0;
   const estimatedRemaining = pos && kg === 0
     ? 0
-    : estimatedService - estimatedPoints - estimatedMembership + (insurance ? 1000 : 0);
+    : estimatedService - estimatedPoints - estimatedMembership - posMembershipCharge + (insurance ? 1000 : 0);
   const estimatedBeforeDiscounts = estimatedBaseService + (pos && kg === 0 ? 0 : insurance ? 1000 : 0);
-  const showOriginalPrice = !pos && estimatedBeforeDiscounts > estimatedRemaining;
+  const showOriginalPrice = estimatedBeforeDiscounts > estimatedRemaining;
+  const posPaidByBalance = posMembershipCharge > 0 && estimatedRemaining === 0;
   const selectService = (id: string) => {
     setService(id);
     const next = services.find((item) => item.id === id);
@@ -1788,6 +1802,10 @@ function OrderForm({
           setStep(2);
           return;
         }
+        if (waitingForPosMember) {
+          setError("Cek status membership pelanggan sebelum menyimpan pesanan.");
+          return;
+        }
         try {
           await submit({
             ...form,
@@ -1803,19 +1821,23 @@ function OrderForm({
             ...(!pos ? { usePoints, useMembershipBalance, membershipLimit: estimatedMembership, pointsLimit: estimatedPoints } : {}),
             ...(pos
               ? {
-                  posPayment,
-                  ...(posMemberCode ? { membershipCode: posMemberCode } : {}),
-                  expectedTotal:
-                    Math.round(
-                      estimate(services, service, kg, speed) *
-                        (posMemberCode.length === 10 ? 0.8 : 1),
-                    ) + (insurance ? 1000 : 0),
+                  posPayment: posPaidByBalance ? "later" : posPayment,
+                  ...(posMembershipCharge > 0 ? {
+                    posUseMembershipBalance: true,
+                    posMembershipReference: posMember?.reference,
+                    expectedMembershipAmount: posMembershipCharge,
+                  } : {}),
+                  expectedTotal: estimatedRemaining,
                 }
               : {}),
             requestId,
           });
         } catch (e) {
           setError((e as Error).message);
+          if (pos) {
+            setPosUseMembershipBalance(false);
+            posLookup.refresh();
+          }
         }
       }}
     >
@@ -2146,6 +2168,7 @@ function OrderForm({
                 minLength={2}
                 maxLength={80}
                 value={form.name}
+                disabled={pos && (busy || posLookup.activationPending)}
                 onChange={(e) => set("name", e.target.value)}
                 placeholder="Nama lengkap"
               />
@@ -2156,42 +2179,35 @@ function OrderForm({
                 autoComplete="tel"
                 type="tel"
                 required
-                pattern="(\+62|62|0)8[0-9]{7,12}"
+                pattern={pos ? undefined : "(\\+62|62|0)8[0-9]{7,12}"}
                 value={form.phone}
-                onChange={(e) => set("phone", e.target.value)}
+                disabled={pos && (busy || posLookup.activationPending)}
+                onChange={(e) => {
+                  if (pos && normalizePhone(e.target.value) !== normalizePhone(form.phone)) setPosUseMembershipBalance(false);
+                  set("phone", e.target.value);
+                }}
                 placeholder="08xxxxxxxxxx"
               />
+              {pos && form.phone && !posLookup.key && <small>Isi nomor WhatsApp pelanggan dengan lengkap.</small>}
             </label>
           </div>
           {pos && (
-            <label>
-              Kode member (opsional)
-              <input
-                value={posMemberCode}
-                onChange={(event) =>
-                  setPosMemberCode(
-                    event.target.value
-                      .toUpperCase()
-                      .replace(/[^A-F0-9]/g, "")
-                      .slice(0, 10),
-                  )
-                }
-                minLength={10}
-                maxLength={10}
-                placeholder="10 karakter dari profil pelanggan"
-                autoComplete="off"
-              />
-              <small>
-                Minta pelanggan membuat kode untuk toko ini di profil. Kode
-                berlaku sekali selama 5 menit; saldo hanya digunakan oleh
-                pelanggan melalui tracking. Diskon berlaku jika saldo masih
-                tersedia saat pesanan disimpan.
-              </small>
+            <PosMembershipDetails key={posLookup.key} lookup={posLookup} name={form.name} disabled={busy} />
+          )}
+          {pos && availablePosBalance > 0 && (
+            <label className="pos-member-use">
+              <input type="checkbox" checked={posUseMembershipBalance} disabled={busy || posLookup.activationPending}
+                onChange={(event) => setPosUseMembershipBalance(event.target.checked)} />
+              <span>
+                <b>Pakai saldo membership {money(availablePosBalance)}</b>
+                <small>Centang jika pelanggan setuju. Pemakaian saldo dicatat saat pesanan disimpan.</small>
+              </span>
             </label>
           )}
-          {pos && (
+          {posPaidByBalance && <p className="small-note">Seluruh tagihan akan lunas dengan saldo membership.</p>}
+          {pos && !posPaidByBalance && (
             <fieldset className="pos-payment-choice">
-              <legend>Pembayaran</legend>
+              <legend>{posMembershipCharge > 0 ? "Pembayaran sisa tagihan" : "Pembayaran"}</legend>
               {(
                 [
                   ["later", "Bayar nanti", "Pesanan dicatat belum dibayar"],
@@ -2302,7 +2318,7 @@ function OrderForm({
         <div>
           <small>
             {pos
-              ? "Total layanan"
+              ? posMembershipCharge > 0 ? "Sisa pembayaran" : "Total layanan"
               : selectedService.startingAt
                 ? "Estimasi dibayar · harga mulai"
                 : serviceAvailableSpeeds(selectedService).length === 0
@@ -2317,15 +2333,10 @@ function OrderForm({
             {kg} {selectedService.unit} ·{" "}
             {pos ? "berat/jumlah aktual" : "belum termasuk ongkir"}
           </small>
-          {pos && posMemberCode.length === 10 && (
-            <small>
-              Diskon membership 20% pada layanan
-              {" · kode dan saldo diperiksa saat disimpan"}
-            </small>
-          )}
-          {!pos && showOriginalPrice && (
-            <div className="order-summary-breakdown" aria-label="Rincian perkiraan potongan">
+          {showOriginalPrice && (
+            <div className="order-summary-breakdown" aria-label="Rincian potongan">
               {estimatedMemberDiscount > 0 && <div><span>Diskon member 20%</span><span>−{money(estimatedMemberDiscount)}</span></div>}
+              {posMembershipCharge > 0 && <div><span>Saldo membership</span><span>−{money(posMembershipCharge)}</span></div>}
               {estimatedMembership > 0 && <div><span>Saldo membership</span><span>−{money(estimatedMembership)}</span></div>}
               {estimatedPoints > 0 && <div><span>Poin loyalty</span><span>−{money(estimatedPoints)}</span></div>}
             </div>
@@ -2336,12 +2347,16 @@ function OrderForm({
             <button
               type="button"
               className="secondary"
-              onClick={() => setStep(1)}
+              disabled={busy || posLookup.activationPending}
+              onClick={() => {
+                setStep(1);
+                if (pos) setPosUseMembershipBalance(false);
+              }}
             >
               Kembali
             </button>
           )}
-          <button disabled={busy || photoBusy || (!pos && (rewardsLoading || rewardsError || !rewardBalances))} className="primary">
+          <button disabled={busy || photoBusy || waitingForPosMember || (!pos && (rewardsLoading || rewardsError || !rewardBalances))} className="primary">
             {busy
               ? "Menyimpan…"
               : step === 1

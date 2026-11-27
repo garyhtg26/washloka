@@ -59,11 +59,10 @@ export const orderSchema = z.object({
   useMembershipBalance: z.boolean().default(false),
   pointsLimit: z.number().int().min(0).max(1000000000).optional(),
   membershipLimit: z.number().int().min(0).max(1000000000).optional(),
-  membershipCode: z
-    .string()
-    .regex(/^[A-F0-9]{10}$/)
-    .optional(),
   posPayment: z.enum(["later", "cash", "transfer"]).optional(),
+  posUseMembershipBalance: z.boolean().optional(),
+  posMembershipReference: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  expectedMembershipAmount: z.number().int().min(1).max(10000000).optional(),
   expectedTotal: z.number().int().min(0).max(10000000).optional(),
 });
 export const updateSchema = z.object({

@@ -193,7 +193,7 @@ function DepositItem({
   );
 }
 
-export default function MembershipAdmin({ branch }: { branch: BranchId }) {
+export default function MembershipAdmin({ branch, onBalanceChanged }: { branch: BranchId; onBalanceChanged?: () => void }) {
   const auth = useAuth();
   const [items, setItems] = useState<Deposit[]>([]);
   const [message, setMessage] = useState("");
@@ -247,6 +247,7 @@ export default function MembershipAdmin({ branch }: { branch: BranchId }) {
       const body = await response.json();
       if (!response.ok)
         throw Error(body.error || "Pengajuan belum bisa diproses.");
+      if (action === "confirm") onBalanceChanged?.();
       await load();
       setMessage(
         action === "confirm"

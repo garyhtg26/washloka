@@ -1,0 +1,73 @@
+.pos-member-panel {
+  display: grid;
+  gap: 12px;
+  margin: 8px 0 18px;
+  padding: 14px;
+  border: 1px solid #eadfe3;
+  border-radius: 12px;
+  background: #fcf8f9;
+}
+.pos-member-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+.pos-member-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--blue);
+  background: #f6e8ed;
+}
+.pos-member-panel h3 {
+  margin: 0 0 3px;
+  font-size: 14px;
+  line-height: 1.3;
+}
+.pos-member-panel p {
+  margin: 0;
+  color: #67585d;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.pos-member-panel label {
+  margin: 0;
+}
+.pos-member-panel > button {
+  justify-self: start;
+}
+.pos-member-panel > p.form-error {
+  color: #ad283c;
+}
+label.pos-member-use {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid #eadfe3;
+  border-radius: 12px;
+}
+.pos-member-use input[type="checkbox"] {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  padding: 0;
+}
+.pos-member-use b,
+.pos-member-use small {
+  display: block;
+}
+.pos-member-use small {
+  margin-top: 3px;
+  line-height: 1.5;
+}
+.pos-membership-open {
+  margin-top: 18px;
+  max-width: 100%;
+}

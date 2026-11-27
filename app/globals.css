@@ -3231,6 +3231,27 @@ dialog.auth-dialog {
   font-size: 10px;
   color: #999db0;
 }
+.user-membership {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 7px;
+  margin-top: 9px;
+  color: #6f6570;
+}
+.user-membership[data-active="true"] {
+  color: #7a0e2f;
+}
+.user-row-info .user-membership span,
+.user-row-info .user-membership small {
+  margin: 0;
+  color: inherit;
+}
+.user-membership strong {
+  font-size: 12px;
+  color: #211a1e;
+  font-variant-numeric: tabular-nums;
+}
 .user-row-controls {
   display: flex;
   align-items: center;

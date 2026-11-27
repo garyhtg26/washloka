@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Plus, ShieldCheck, User, Trash2, Save } from "lucide-react";
+import { Plus, ShieldCheck, User, Trash2, Save, Wallet } from "lucide-react";
 import { useAuth } from "./auth-provider";
 import MembershipAdmin from "./membership-admin";
 import DeleteUserModal from "./delete-user-modal";
 import { branches as branchNames, type BranchId } from "@/lib/branches";
+import { money } from "@/lib/types";
 type Row = {
   uid: string;
   email: string;
@@ -18,6 +19,12 @@ type Row = {
   providers: string[];
   phoneAccount?: boolean;
   branches: BranchId[];
+  membership?: {
+    registered: boolean;
+    active: boolean;
+    balance: number | null;
+    reconciliationRequired: boolean;
+  } | null;
 };
 export default function UserManagement({ branch, allowedBranches }: { branch: BranchId; allowedBranches: BranchId[] }) {
   const auth = useAuth();
@@ -73,7 +80,7 @@ export default function UserManagement({ branch, allowedBranches }: { branch: Br
   }
   return (
     <section className="user-management">
-      <MembershipAdmin key={branch} branch={branch} />
+      <MembershipAdmin key={branch} branch={branch} onBalanceChanged={canDeleteAccounts ? () => void load() : undefined} />
       <div className="users-toolbar">
         <div>
           <h2>Tim & pelanggan</h2>
@@ -248,6 +255,10 @@ function UserRow({
   const [disabled, setDisabled] = useState(row.disabled);
   const [selectedBranches, setSelectedBranches] = useState<BranchId[]>(row.branches);
   const protectedUser = row.self || row.role === "owner";
+  const membership = row.membership;
+  const membershipLabel = !membership ? "Membership belum bisa dimuat"
+    : membership.active ? "Member aktif"
+      : membership.registered ? "Membership terdaftar" : "Belum menjadi member";
   useEffect(() => {
     setRole(row.role);
     setDisabled(row.disabled);
@@ -282,6 +293,16 @@ function UserRow({
               : "Email belum diverifikasi"}{" "}
           · {row.disabled ? "Nonaktif" : "Aktif"}
         </small>
+        {membership !== undefined && (
+          <div className="user-membership" data-active={membership?.active || undefined}>
+            <Wallet size={14} aria-hidden="true" />
+            <span>{membershipLabel}</span>
+            {membership?.registered && (
+              <strong>{membership.balance === null ? "Saldo belum tersedia" : money(membership.balance)}</strong>
+            )}
+            {membership?.reconciliationRequired && <small>Saldo sedang diperiksa</small>}
+          </div>
+        )}
       </div>
       <div className="user-row-controls">
         <div className="user-row-main-controls">

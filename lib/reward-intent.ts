@@ -111,7 +111,7 @@ export function commitRewardReservation(
   if (memberDelta) {
     tx.set(plan.memberRef, { balance: nextMemberBalance, updatedAt: now }, { merge: true });
     tx.create(database.doc(`memberships/${order.uid}/events/${randomUUID()}`), {
-      type: memberDelta > 0 ? "returned" : "redeemed", amount: Math.abs(memberDelta), orderId: order.id, branchId: order.branchId, createdAt: now,
+      type: memberDelta > 0 ? "returned" : "redeemed", amount: Math.abs(memberDelta), balanceAfter: nextMemberBalance, orderId: order.id, branchId: order.branchId, createdAt: now,
     });
   }
   return {
@@ -141,7 +141,7 @@ export function commitRewardIntent(
   if (plan.membershipUsed) {
     tx.set(plan.memberRef, { balance: nextMemberBalance, updatedAt: now }, { merge: true });
     tx.create(database.doc(`memberships/${order.uid}/events/${randomUUID()}`), {
-      type: "redeemed", amount: plan.membershipUsed, orderId: order.id, createdAt: now,
+      type: "redeemed", amount: plan.membershipUsed, balanceAfter: nextMemberBalance, orderId: order.id, branchId: order.branchId, createdAt: now,
     });
   }
   return {

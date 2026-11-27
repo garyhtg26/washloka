@@ -8,7 +8,9 @@ import {
   type FormEvent,
 } from "react";
 import {
+  ArrowDownLeft,
   ArrowRight,
+  ArrowUpRight,
   BadgeCheck,
   Building2,
   Check,
@@ -17,14 +19,15 @@ import {
   Copy,
   CreditCard,
   Gift,
+  History,
   ImagePlus,
   QrCode,
-  ShieldCheck,
   X,
 } from "lucide-react";
 import { money } from "@/lib/types";
 import { prepareImage } from "@/lib/image-upload";
-import { DEFAULT_BRANCH, activeBranchIds, branches, resolveCustomerBranch, type BranchId } from "@/lib/branches";
+import { formatOrderCreatedAt } from "@/lib/tracking-date";
+import { DEFAULT_BRANCH, activeBranchIds, branches, normalizeBranchId, resolveCustomerBranch, type BranchId } from "@/lib/branches";
 import { useAuth } from "./auth-provider";
 import "./membership-card.css";
 
@@ -36,6 +39,17 @@ type Deposit = {
   paymentMethod?: "bank_transfer" | "qris_static";
   qris?: { id: string; recipient: string };
   bank: { bankName: string; accountNumber: string; accountHolder: string };
+};
+type BalanceEvent = {
+  id: string;
+  type: string;
+  amount: number;
+  createdAt: string;
+  orderId?: string;
+  branchId?: string;
+  note?: string;
+  source?: string;
+  balanceAfter?: number;
 };
 type Membership = {
   active: boolean;
@@ -49,9 +63,64 @@ type Membership = {
     accountHolder: string;
     configured: boolean;
   };
-  history: { id: string; type: string; amount: number; createdAt: string }[];
+  history: BalanceEvent[];
 };
-type DialogView = "deposit" | "code";
+type DialogView = "deposit" | "history";
+
+function BalanceHistory({ data }: { data: Membership }) {
+  return (
+    <div className="member-history">
+      <div className="member-history-balance">
+        <span>Saldo saat ini</span>
+        <strong>{money(data.balance)}</strong>
+      </div>
+      {!data.history.length ? (
+        <p className="member-history-empty">Belum ada transaksi saldo.</p>
+      ) : (
+        <ul aria-label="Transaksi saldo terbaru">
+          {data.history.map((event) => {
+            const deduction = event.type === "redeemed" || event.amount < 0;
+            const credit = event.type === "deposit" || event.type === "returned";
+            const Movement = deduction ? ArrowUpRight : credit ? ArrowDownLeft : History;
+            const title = event.type === "deposit" ? "Isi saldo"
+              : event.type === "returned" ? "Saldo dikembalikan"
+              : deduction ? "Pembayaran pesanan" : "Perubahan saldo";
+            const date = formatOrderCreatedAt(event.createdAt);
+            const store = normalizeBranchId(event.branchId);
+            return (
+              <li key={event.id}>
+                <span className={`member-history-icon ${deduction ? "is-debit" : credit ? "is-credit" : ""}`}>
+                  <Movement size={17} aria-hidden="true" />
+                </span>
+                <div className="member-history-description">
+                  <b>{title}</b>
+                  {event.orderId && <small>Pesanan {event.orderId}</small>}
+                  {(store || date) && (
+                    <small>
+                      {store && branches[store]}
+                      {store && date && " · "}
+                      {date && <time dateTime={event.createdAt}>{date}</time>}
+                    </small>
+                  )}
+                  {event.note && <small>{event.note}</small>}
+                  {event.source === "manual" && <small>Dicatat oleh toko</small>}
+                </div>
+                <div className="member-history-value">
+                  <b className={deduction ? "is-debit" : credit ? "is-credit" : ""}>
+                    {deduction ? "−" : credit ? "+" : ""}{money(Math.abs(event.amount))}
+                  </b>
+                  {typeof event.balanceAfter === "number" && Number.isSafeInteger(event.balanceAfter) && (
+                    <small>Sisa {money(event.balanceAfter)}</small>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function MembershipCard() {
   const auth = useAuth();
@@ -67,10 +136,6 @@ export default function MembershipCard() {
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState(false);
   const [view, setView] = useState<DialogView | null>(null);
-  const [code, setCode] = useState<{ code: string; expiresAt: number } | null>(
-    null,
-  );
-  const [codeBusy, setCodeBusy] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const loadRevision = useRef(0);
   const canPayWithQris = loadedBranch === branch && data?.staticQrisAvailable === true;
@@ -82,7 +147,7 @@ export default function MembershipCard() {
   }, []);
   const load = useCallback(async () => {
     const revision = ++loadRevision.current;
-    const response = await auth.request(`/api/membership?branch=${branch}`);
+    const response = await auth.request(`/api/membership?branch=${branch}`, { cache: "no-store" });
     const result = await response.json();
     if (!response.ok)
       throw Error(result.error || "Membership belum bisa dimuat.");
@@ -119,7 +184,11 @@ export default function MembershipCard() {
   function open(nextView: DialogView) {
     setMessage("");
     setCopied(false);
-    setCode(null);
+    setView(nextView);
+    if (nextView === "history") {
+      void load().catch((error) => setMessage(error.message));
+      return;
+    }
     try {
       const requested = new URLSearchParams(window.location.search).get("branch");
       const saved = localStorage.getItem("eazywash-selected-store");
@@ -130,7 +199,6 @@ export default function MembershipCard() {
         setBranch(nextBranch);
       }
     } catch {}
-    setView(nextView);
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -190,27 +258,6 @@ export default function MembershipCard() {
       setBusy(false);
     }
   }
-  async function createCode() {
-    setCodeBusy(true);
-    setMessage("");
-    setCode(null);
-    try {
-      const response = await auth.request("/api/membership/code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ branch }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw Error(result.error || "Kode belum bisa dibuat.");
-      setCode(result);
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Kode belum bisa dibuat.",
-      );
-    } finally {
-      setCodeBusy(false);
-    }
-  }
   async function copyAccount(account: string) {
     try {
       await navigator.clipboard.writeText(account);
@@ -229,8 +276,8 @@ export default function MembershipCard() {
       ? "Menunggu verifikasi"
       : "Belum aktif";
   const title =
-    view === "code"
-      ? "Kode member"
+    view === "history"
+      ? "Riwayat saldo"
       : isPending
         ? "Status deposit"
         : data?.active
@@ -293,15 +340,14 @@ export default function MembershipCard() {
                 : "Aktifkan membership"}
             <ArrowRight size={16} />
           </button>
-          {data?.discountEligible && (
-            <button
-              type="button"
-              className="member-code-link"
-              onClick={() => open("code")}
-            >
-              Kode member <ChevronRight size={16} />
-            </button>
-          )}
+          <button
+            type="button"
+            className="member-history-button"
+            disabled={!data}
+            onClick={() => open("history")}
+          >
+            <History size={16} aria-hidden="true" /> Riwayat saldo
+          </button>
         </div>
         {!data && message && (
           <p className="member-summary-error" role="alert">
@@ -342,14 +388,13 @@ export default function MembershipCard() {
           </button>
         </div>
         <div className="member-dialog-content">
-          {(view === "code" || !isPending) && (
+          {view === "deposit" && !isPending && (
             <label className="member-field">
-              Toko {view === "code" ? "untuk kode member" : "penerima deposit"}
+              Toko penerima deposit
               <select
                 value={branch}
-                disabled={busy || codeBusy}
+                disabled={busy}
                 onChange={(event) => {
-                  setCode(null);
                   setCopied(false);
                   setMessage("");
                   setPaymentMethod("bank_transfer");
@@ -361,44 +406,8 @@ export default function MembershipCard() {
               </select>
             </label>
           )}
-          {view === "code" ? (
-            <div className="member-code-panel">
-              <div className="member-benefit">
-                <span>
-                  <ShieldCheck size={20} />
-                </span>
-                <div>
-                  <b>Untuk pesanan di {branches[branch]}</b>
-                  <p>
-                    Tunjukkan kode sekali pakai kepada staf saat mencatat
-                    pesanan.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="member-primary member-wide"
-                disabled={codeBusy}
-                onClick={() => void createCode()}
-              >
-                {codeBusy ? "Menyiapkan…" : "Buat kode member"}
-                <ArrowRight size={16} />
-              </button>
-              {code && (
-                <div className="member-code-value">
-                  <span>KODE SEKALI PAKAI</span>
-                  <strong>{code.code}</strong>
-                  <small>
-                    Berlaku sampai{" "}
-                    {new Date(code.expiresAt).toLocaleTimeString("id-ID", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                    . Kode baru membatalkan kode sebelumnya.
-                  </small>
-                </div>
-              )}
-            </div>
+          {view === "history" ? (
+            data && <BalanceHistory data={data} />
           ) : isPending ? (
             <div className="member-pending-panel">
               <span className="member-pending-icon">
@@ -580,35 +589,6 @@ export default function MembershipCard() {
             <p className="member-form-message" role="status">
               {message}
             </p>
-          )}
-          {view === "deposit" && !!data?.history.length && (
-            <details className="member-history">
-              <summary>Riwayat saldo</summary>
-              <ul>
-                {data.history.map((event) => (
-                  <li key={event.id}>
-                    <span>
-                      {event.type === "deposit"
-                        ? "Deposit dikonfirmasi"
-                        : event.type === "returned"
-                          ? "Saldo dikembalikan"
-                          : "Digunakan untuk cuci"}
-                      <small>
-                        {new Date(event.createdAt).toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </small>
-                    </span>
-                    <b>
-                      {event.type === "redeemed" ? "−" : "+"}
-                      {money(event.amount)}
-                    </b>
-                  </li>
-                ))}
-              </ul>
-            </details>
           )}
         </div>
       </dialog>

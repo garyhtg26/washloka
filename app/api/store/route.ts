@@ -33,11 +33,7 @@ import { serverFailure } from "@/lib/server-diagnostics";
 import { paymentLocked } from "@/lib/payments/policy";
 import { bankDetails, manualLocked, safeManualSummary } from "@/lib/payments/manual-policy";
 import { signalPaymentChange } from "@/lib/payments/service";
-import {
-  memberCodeHash,
-  validMemberCode,
-  validMemberWallet,
-} from "@/lib/membership-code";
+import { findPosMember, posMembershipPayment } from "@/lib/pos-membership";
 import { prepareEarn, commitEarn } from "@/lib/loyalty";
 import { eligibleMemberDiscount } from "@/lib/membership-eligibility";
 import { prepareRewardIntent, commitRewardIntent, prepareRewardReservation, commitRewardReservation } from "@/lib/reward-intent";
@@ -102,8 +98,8 @@ export async function POST(req: NextRequest) {
         lat: customerInput.fulfillment === "delivery" ? customerInput.lat! : 0,
         lng: customerInput.fulfillment === "delivery" ? customerInput.lng! : 0,
         date: "", slot: "", photo: "", insurance: false,
-        membershipCode: undefined,
-        posPayment: undefined, expectedTotal: undefined,
+        posPayment: undefined, posUseMembershipBalance: undefined, posMembershipReference: undefined,
+        expectedTotal: undefined, expectedMembershipAmount: undefined,
       } : orderSchema.parse(body.data);
       if (!user && (input.usePoints || input.useMembershipBalance))
         throw new ApiError(401, "Masuk untuk menggunakan poin atau saldo membership.");
@@ -121,10 +117,12 @@ export async function POST(req: NextRequest) {
       if (
         input.source !== "pos" &&
         (input.posPayment ||
-          input.expectedTotal !== undefined ||
-          input.membershipCode)
+          input.expectedTotal !== undefined || input.posUseMembershipBalance !== undefined ||
+          input.expectedMembershipAmount !== undefined || input.posMembershipReference !== undefined)
       )
         throw new ApiError(400, "Pilihan pembayaran kasir tidak tersedia.");
+      if (input.posUseMembershipBalance && (!input.posMembershipReference || input.expectedMembershipAmount === undefined || input.expectedTotal === undefined))
+        throw new ApiError(409, "Periksa kembali saldo yang akan digunakan dan sisa tagihan.");
       const today = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Jakarta",
       }).format(new Date());
@@ -164,22 +162,6 @@ export async function POST(req: NextRequest) {
         database.doc(`guestOrderRates/${createHash("sha256").update(`phone:${input.phone}`).digest("hex")}`),
         database.doc(`guestOrderRates/${createHash("sha256").update(`network:${ip || "unavailable"}`).digest("hex")}`),
       ];
-      if (input.membershipCode) {
-        await database.runTransaction(async (tx) => {
-          const attemptRef = database.doc(`membershipCodeAttempts/${user!.uid}`);
-          const attemptSnap = await tx.get(attemptRef);
-          const now = Date.now();
-          const attempts = (attemptSnap.get("attempts") || []).filter(
-            (value: number) => Number.isFinite(value) && value > now - 3600000,
-          );
-          if (attempts.length >= 30)
-            throw new ApiError(
-              429,
-              "Terlalu banyak percobaan kode member. Coba lagi nanti.",
-            );
-          tx.set(attemptRef, { attempts: [...attempts, now] });
-        });
-      }
       let photoPath = "";
       if (input.photo) {
         if (!photoStorageReady())
@@ -194,17 +176,10 @@ export async function POST(req: NextRequest) {
         await uploadPhoto(photoPath, bytes);
       }
       await database.runTransaction(async (tx) => {
-        const codeHash = input.membershipCode
-          ? memberCodeHash(input.membershipCode)
-          : null;
-        const codeRef = codeHash
-          ? database.doc(`membershipCodes/${codeHash}`)
-          : null;
-        const [settings, prior, rate, codeSnap, bankSettings, ...guestRates] = await Promise.all([
+        const [settings, prior, rate, bankSettings, ...guestRates] = await Promise.all([
           readBranchSettings(database, branch, tx),
           tx.get(ref),
           user ? tx.get(database.doc(`rateLimits/${user.uid}`)) : Promise.resolve(null),
-          codeRef ? tx.get(codeRef) : Promise.resolve(null),
           branch === "buzzwash" ? readStoreBankSettings(database, branch, tx) : Promise.resolve(null),
           ...guestRateRefs.map((rateRef) => tx.get(rateRef)),
         ]);
@@ -215,25 +190,6 @@ export async function POST(req: NextRequest) {
         }
         if (branch === "buzzwash" && !bankDetails(bankSettings, branch).configured)
           throw new ApiError(409, "Rekening BuzzWash belum tersedia. Coba lagi nanti.");
-        let customerUid: string | null =
-          input.source === "web" ? user?.uid || null : null;
-        if (codeRef) {
-          const codeData = codeSnap?.data();
-          if (!validMemberCode(codeData, branch, Date.now()))
-            throw new ApiError(
-              409,
-              "Kode member tidak berlaku, kedaluwarsa, atau sudah digunakan. Minta kode baru untuk toko ini.",
-            );
-          customerUid = codeData!.uid as string;
-        }
-        const membership = customerUid
-          ? await tx.get(database.doc(`memberships/${customerUid}`))
-          : null;
-        if (codeRef && !validMemberWallet(membership?.data(), codeHash!))
-          throw new ApiError(
-            409,
-            "Kode member tidak berlaku atau saldo sudah habis. Minta pelanggan memeriksa saldo dan membuat kode baru.",
-          );
         const cutoff = Date.now() - 3600000;
         const attempts = (rate?.get("orders") || []).filter(
           (t: number) => t > cutoff,
@@ -243,6 +199,10 @@ export async function POST(req: NextRequest) {
         const guestAttempts = guestRates.map((snapshot) => (snapshot!.get("orders") || []).filter((t: number) => Number.isFinite(t) && t > cutoff));
         if (guestAttempts.some((entries, index) => entries.length >= (index === 0 ? 10 : 40)))
           throw new ApiError(429, "Terlalu banyak pesanan. Coba lagi nanti.");
+        const posMember = input.source === "pos" ? await findPosMember(database, input.phone, tx) : null;
+        const customerUid = input.source === "web" ? user?.uid || null : posMember?.uid ?? null;
+        const webMembership = input.source === "web" && customerUid
+          ? await tx.get(database.doc(`memberships/${customerUid}`)) : null;
         const services = normalizeServices(settings.get("services"), branch);
         const service = services.find((item) => item.id === input.service);
         if (!service)
@@ -265,7 +225,7 @@ export async function POST(req: NextRequest) {
           throw new ApiError(400, `Maksimum layanan ini ${service.maximumQuantity} ${service.unit} per paket.`);
         if (service.unit !== "kg" && !Number.isInteger(quantity))
           throw new ApiError(400, "Jumlah item harus berupa bilangan bulat.");
-        if (service.startingAt && input.source === "pos" && input.posPayment === "cash")
+        if (service.startingAt && input.source === "pos" && (input.posPayment === "cash" || input.posUseMembershipBalance))
           throw new ApiError(409, "Harga akhir perlu dikonfirmasi sebelum menerima pembayaran.");
         const unitPrice = serviceUnitRate(service, speed);
         const washService = services.find((item) => item.id === "wash")!;
@@ -275,13 +235,14 @@ export async function POST(req: NextRequest) {
           requestId,
           photo,
           expectedTotal,
-          membershipCode,
+          expectedMembershipAmount,
+          posUseMembershipBalance,
+          posMembershipReference,
           posPayment,
           ...cleanInput
         } = input;
         void requestId;
         void photo;
-        void membershipCode;
         const clean = {
           ...cleanInput,
           ...(posPayment ? { posPayment } : {}),
@@ -293,7 +254,7 @@ export async function POST(req: NextRequest) {
             usePoints: false,
             pointsLimit: 0,
           } : {}),
-          membershipDiscount: eligibleMemberDiscount(membership?.data()),
+          membershipDiscount: posMember?.discountEligible ?? eligibleMemberDiscount(webMembership?.data()),
           express: speed !== "regular",
           unit: service.unit,
           speed,
@@ -303,18 +264,21 @@ export async function POST(req: NextRequest) {
           ...(service.pricingModel ? { pricingModel: service.pricingModel } : {}),
           ...(service.startingAt ? { startingAt: true, pricePending: true } : {}),
         };
-        const calculatedTotal =
-          (simpleCustomer ? 0 : calculateOrderPrice({ ...clean, unitPrice, washPrice }, quantity)) +
-          (input.insurance ? 1000 : 0);
-        if (
-          input.source === "pos" &&
-          input.posPayment === "cash" &&
-          expectedTotal !== calculatedTotal
-        )
-          throw new ApiError(
-            409,
-            "Harga layanan berubah. Periksa ulang tagihan sebelum menerima tunai.",
-          );
+        if (posUseMembershipBalance && !posMember?.discountEligible)
+          throw new ApiError(409, "Saldo membership sudah tidak tersedia. Cek ulang nomor dan saldo pelanggan.");
+        if (posUseMembershipBalance && posMembershipReference !== posMember?.reference)
+          throw new ApiError(409, "Akun pelanggan berubah. Cek ulang nomor sebelum memakai saldo.");
+        const serviceAmount = simpleCustomer ? 0 : calculateOrderPrice({ ...clean, unitPrice, washPrice }, quantity);
+        const { total: calculatedTotal, membershipUsed } = posMembershipPayment(
+          serviceAmount, input.insurance, posMember?.balance ?? 0, posUseMembershipBalance === true,
+        );
+        if (input.source === "pos" && (
+          ((input.posPayment === "cash" || expectedTotal !== undefined) && expectedTotal !== calculatedTotal) ||
+          (posUseMembershipBalance && expectedMembershipAmount !== membershipUsed)
+        ))
+          throw new ApiError(409, "Harga atau saldo berubah. Cek ulang tagihan sebelum menerima pembayaran.");
+        const settledByBalance = membershipUsed > 0 && calculatedTotal === 0;
+        const paidCash = input.source === "pos" && input.posPayment === "cash" && !settledByBalance;
         const status = input.source === "pos" ? 3 : 0;
         const token = randomUUID();
         const order: Order = {
@@ -325,10 +289,11 @@ export async function POST(req: NextRequest) {
           branchId: branch,
           actualKg: input.source === "pos" ? input.kg : null,
           status,
-          paid: input.source === "pos" && input.posPayment === "cash",
-          ...(input.source === "pos" && input.posPayment === "cash"
-            ? { paymentMethod: "cash" as const, paidAt: now }
+          paid: paidCash || settledByBalance,
+          ...(paidCash || settledByBalance
+            ? { paymentMethod: settledByBalance ? "membership" as const : "cash" as const, paidAt: now }
             : {}),
+          ...(membershipUsed ? { membershipUsed } : {}),
           shippingFee: input.source === "pos" || customerInput?.fulfillment === "dropoff" ? 0 : null,
           total: calculatedTotal,
           unitPrice,
@@ -342,12 +307,20 @@ export async function POST(req: NextRequest) {
           ? await prepareRewardReservation(tx, database, order, calculatedTotal - (input.insurance ? 1000 : 0), null, false)
           : null;
         const earn = order.paid ? await prepareEarn(tx, database, order) : null;
+        if (membershipUsed && posMember) {
+          const walletRef = database.doc(`memberships/${posMember.uid}`);
+          const balanceAfter = posMember.balance - membershipUsed;
+          tx.update(walletRef, { balance: balanceAfter, updatedAt: now });
+          tx.create(walletRef.collection("events").doc(`pos-${id}`), {
+            type: "redeemed", source: "pos", amount: membershipUsed, balanceAfter,
+            orderId: id, branchId: branch, createdAt: now, recordedBy: requester,
+          });
+        }
         const earnedFields = commitEarn(tx, database, order, earn, now);
         const reservedFields = reservation ? commitRewardReservation(tx, database, order, reservation, now) : {};
         tx.create(ref, { ...order, ...earnedFields, ...reservedFields, createdBy: requester });
         // Wake the active store dashboard as soon as a customer order is committed.
         if (input.source === "web") signalPaymentChange(tx, database, branch);
-        if (codeRef) tx.delete(codeRef);
         tx.create(database.doc(`tracking/${token}`), { orderId: id });
         if (user) tx.set(database.doc(`rateLimits/${user.uid}`), {
           orders: [...attempts, Date.now()], updatedAt: now,

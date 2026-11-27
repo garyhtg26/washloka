@@ -76,7 +76,17 @@ export async function GET(req: NextRequest) {
                 createdAt: pending.get("createdAt"),
               }
             : null,
-        history: history.docs.map((x) => ({ id: x.id, ...x.data() })),
+        history: history.docs.map((event) => ({
+          id: event.id,
+          type: event.get("type"),
+          amount: event.get("amount"),
+          createdAt: event.get("createdAt"),
+          orderId: event.get("orderId"),
+          branchId: event.get("branchId"),
+          note: event.get("note"),
+          source: event.get("source"),
+          balanceAfter: event.get("balanceAfter"),
+        })),
         bank: approvedBank ? bank : { bankName: "BCA", accountNumber: "", accountHolder: "", configured: false },
         staticQrisAvailable: isStaticQrisAvailable(branch, bank),
       },
