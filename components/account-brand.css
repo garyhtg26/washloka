@@ -46,12 +46,6 @@
   background: #f8f7f7;
   color: #1f1f1f;
 }
-.email-page .email-story {
-  background: linear-gradient(145deg, #4e091f, #7a0e2f);
-}
-.email-page .email-story h1 {
-  color: #fff;
-}
 .auth-panel h2,
 .auth-panel .auth-form label,
 .auth-panel .auth-form input {
@@ -108,10 +102,6 @@ dialog.auth-dialog:focus-visible {
 .auth-panel .auth-google:hover {
   border-color: #d7b6c1;
   background: #fbf7f8;
-}
-.email-page .email-story-caption {
-  color: #f6d9e2;
-  background: #68112d;
 }
 .email-page .email-status-icon:not(.is-success) {
   color: #7a0e2f;

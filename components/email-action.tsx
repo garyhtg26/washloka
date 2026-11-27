@@ -125,19 +125,15 @@ export default function EmailAction({
         />
       </a>
       <div className="email-layout">
-        <aside className="email-story">
-          <h1>Akun Washloka</h1>
+        <div className="email-story" aria-hidden="true">
           <Image
             src="/unsplash/folding-web.webp"
-            width={1536}
-            height={1024}
-            alt="Pakaian bersih terlipat rapi"
+            fill
+            sizes="(max-width: 680px) 1px, (max-width: 1114px) 44vw, 490px"
+            alt=""
             className="email-story-photo"
           />
-          <span className="email-story-caption">
-            WASHLOKA · LAUNDRY ECOSYSTEM
-          </span>
-        </aside>
+        </div>
         <section className="email-card" aria-live="polite">
           <span className={`email-status-icon ${success ? "is-success" : ""}`}>
             {state === "loading" ? (
@@ -161,7 +157,7 @@ export default function EmailAction({
           <p className="auth-kicker">
             {auth.scope === "admin" ? "WASHLOKA WORKSPACE" : "AKUN WASHLOKA"}
           </p>
-          <h2>
+          <h1>
             {state === "loading"
               ? "Memeriksa tautan…"
               : success
@@ -175,7 +171,7 @@ export default function EmailAction({
                     : reset
                       ? "Buat password baru."
                       : "Selamat datang di Washloka."}
-          </h2>
+          </h1>
           <p className="email-description">
             {success
               ? reset
