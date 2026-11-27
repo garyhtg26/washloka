@@ -1,13 +1,15 @@
 import type { TrackingOrder } from "./types";
 
-function revision(order: TrackingOrder): number {
+type VersionedOrder = Pick<TrackingOrder, "id" | "paymentRevision">;
+
+function revision(order: VersionedOrder): number {
   return Number.isSafeInteger(order.paymentRevision) && (order.paymentRevision ?? -1) >= 0
     ? order.paymentRevision!
     : 0;
 }
 
-/** Never replace an already received tracking snapshot with an older one. */
-export function acceptTrackingSnapshot(previous: TrackingOrder | null, incoming: TrackingOrder): TrackingOrder {
+/** Never replace an already received order snapshot with an older one. */
+export function acceptOrderSnapshot<T extends VersionedOrder>(previous: T | null, incoming: T): T {
   return previous && previous.id === incoming.id && revision(previous) > revision(incoming)
     ? previous
     : incoming;

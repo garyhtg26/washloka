@@ -51,9 +51,9 @@ import {
   tenantStorePath,
 } from "@/lib/dfable-path";
 import { consumePaymentEvents } from "@/lib/payment-stream";
-import { requestBranchStore } from "@/lib/branch-loading";
+import { acceptStoreSnapshot, requestBranchStore } from "@/lib/branch-loading";
 import { scrollMobileTrackingTop } from "@/lib/tracking-scroll";
-import { acceptTrackingSnapshot, preferOwnerTracking } from "@/lib/tracking-freshness";
+import { acceptOrderSnapshot, preferOwnerTracking } from "@/lib/tracking-freshness";
 import { publicTracking as toPublicTracking } from "@/lib/tracking-data";
 import type { TrackingOrder } from "@/lib/types";
 import {
@@ -309,7 +309,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
         switchBranch(data.allowedBranches[0], false);
         return;
       }
-      setStore(data);
+      setStore((previous) => acceptStoreSnapshot(previous, data));
       setLoadedSession(capturedSession);
       setProfile({
         name: data.profile?.name || auth.name,
@@ -438,7 +438,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
       if (orderBranch) switchBranch(orderBranch, false);
       setPublicTracking((previous) => ({
         token: requestedTrack,
-        order: acceptTrackingSnapshot(previous?.token === requestedTrack ? previous.order : null, data),
+        order: acceptOrderSnapshot(previous?.token === requestedTrack ? previous.order : null, data),
       }));
       setTrackingError("");
     } catch (error) {
@@ -494,6 +494,8 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
     }
   }, [toast]);
   async function action(action: string, data: unknown) {
+    const capturedSession = sessionKey;
+    const readInFlight = storeLoadController.current;
     setBusy(true);
     try {
       const r = await auth.request(`/api/store?branch=${branch}`, {
@@ -503,8 +505,11 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
       });
       const result = await r.json();
       if (!r.ok) throw Error(result.error);
-      setStore(result.store);
-      if (result.store.profile) setProfile(result.store.profile);
+      if (capturedSession === activeSession.current) {
+        if (readInFlight && storeLoadController.current === readInFlight) readInFlight.abort();
+        setStore((previous) => acceptStoreSnapshot(previous, result.store));
+        if (result.store.profile) setProfile(result.store.profile);
+      }
       return result;
     } finally {
       setBusy(false);
@@ -530,6 +535,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
   const currentSelected = selected
     ? orders.find((order) => order.id === selected.id) || selected
     : null;
+  const savingOrderDetail = modal === "detail" && busy;
   const myOrders = orders.filter((o) => auth.user && o.uid === auth.user.uid);
   const visible = orders.filter(
     (o) =>
@@ -1371,9 +1377,12 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
       <dialog
         aria-label={modal === "pos-membership" ? "Membership Washloka" : modal === "order" && !dashboard ? "Form pemesanan" : "Form Washloka"}
         ref={dialog}
-        onCancel={() => setModal("")}
+        onCancel={(event) => {
+          if (savingOrderDetail) event.preventDefault();
+          else setModal("");
+        }}
         onClick={(e) => {
-          if (e.target === dialog.current) setModal("");
+          if (!savingOrderDetail && e.target === dialog.current) setModal("");
         }}
         className={`${!dashboard && modal !== "login" && tenantBranch === "dfablelaundry" ? "tenant-dfable " : !dashboard && modal !== "login" && tenantBranch === "buzzwash" ? "tenant-buzzwash " : ""}${
           modal === "order"
@@ -1390,8 +1399,10 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
         }`}
       >
         <button
+          type="button"
           className="close-button"
           onClick={() => setModal("")}
+          disabled={savingOrderDetail}
           aria-label="Tutup"
         >
           <X size={21} />
@@ -1601,9 +1612,9 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
             </button>
           </div>
         )}
-        {modal === "detail" && selected && (
+        {modal === "detail" && currentSelected && (
           <StaffOrderDetail
-            order={store.orders.find((o) => o.id === selected.id) || selected}
+            order={currentSelected}
             services={store.services}
             busy={busy}
             paymentEnabled={store.paymentEnabled}
@@ -1660,11 +1671,14 @@ function OrderForm({
   const [step, setStep] = useState(1);
   const [requestId] = useState(() => crypto.randomUUID());
   const [service, setService] = useState(initialService);
+  function initialQuantity(item?: Service) {
+    if (!pos) return item?.minimumQuantity || 1;
+    return item?.id === "wash" && item.unit === "kg" && item.packageSize === 10
+      ? item.packageSize
+      : 0;
+  }
   const [kg, setKg] = useState(() =>
-    pos
-      ? 0
-      : services.find((item) => item.id === initialService)?.minimumQuantity ||
-        1,
+    initialQuantity(services.find((item) => item.id === initialService)),
   );
   const [speed, setSpeed] = useState<ServiceSpeed>(() => defaultSpeed(services.find((item) => item.id === initialService) || services[0]));
   const [insurance, setInsurance] = useState(false);
@@ -1754,7 +1768,7 @@ function OrderForm({
   const selectService = (id: string) => {
     setService(id);
     const next = services.find((item) => item.id === id);
-    setKg(pos ? 0 : next?.minimumQuantity || 1);
+    setKg(initialQuantity(next));
     if (next) setSpeed(defaultSpeed(next));
     setPosPayment("later");
   };

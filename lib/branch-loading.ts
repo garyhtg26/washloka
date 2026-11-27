@@ -1,8 +1,21 @@
 import type { BranchId } from "./branches";
+import { acceptOrderSnapshot } from "./tracking-freshness";
+import type { Store } from "./types";
 
 type Requester = (url: string, init?: RequestInit) => Promise<Response>;
 
 const DEFAULT_TIMEOUT_MS = 12_000;
+
+export function acceptStoreSnapshot(previous: Store | null, incoming: Store): Store {
+  if (!previous || previous.branchId !== incoming.branchId || previous.isAdmin !== incoming.isAdmin)
+    return incoming;
+
+  const previousOrders = new Map(previous.orders.map((order) => [order.id, order]));
+  return {
+    ...incoming,
+    orders: incoming.orders.map((order) => acceptOrderSnapshot(previousOrders.get(order.id) ?? null, order)),
+  };
+}
 
 export async function requestBranchStore(
   request: Requester,
