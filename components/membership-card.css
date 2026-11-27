@@ -279,13 +279,19 @@ dialog.member-dialog {
   border: 0;
 }
 .member-methods legend { color: #51464c; font-size: 12px; font-weight: 700; }
-.member-methods > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.member-methods > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
 .member-methods label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: 48px;
+  margin: 0;
+  padding: 10px;
   border: 1px solid #e9e1e4;
   border-radius: 10px;
   color: #51464c;
@@ -295,7 +301,17 @@ dialog.member-dialog {
   cursor: pointer;
 }
 .member-methods label.selected { border-color: #9f3154; color: #7a0e2f; background: #fbf3f6; }
-.member-methods input { accent-color: #7a0e2f; }
+.member-methods input[type="radio"] {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  accent-color: #7a0e2f;
+}
+.member-methods label > svg { flex: none; }
 .member-methods label:focus-within { outline: 2px solid #d9a9b9; outline-offset: 2px; }
 .member-qris {
   display: grid;

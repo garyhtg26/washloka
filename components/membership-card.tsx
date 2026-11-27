@@ -473,11 +473,13 @@ export default function MembershipCard() {
                 <div>
                   <label className={paymentMethod === "bank_transfer" ? "selected" : ""}>
                     <input type="radio" name="member-payment" value="bank_transfer" checked={paymentMethod === "bank_transfer"} disabled={busy} onChange={() => { setPaymentMethod("bank_transfer"); setShowQr(false); }} />
-                    <Building2 size={18} /> Transfer bank
+                    <Building2 size={18} aria-hidden="true" />
+                    <span>Transfer bank</span>
                   </label>
                   {loadedBranch === branch && data?.staticQrisAvailable && <label className={paymentMethod === "qris_static" ? "selected" : ""}>
                     <input type="radio" name="member-payment" value="qris_static" checked={paymentMethod === "qris_static"} disabled={busy} onChange={() => setPaymentMethod("qris_static")} />
-                    <QrCode size={18} /> QRIS manual
+                    <QrCode size={18} aria-hidden="true" />
+                    <span>QRIS manual</span>
                   </label>}
                 </div>
               </fieldset>
