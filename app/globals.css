@@ -1120,7 +1120,7 @@ footer > span {
   font-size: 12px;
   line-height: 1.7;
 }
-.blue-note button {
+.blue-note button:where(:not(.primary, .secondary)) {
   font-size: 12px;
   font-weight: 650;
   padding: 0;
