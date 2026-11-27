@@ -52,7 +52,7 @@ import {
 } from "@/lib/dfable-path";
 import { consumePaymentEvents } from "@/lib/payment-stream";
 import { acceptStoreSnapshot, requestBranchStore } from "@/lib/branch-loading";
-import { scrollMobileTrackingTop } from "@/lib/tracking-scroll";
+import { revealTrackingResult, scrollMobileTrackingTop } from "@/lib/tracking-scroll";
 import { acceptOrderSnapshot, preferOwnerTracking } from "@/lib/tracking-freshness";
 import { publicTracking as toPublicTracking } from "@/lib/tracking-data";
 import type { TrackingOrder } from "@/lib/types";
@@ -245,6 +245,8 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
   const trackingRequest = useRef<AbortController | null>(null);
   const trackingSequence = useRef(0);
   const [trackingError, setTrackingError] = useState("");
+  const trackingResult = useRef<HTMLElement>(null);
+  const [orderToReveal, setOrderToReveal] = useState<{ id: string } | null>(null);
   const [store, setStore] = useState<Store | null>(null);
   const [error, setError] = useState("");
   const [loadedSession, setLoadedSession] = useState("");
@@ -558,6 +560,13 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
       (o.id === publicOrder?.id || o.token === track.trim() || o.id === track.trim().toUpperCase()),
   ) : undefined;
   const tracked = preferOwnerTracking(publicOrder, ownerOrder ? toPublicTracking(ownerOrder) : undefined);
+  const trackedId = tracked?.id;
+  const trackingPageVisible = view === "tracking" && !pageLoading && !loadingProgress.visible;
+  useEffect(() => {
+    if (!trackingPageVisible || !orderToReveal || orderToReveal.id !== trackedId || !trackingResult.current) return;
+    revealTrackingResult(trackingResult.current, window);
+    setOrderToReveal(null);
+  }, [orderToReveal, trackedId, trackingPageVisible]);
   if (pageLoading || loadingProgress.visible)
     return (
       <main className={`loading${!dashboard && tenantBranch ? ` tenant-${tenantBranch === "dfablelaundry" ? "dfable" : "buzzwash"}` : ""}`}>
@@ -1292,6 +1301,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
                   <Tracking
                     order={tracked}
                     services={store.services}
+                    statusRef={trackingResult}
                     isOwner={
                       !!auth.user &&
                       orders.some(
@@ -1337,7 +1347,7 @@ export default function Studio({ dashboard = false, tenantBranch }: { dashboard?
                   <section className="history">
                     <h3>Pesanan kamu</h3>
                     {myOrders.map((o) => (
-                      <button key={o.id} onClick={() => { setTrack(o.id); scrollMobileTrackingTop(window); }}>
+                      <button type="button" key={o.id} onClick={() => { setTrack(o.id); setOrderToReveal({ id: o.id }); }}>
                         <Package size={20} />
                         <span>
                           <b>{o.id}</b>

@@ -14,6 +14,9 @@
   box-shadow: 0 8px 28px #1e285408;
   overflow: hidden;
 }
+.tracking-progress-card {
+  scroll-margin-top: 1rem;
+}
 .tracking-status-hero {
   position: relative;
   overflow: hidden;

@@ -1,4 +1,5 @@
 "use client";
+import type { Ref } from "react";
 import Link from "next/link";
 import {
   CalendarDays,
@@ -68,6 +69,7 @@ export default function Tracking({
   paymentEnabled,
   onOrderChanged,
   isOwner = false,
+  statusRef,
 }: {
   order: TrackingOrder;
   services: Service[];
@@ -76,6 +78,7 @@ export default function Tracking({
   paymentEnabled?: boolean;
   onOrderChanged?: () => void;
   isOwner?: boolean;
+  statusRef?: Ref<HTMLElement>;
 }) {
   const auth = useAuth();
   const createdAt = formatOrderCreatedAt(o.createdAt);
@@ -96,7 +99,7 @@ export default function Tracking({
         </div>
       )}
       <div className="tracking-detail-grid">
-        <section className="tracking-progress-card" aria-label="Status pesanan">
+        <section ref={statusRef} tabIndex={statusRef ? -1 : undefined} className="tracking-progress-card" aria-label="Status pesanan">
           <div className="tracking-status-hero">
             <div className="tracking-status-top">
               <b>STATUS PESANAN</b>

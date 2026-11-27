@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { scrollMobileTrackingTop } from "../lib/tracking-scroll";
+import { revealTrackingResult, scrollMobileTrackingTop } from "../lib/tracking-scroll";
 
 function windowStub(mobile: boolean, reducedMotion: boolean) {
   const calls: ScrollToOptions[] = [];
@@ -24,4 +24,18 @@ test("tracking respects reduced motion and does not override desktop scrolling",
   const desktop = windowStub(false, false);
   assert.equal(scrollMobileTrackingTop(desktop.target), false);
   assert.deepEqual(desktop.calls, []);
+});
+
+test("history clicks focus and reveal the result on desktop and respect reduced motion", () => {
+  const calls: Array<FocusOptions | ScrollIntoViewOptions | undefined> = [];
+  const result = {
+    focus: (options?: FocusOptions) => { calls.push(options); },
+    scrollIntoView: (options?: ScrollIntoViewOptions) => { calls.push(options); },
+  };
+  revealTrackingResult(result, windowStub(false, false).target);
+  revealTrackingResult(result, windowStub(false, true).target);
+  assert.deepEqual(calls, [
+    { preventScroll: true }, { block: "start", behavior: "smooth" },
+    { preventScroll: true }, { block: "start", behavior: "auto" },
+  ]);
 });
