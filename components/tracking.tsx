@@ -23,7 +23,7 @@ import PaymentPanel from "./payment-panel";
 import LoyaltyRedemption from "./loyalty-redemption";
 import MembershipRedemption from "./membership-redemption";
 import { useAuth } from "./auth-provider";
-import { DFABLE_HOME } from "@/lib/dfable-path";
+import { dfableTrackingPath } from "@/lib/dfable-path";
 import { formatOrderCreatedAt } from "@/lib/tracking-date";
 import "./tracking.css";
 
@@ -213,22 +213,28 @@ export default function Tracking({
           </div>
           {isOwner && !preview && !pendingStoreConfirmation && (
             <>
-              <MembershipRedemption order={o} onChanged={onOrderChanged} />
+              <MembershipRedemption key={o.id} order={o} onChanged={onOrderChanged} />
               <LoyaltyRedemption order={o} onChanged={onOrderChanged} />
             </>
           )}
           {!preview && !isOwner && !auth.user && !o.guest && !o.paid && (
-            <section className="loyalty-login-hint" aria-label="Poin loyalty">
-              <b>Punya poin loyalty?</b>
+            <section className="loyalty-login-hint" aria-label="Saldo membership dan poin">
+              <b>Punya saldo membership atau poin?</b>
               <p>
-                Masuk dengan akun pemilik pesanan untuk menggunakan poin. Jika
+                Masuk dengan akun pemilik pesanan untuk memakai saldo atau poin. Jika
                 pesanan toko belum terhubung ke akunmu, minta bantuan staf.
               </p>
               <Link
-                href={`${DFABLE_HOME}?account=1${trackingToken ? `&track=${encodeURIComponent(trackingToken)}` : "&view=tracking"}`}
+                href={`${dfableTrackingPath(trackingToken || o.id, o.branchId)}&account=1`}
               >
-                Masuk untuk cek poin
+                Masuk untuk cek saldo
               </Link>
+            </section>
+          )}
+          {!preview && !isOwner && auth.verified && !o.paid && (
+            <section className="loyalty-login-hint" aria-label="Saldo membership dan poin">
+              <b>Pesanan belum terhubung ke akun ini</b>
+              <p>Hubungi toko untuk mengecek akun pemilik pesanan agar saldo membership dan poin bisa digunakan.</p>
             </section>
           )}
           <div className="tracking-price-summary" aria-label="Ringkasan tagihan">

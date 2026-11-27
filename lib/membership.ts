@@ -123,14 +123,14 @@ export async function redeemMembership(
     }
     const current = order.membershipUsed || 0;
     const balance = memberBalance(walletSnap.get("balance"));
+    if (amount > current && walletSnap.get("active") !== true)
+      throw new ApiError(409, "Saldo bisa dipakai setelah deposit dikonfirmasi.");
     if (walletSnap.get("reconciliationRequired") && amount > current)
       throw new ApiError(
         409,
         "Saldo sedang diperiksa toko. Hubungi toko untuk bantuan.",
       );
     const service = calculateOrderPrice(order, order.actualKg);
-    if (!walletSnap.get("active") || !order.membershipDiscount)
-      throw new ApiError(409, "Membership belum aktif pada pesanan ini.");
     if (
       !Number.isSafeInteger(amount) ||
       amount < 0 ||

@@ -1407,6 +1407,43 @@ test("membership and points reduce discounted service but not insurance or shipp
   );
 });
 
+test("a newly confirmed shared deposit can pay an already confirmed order at its quoted price", async () => {
+  const requestId = "73476a0d-2bdf-44ae-b4d8-f12af667cc2d";
+  for (const [orderBranch, depositBranch] of [
+    ["cinere", "buzzwash"],
+    ["buzzwash", "dfablelaundry"],
+  ] as const) {
+    const value: Order = {
+      ...order(), branchId: orderBranch,
+      ...(orderBranch === "buzzwash" ? {
+        membershipDiscount: false,
+        fulfillment: "dropoff",
+        quantityPending: false,
+      } : {}),
+      total: 22000, shippingFee: 2000,
+    };
+    const database = new MemoryDatabase(value);
+    database.values.set("membershipDeposits/customer", {
+      uid: "customer", requestId, amount: 100000,
+      branchId: depositBranch, status: "pending",
+    });
+
+    assert.equal(finalAmount(value), 22000);
+    await assert.rejects(redeemMembership(database.firestore(), "customer", value.id, 20000), /deposit dikonfirmasi/i);
+    await reviewDeposit(database.firestore(), owner, "customer", requestId, "confirm");
+
+    const payment = await redeemMembership(database.firestore(), "customer", value.id, 20000);
+    assert.deepEqual(payment, { balance: 80000, amount: 20000, total: 2000, paid: false });
+    assert.equal(database.current().membershipDiscount, value.membershipDiscount);
+    assert.equal(database.current().membershipUsed, 20000);
+    assert.equal(finalAmount(database.current()), 2000);
+
+    await redeemMembership(database.firestore(), "customer", value.id, 0);
+    assert.equal(finalAmount(database.current()), 22000);
+    assert.equal(database.values.get("memberships/customer")?.balance, 100000);
+  }
+});
+
 test("membership full settlement credits loyalty only once", async () => {
   const value = { ...order(), membershipDiscount: true, total: 16000 };
   const database = new MemoryDatabase(value);
